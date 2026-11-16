@@ -1,0 +1,13 @@
+{
+  "name": "dart-struners",
+  "version": "1.0.0",
+  "description": "De Dart Struners: toernooi, competitie en live monitor voor darts",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
