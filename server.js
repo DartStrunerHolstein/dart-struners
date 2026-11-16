@@ -2,7 +2,8 @@
 // Geen extra pakketten nodig: alleen Node.js (versie 18 of nieuwer).
 //
 // Instellingen (omgevingsvariabelen):
-//   ADMIN_PIN  verplicht: de beheerderscode waarmee je scores mag invoeren
+//   ADMIN_PIN  verplicht: de beheerderscode (alles beheren)
+//   TELLER_PIN optioneel: code voor tellers (alleen scores invoeren)
 //   PORT       poort (Render vult dit zelf in), standaard 3000
 //   DATA_DIR   map waar de stand wordt bewaard, standaard ./data
 //   TUNNEL     zet op 1 om automatisch een gratis Cloudflare-link te maken
@@ -17,6 +18,7 @@ const { spawn } = require('child_process');
 
 const PORT = +process.env.PORT || 3000;
 const PIN = String(process.env.ADMIN_PIN || '').trim();
+const TPIN = String(process.env.TELLER_PIN || '').trim();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const STATE_FILE = path.join(DATA_DIR, 'stand.json');
 const PUBLIC = path.join(__dirname, 'public');
@@ -79,10 +81,29 @@ setInterval(() => {
 }, 25000);
 
 // ---------- beveiliging ----------
-function pinOk(given) {
+function same(given, real) {
   const a = crypto.createHash('sha256').update(String(given || '')).digest();
-  const b = crypto.createHash('sha256').update(PIN).digest();
+  const b = crypto.createHash('sha256').update(real).digest();
   return crypto.timingSafeEqual(a, b);
+}
+// Geeft 'admin', 'teller' of null terug
+function roleOf(given) {
+  if (same(given, PIN)) return 'admin';
+  if (TPIN.length >= 4 && same(given, TPIN)) return 'teller';
+  return null;
+}
+// Een teller mag alleen uitslagen, beurten en speel-instellingen wijzigen
+const TELLER_KEYS = ['single', 'inmode', 'sound', 'voice', 'game', 'dout'];
+function mergeTeller(oldS, newS) {
+  const out = Object.assign({}, oldS);
+  for (const k of TELLER_KEYS) if (k in newS) out[k] = newS[k];
+  for (const k of ['results', 'turns']) {
+    const inc = newS[k] && typeof newS[k] === 'object' ? newS[k] : {};
+    const merged = Object.assign({}, oldS[k] || {}, inc);
+    if (!('X' in inc)) delete merged.X; // 'nog een wedstrijd' bij 1 tegen 1
+    out[k] = merged;
+  }
+  return out;
 }
 const fails = new Map(); // ip -> {n, until}
 function blocked(ip) {
@@ -171,19 +192,22 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && p === '/api/login') {
       if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
       const b = await readBody(req);
-      if (pinOk(b.pin)) { fails.delete(ip); return send(res, 200, { ok: true }); }
+      const role = roleOf(b.pin);
+      if (role) { fails.delete(ip); return send(res, 200, { ok: true, role }); }
       failed(ip);
       return send(res, 401, { error: 'Onjuiste code' });
     }
 
     if (req.method === 'POST' && p === '/api/state') {
       if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
-      if (!pinOk(req.headers['x-pin'])) { failed(ip); return send(res, 401, { error: 'Onjuiste code' }); }
+      const role = roleOf(req.headers['x-pin']);
+      if (!role) { failed(ip); return send(res, 401, { error: 'Onjuiste code' }); }
       const b = await readBody(req);
       if (!b || typeof b.S !== 'object' || !b.S || !Array.isArray(b.S.players)) return send(res, 400, { error: 'Ongeldige stand' });
+      if (role === 'teller' && !state.S) return send(res, 403, { error: 'Nog niets om te tellen' });
       state = {
         v: state.v + 1,
-        S: b.S,
+        S: role === 'admin' ? b.S : mergeTeller(state.S, b.S),
         live: b.live && typeof b.live === 'object' ? b.live : null,
         by: typeof b.by === 'string' ? b.by.slice(0, 40) : null,
         at: new Date().toISOString()

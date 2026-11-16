@@ -243,6 +243,16 @@ body.tvm .hero,body.tvm main,body.tvm #ov{display:none!important}
 .tvsdn{margin:auto 0 0;padding-top:1.5vh;font-size:clamp(10px,.9vw,16px);color:rgba(255,255,255,.5);font-weight:600}
 .tvsdn i{display:inline-block;width:.8em;height:.8em;border-radius:3px;background:rgba(255,45,138,.5);margin-right:.4em;vertical-align:middle}
 body.kijk .tvx{display:none}
+.ktabs{display:flex;gap:8px;overflow-x:auto;flex:none}
+.ktabs button{flex:none;font:800 15px Inter,sans-serif;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#ffd6e8;cursor:pointer}
+.ktabs button.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.kscroll{flex:1;min-height:0;overflow-y:auto;padding-bottom:24px}
+.kh{font:clamp(18px,1.8vw,30px) Anton,Impact,sans-serif;text-transform:uppercase;color:var(--pink);margin:18px 0 8px;letter-spacing:.02em;font-weight:400}
+.kh:first-child{margin-top:0}
+.tvnx li.done span.w{color:#fff}.tvnx li.done span.l{color:rgba(255,255,255,.45)}
+.tvnx li.now{border:1px solid var(--pink);background:rgba(255,45,138,.14)}
+.tvnx li em b{font:1.15em Anton,Impact,sans-serif;font-weight:400;color:#fff;letter-spacing:.02em}
+.kempty{color:rgba(255,255,255,.65);font-size:15px}
 /* meekijken op een telefoon (staand scherm) */
 @media (max-width:760px),(max-aspect-ratio:1/1){
  #tv{overflow-y:auto}
@@ -316,7 +326,9 @@ const DEF=()=>({players:[],started:false,seeds:[],bo:3,boF:5,results:{},name:'',
 let S=DEF();
 let tab='spelers',confirmReset=false;
 let tv=false,tvOn=false,tvSound=false,tvGot=false,tvSlow=false,tvEv=0,tvFx=null,tvFxT=0,tvTO=0,sender=false,pushT=0,wBusy=false,wNext=false,wLast='',evs=[],evN=0;
-let admin=false,ready=false,pin='',ver=0,netOk=null,loginErr='';
+let kijkTab='live';
+let admin=false,ready=false,pin='',ver=0,netOk=null,loginErr='',role='admin';
+const ADM=()=>role==='admin';
 const myId=Math.random().toString(36).slice(2,10);
 const PATH=(location.pathname.replace(/\/+$/,'')||'/').toLowerCase();
 const KIJK=PATH==='/kijk';
@@ -616,6 +628,7 @@ function cCard(id,m){
 }
 function vComp(){
   const C=S.comp,P=C.players;
+  if(!C.started&&!ADM())return`<h2>Competitie</h2><p class="empty">Er is nog geen competitie gestart. Alleen de beheerder kan een competitie opzetten.</p>`;
   if(!C.started)return`<h2>Competitie</h2><p class="stat">Iedereen speelt twee keer tegen iedereen: één keer thuis, één keer uit. Elke wedstrijd is best of 5 legs. Winst levert 2 punten op.</p>
   <form id="fc" class="row" style="max-width:560px"><input type="text" id="cnm" maxlength="24" placeholder="Naam speler" autocomplete="off" aria-label="Naam speler"><button class="btn pri">Toevoegen</button></form>
   ${P.length?`<ul class="list">${P.map((p,i)=>`<li><span class="sd">${i+1}</span><span class="n">${esc(p)}</span><button class="x" data-cdel="${i}" aria-label="Verwijder ${esc(p)}">×</button></li>`).join('')}</ul>`:'<p class="empty">Nog geen spelers. Voeg er minstens 3 toe.</p>'}
@@ -636,7 +649,7 @@ function vComp(){
     h+=`<h2>Wedstrijden</h2><p class="stat">${done} van ${M.length} gespeeld · eerst de heenronde, daarna de terugwedstrijden</p>`+
       Object.keys(rounds).map(r=>`<h3 class="rd">Ronde ${r}${r===next?' · nu aan de beurt':''}</h3><div class="grid" style="margin-bottom:8px">${rounds[r].map(k=>cCard('C'+k,M[k])).join('')}</div>`).join('');
   }
-  h+=`<div class="set" style="margin-top:20px">${gameSel()}</div>`+(cConf?`<div class="conf"><p style="margin:0 0 10px">Alle uitslagen van de competitie worden gewist. De spelers blijven staan.</p><div class="row"><button class="btn pri" data-a="creset">Ja, opnieuw beginnen</button><button class="btn" data-a="cno">Annuleren</button></div></div>`:`<button class="btn" data-a="cask">Nieuwe competitie</button>`);
+  h+=`<div class="set" style="margin-top:20px">${gameSel()}</div>`+(!ADM()?'':cConf?`<div class="conf"><p style="margin:0 0 10px">Alle uitslagen van de competitie worden gewist. De spelers blijven staan.</p><div class="row"><button class="btn pri" data-a="creset">Ja, opnieuw beginnen</button><button class="btn" data-a="cno">Annuleren</button></div></div>`:`<button class="btn" data-a="cask">Nieuwe competitie</button>`);
   return tg+h;
 }
 let publicUrl=null;
@@ -647,10 +660,11 @@ function linksHtml(){
    <div class="lk"><code>${esc(o)}/monitor</code><button class="btn" data-copy="${esc(o)}/monitor">Kopieer</button></div>
    <div>Meekijken voor medespelers, zonder code of account. Ze kunnen niets veranderen.</div>
    <div class="lk"><code>${esc(o)}/kijk</code><button class="btn" data-copy="${esc(o)}/kijk">Kopieer</button></div>
+   ${ADM()?'':'<div>Je bent ingelogd als <b>teller</b>: je kunt wedstrijden tellen, maar niets aan spelers, toernooien of competities veranderen.</div>'}
    <h3 style="margin-top:12px">Gegevens</h3>
    <div>Maak af en toe een reservekopie. Met importeren zet je ook de gegevens over vanuit de claude.ai-versie.</div>
-   <div class="row"><button class="btn" data-a="export">Exporteren</button><label class="btn" style="cursor:pointer">Importeren uit bestand<input type="file" accept="application/json,.json,.txt" data-import hidden></label><button class="btn" data-a="pasteopen">Importeren door plakken</button><button class="btn" data-a="logout">Uitloggen</button></div>
-   ${pasteOpen?`<textarea id="pastebox" rows="5" placeholder="Plak hier de tekst die je in de claude.ai-versie hebt gekopieerd" style="font:13px ui-monospace,monospace;padding:10px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)"></textarea><div class="row"><button class="btn pri" data-a="pastego">Importeren</button><button class="btn" data-a="pasteopen">Annuleren</button></div>`:''}
+   <div class="row"><button class="btn" data-a="export">Exporteren</button>${ADM()?`<label class="btn" style="cursor:pointer">Importeren uit bestand<input type="file" accept="application/json,.json,.txt" data-import hidden></label><button class="btn" data-a="pasteopen">Importeren door plakken</button>`:''}<button class="btn" data-a="logout">Uitloggen</button></div>
+   ${pasteOpen&&ADM()?`<textarea id="pastebox" rows="5" placeholder="Plak hier de tekst die je in de claude.ai-versie hebt gekopieerd" style="font:13px ui-monospace,monospace;padding:10px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)"></textarea><div class="row"><button class="btn pri" data-a="pastego">Importeren</button><button class="btn" data-a="pasteopen">Annuleren</button></div>`:''}
   </div>`;
 }
 function vSpelers(){
@@ -665,9 +679,10 @@ function vToernooi(){
     return champBox()+`<h2>Nu te spelen</h2><p class="stat">${done} van ${all.length} wedstrijden gespeeld</p>`+
       (ready.length?`<div class="grid">${ready.map(card).join('')}</div>`:'<p class="empty">Geen wedstrijden klaar om te spelen.</p>')+
       `<div class="set">${gameSel()}</div><h2>Spelers</h2><ul class="list">${S.seeds.map((p,i)=>`<li><span class="sd">${i+1}</span><span class="n">${esc(p)}</span></li>`).join('')}</ul>`+
-      (confirmReset?`<div class="conf"><p style="margin:0 0 10px">Alle uitslagen worden gewist. De spelerslijst blijft staan.</p><div class="row"><button class="btn pri" data-a="reset">Ja, opnieuw beginnen</button><button class="btn" data-a="nores">Annuleren</button></div></div>`
+      (!ADM()?'':confirmReset?`<div class="conf"><p style="margin:0 0 10px">Alle uitslagen worden gewist. De spelerslijst blijft staan.</p><div class="row"><button class="btn pri" data-a="reset">Ja, opnieuw beginnen</button><button class="btn" data-a="nores">Annuleren</button></div></div>`
       :`<button class="btn" data-a="askreset">Nieuw toernooi</button>`);
   }
+  if(!ADM())return`<h2>Toernooi</h2><p class="empty">Er is nog geen toernooi gestart. Alleen de beheerder kan een toernooi opzetten.</p>`;
   return`<h2>Spelers toevoegen</h2>
   <form id="f" class="row" style="max-width:560px"><input type="text" id="nm" maxlength="24" placeholder="Naam speler" autocomplete="off" aria-label="Naam speler"><button class="btn pri">Toevoegen</button></form>
   ${S.players.length?`<ul class="list">${S.players.map((p,i)=>`<li><span class="sd">${i+1}</span><span class="n">${esc(p)}</span><button class="x" data-del="${i}" aria-label="Verwijder ${esc(p)}">×</button></li>`).join('')}</ul>`:'<p class="empty">Nog geen spelers. Voeg er minstens 3 toe.</p>'}
@@ -716,6 +731,7 @@ function render(){
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.ktab){kijkTab=t.dataset.ktab;renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
   if(t.dataset.copy){const v=t.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>{t.textContent='Gekopieerd';setTimeout(()=>t.textContent='Kopieer',1500)})}catch(_){}return}
   if(t.dataset.tab){tab=t.dataset.tab;try{history.replaceState(null,'','#'+tab)}catch(_){}render();window.scrollTo(0,0);return}
   if(t.dataset.score){sender=true;openId=t.dataset.score;buf='';msg='';darts=[];mod=1;renderOv();return}
@@ -807,13 +823,13 @@ async function flush(){
 }
 async function loadState(){
   try{const r=await fetch('/api/state',{cache:'no-store'});const d=await r.json();setNet(true);
-    if(d&&d.S&&Array.isArray(d.S.players)){S=Object.assign(DEF(),d.S);ver=d.v||0;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+    if(d&&d.S&&Array.isArray(d.S.players)){S=Object.assign(DEF(),d.S);ver=d.v||0;sender=false;clearTimeout(pushT);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
     return true}catch(e){setNet(false);return false}
 }
 async function login(p){
   loginErr='';
   try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:p})});
-    if(r.ok){pin=p;try{localStorage.setItem(PINKEY,p)}catch(e){}admin=true;await loadState();ready=true;render();window.scrollTo(0,0);return true}
+    if(r.ok){const d0=await r.json().catch(()=>({}));role=d0.role==='teller'?'teller':'admin';pin=p;try{localStorage.setItem(PINKEY,p)}catch(e){}admin=true;await loadState();ready=true;render();window.scrollTo(0,0);return true}
     const d=await r.json().catch(()=>({}));loginErr=d.error||'Inloggen mislukt';
   }catch(e){loginErr='Geen verbinding met de server'}
   admin=false;ready=true;render();return false;
@@ -897,6 +913,31 @@ function fxHtml(){
   const sub=d.k==='leg'?'Leg voor '+w:d.k==='match'?w+' wint de wedstrijd!':w;
   return`<div class="tvfx k-${d.k}"><div>${big}</div><small>${sub}</small></div>`;
 }
+function kRow(id,small,h,u,o,isNow){
+  const done=o&&o.win!==null,hw=done&&o.win===o.a;
+  const mid=o&&(done||o.sa||o.sb)?`<b>${o.sa} – ${o.sb}</b>`:'–';
+  return`<li class="${done?'done':''}${isNow?' now':''}"><small>${esc(small)}${isNow?' · nu bezig':''}</small><span class="${done?(hw?'w':'l'):''}">${h}</span><em>${mid}</em><span class="${done?(hw?'l':'w'):''}">${u}</span></li>`;
+}
+function kStand(){
+  if(S.kind==='comp'&&S.comp.started){const M=cMatches(),done=M.filter((m,k)=>getO('C'+k).win!==null).length;
+    return`<h2 class="tvh2">Stand</h2><p class="kempty" style="margin:-4px 0 12px">${done} van ${M.length} wedstrijden gespeeld · winst = 2 punten</p>${tvTable(cStand())}<p class="kempty" style="margin-top:8px">G = gespeeld · W = gewonnen · V = verloren</p>`}
+  return'<p class="kempty">Er loopt op dit moment geen competitie.</p>';
+}
+function kMatches(){
+  if(S.kind==='comp'&&S.comp.started){
+    const M=cMatches(),P=S.comp.players,rounds={};M.forEach((m,k)=>{(rounds[m.rd]=rounds[m.rd]||[]).push(k)});
+    const next=Object.keys(rounds).find(r=>rounds[r].some(k=>getO('C'+k).win===null));
+    return Object.keys(rounds).map(r=>`<h3 class="kh">Ronde ${r}${r===next?' · aan de beurt':''}</h3><ul class="tvnx">${rounds[r].map(k=>kRow('C'+k,'thuis – uit',esc(P[M[k].h]),esc(P[M[k].u]),getO('C'+k),openId==='C'+k)).join('')}</ul>`).join('');
+  }
+  if(S.kind==='toernooi'&&S.started&&B&&R){
+    const lab=s=>typeof s==='number'?nm(s):'<i style="font-weight:400;opacity:.6">nog onbekend</i>';
+    const sec=(rounds,br)=>rounds.map((ids,ri)=>{const vis=ids.filter(id=>!R[id].bye);if(!vis.length)return'';
+      return`<h3 class="kh">${roundName(br,ri+1,rounds.length)}</h3><ul class="tvnx">${vis.map(id=>{const o=R[id];return kRow(id,'Best of '+S.bo,lab(o.a),lab(o.b),o,openId===id)}).join('')}</ul>`}).join('');
+    const f=R.F;
+    return sec(B.W,'W')+(B.L.length?sec(B.L,'L'):'')+`<h3 class="kh">Finale</h3><ul class="tvnx">${kRow('F','Best of '+S.boF,lab(f.a),lab(f.b),f,openId==='F')}</ul>`;
+  }
+  return'<p class="kempty">Er loopt op dit moment geen toernooi of competitie.</p>';
+}
 function renderTV(){
   const el=document.getElementById('tv');if(!el)return;
   document.body.classList.add('tvm');el.hidden=false;document.getElementById('ov').hidden=true;
@@ -905,9 +946,11 @@ function renderTV(){
   let c;
   try{
     if(!tvGot)c={ctx:'',html:`<div class="tvch"><small>Verbinden</small><div class="tvwait">Even geduld, de stand wordt opgehaald</div></div>`};
+    else if(KIJK&&kijkTab==='stand')c={ctx:'',html:`<div class="kscroll">${kStand()}</div>`};
+    else if(KIJK&&kijkTab==='wedstrijden')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Wedstrijden</h2>${kMatches()}</div>`};
     else{const go=openId&&getO(openId);c=go&&typeof go.a==='number'&&typeof go.b==='number'?tvMatch():tvOverview()}
   }catch(e){c={ctx:'',html:'<div class="tvch"><small>Even geduld</small></div>'}}
-  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${c.html}</div>${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
+  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden']].filter(([k])=>k!=='stand'||(S.kind==='comp'&&S.comp.started)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
 }
 
 /* ---------- opstarten ---------- */
