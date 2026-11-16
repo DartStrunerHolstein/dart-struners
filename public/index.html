@@ -260,6 +260,7 @@ body.kijk .tvr{font-size:min(15vw,19vh)}
 .tvh{font-size:clamp(11px,min(1.3vw,2.4vh),24px)}
 .tvmini td{padding:.8vh .3vw}
 .tvtb td{padding:1vh .6vw}
+.tvo>div{min-height:0;overflow-y:auto}
 .ktabs{display:flex;gap:8px;overflow-x:auto;flex:none}
 .ktabs button{flex:none;font:800 15px Inter,sans-serif;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#ffd6e8;cursor:pointer}
 .ktabs button.on{background:var(--pink);border-color:var(--pink);color:#fff}
@@ -913,8 +914,8 @@ function tvMatch(){
 function tvOverview(){
   if(S.kind==='comp'&&S.comp.started){
     const M=cMatches(),T=cStand(),done=M.filter((m,k)=>getO('C'+k).win!==null).length;
-    const nx=M.map((m,k)=>({m,k})).filter(x=>getO('C'+x.k).win===null).slice(0,6);
-    const right=nx.length?`<h2>Volgende wedstrijden</h2><ul class="tvnx">${nx.map(x=>`<li><small>Ronde ${x.m.rd}</small><span>${esc(S.comp.players[x.m.h])}</span><em>–</em><span>${esc(S.comp.players[x.m.u])}</span></li>`).join('')}</ul>`
+    const nx=M.map((m,k)=>({m,k})).filter(x=>getO('C'+x.k).win===null).slice(0,3);
+    const right=nx.length?`<h2>Volgende wedstrijden</h2><ul class="tvnx">${nx.map(x=>`<li><small>Ronde ${x.m.rd}</small><span>${esc(S.comp.players[x.m.h])}</span><em>–</em><span>${esc(S.comp.players[x.m.u])}</span></li>`).join('')}</ul>${KIJK?'<p class="kempty" style="margin-top:10px">Alle wedstrijden staan onder <b>Wedstrijden</b>.</p>':''}`
       :`<div class="tvch"><small>Kampioen</small><div>${esc(T[0].n)}</div></div>`;
     return{ctx:`Competitie · ${done} van ${M.length} wedstrijden gespeeld · winst = 2 punten`,html:`<div class="tvo"><div><h2>Stand</h2>${tvTable(T)}</div><div>${right}</div></div>`};
   }
