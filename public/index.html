@@ -639,8 +639,9 @@ function vComp(){
   h+=`<div class="set" style="margin-top:20px">${gameSel()}</div>`+(cConf?`<div class="conf"><p style="margin:0 0 10px">Alle uitslagen van de competitie worden gewist. De spelers blijven staan.</p><div class="row"><button class="btn pri" data-a="creset">Ja, opnieuw beginnen</button><button class="btn" data-a="cno">Annuleren</button></div></div>`:`<button class="btn" data-a="cask">Nieuwe competitie</button>`);
   return tg+h;
 }
+let publicUrl=null;
 function linksHtml(){
-  const o=location.origin;
+  const o=publicUrl||location.origin;
   return`<div class="monb"><h3>Delen en monitor</h3>
    <div>Monitor in de dartruimte: open deze link op de computer aan de monitor.</div>
    <div class="lk"><code>${esc(o)}/monitor</code><button class="btn" data-copy="${esc(o)}/monitor">Kopieer</button></div>
@@ -836,16 +837,21 @@ function applyRemote(c){
     else if(FXK.includes(x.k)){tvFx={k:x.k,who:String(x.who||'').slice(0,40),v:+x.v||0};clearTimeout(tvFxT);tvFxT=setTimeout(()=>{tvFx=null;renderTV()},2600)}});
   try{refresh()}catch(e){}
 }
-function stream(){
-  let es;try{es=new EventSource('/api/stream')}catch(e){setNet(false);return}
-  es.onopen=()=>{clearTimeout(tvTO);tvSlow=false;setNet(true)};
-  es.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch(_){return}
-    setNet(true);
-    if(tv){applyRemote(d);renderTV();return}
-    // Beheerder op een ander apparaat heeft iets veranderd: haal de volledige stand op
-    if(admin&&d.by&&d.by!==myId&&d.v>ver&&!openId&&!wBusy){loadState().then(render)}
-  };
-  es.onerror=()=>{setNet(false)};
+// Live bijwerken met 'long polling': de server antwoordt zodra er iets verandert
+async function stream(){
+  let v=-1;
+  for(;;){
+    try{
+      const r=await fetch('/api/wait?v='+v+'&c='+myId,{cache:'no-store'});
+      if(!r.ok)throw new Error(r.status);
+      const d=await r.json();
+      clearTimeout(tvTO);tvSlow=false;setNet(true);
+      const changed=d.v!==v;v=d.v;
+      if(tv){if(changed||!tvGot){applyRemote(d);renderTV()}continue}
+      // Beheerder op een ander apparaat heeft iets veranderd: haal de volledige stand op
+      if(changed&&admin&&d.by&&d.by!==myId&&d.v>ver&&!openId&&!wBusy){await loadState();render()}
+    }catch(e){setNet(false);await new Promise(r=>setTimeout(r,2000))}
+  }
 }
 
 /* ---------- monitor- en meekijkweergave ---------- */
@@ -907,6 +913,7 @@ function renderTV(){
 /* ---------- opstarten ---------- */
 (async()=>{
   if(tv){tvTO=setTimeout(()=>{tvSlow=true;renderTV()},10000);renderTV();stream();return}
+  try{const r=await fetch('/api/info',{cache:'no-store'});const d=await r.json();if(d&&typeof d.publicUrl==='string'&&/^https:\/\//.test(d.publicUrl))publicUrl=d.publicUrl}catch(e){}
   if(pin){await login(pin)}else{await loadState();ready=true;render()}
   stream();
 })();

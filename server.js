@@ -5,12 +5,15 @@
 //   ADMIN_PIN  verplicht: de beheerderscode waarmee je scores mag invoeren
 //   PORT       poort (Render vult dit zelf in), standaard 3000
 //   DATA_DIR   map waar de stand wordt bewaard, standaard ./data
+//   TUNNEL     zet op 1 om automatisch een gratis Cloudflare-link te maken
+//              (cloudflared.exe moet dan in deze map staan of in het pad)
 
 'use strict';
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { spawn } = require('child_process');
 
 const PORT = +process.env.PORT || 3000;
 const PIN = String(process.env.ADMIN_PIN || '').trim();
@@ -59,11 +62,15 @@ function publicView() {
 
 // ---------- live verbindingen ----------
 const clients = new Set();
+let waiters = [];
 function broadcast() {
-  const msg = 'data: ' + JSON.stringify(publicView()) + '\n\n';
+  const view = publicView();
+  const msg = 'data: ' + JSON.stringify(view) + '\n\n';
   for (const res of clients) {
     try { res.write(msg); } catch (e) { clients.delete(res); }
   }
+  const w = waiters; waiters = [];
+  for (const x of w) { clearTimeout(x.t); try { send(x.res, 200, view); } catch (e) {} }
 }
 setInterval(() => {
   for (const res of clients) {
@@ -134,6 +141,18 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/healthz') return send(res, 200, { ok: true });
 
     if (req.method === 'GET' && p === '/api/state') return send(res, 200, state);
+    if (req.method === 'GET' && p === '/api/info') return send(res, 200, { publicUrl });
+
+    // Live bijwerken via 'long polling': werkt ook via de gratis Cloudflare-tunnel
+    if (req.method === 'GET' && p === '/api/wait') {
+      const known = Number(url.searchParams.get('v'));
+      if (known !== state.v) return send(res, 200, publicView());
+      if (waiters.length > 500) return send(res, 200, publicView());
+      const x = { res, t: setTimeout(() => { waiters = waiters.filter(y => y !== x); send(res, 200, publicView()); }, 25000) };
+      waiters.push(x);
+      req.on('close', () => { clearTimeout(x.t); waiters = waiters.filter(y => y !== x); });
+      return;
+    }
 
     if (req.method === 'GET' && p === '/api/stream') {
       res.writeHead(200, Object.assign({
@@ -180,4 +199,55 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log('De Dart Struners draait op poort ' + PORT));
+// ---------- gratis Cloudflare-tunnel ----------
+let publicUrl = null;
+function startTunnel() {
+  const local = path.join(__dirname, process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared');
+  const bin = process.env.CLOUDFLARED || (fs.existsSync(local) ? local : 'cloudflared');
+  console.log('Tunnel starten…');
+  let child;
+  try {
+    child = spawn(bin, ['tunnel', '--no-autoupdate', '--protocol', process.env.TUNNEL_PROTOCOL || 'http2', '--url', 'http://127.0.0.1:' + PORT], { windowsHide: true });
+  } catch (e) { console.error('Kon cloudflared niet starten:', e.message); return; }
+  let shownErr = 0;
+  const scan = buf => {
+    const txt = String(buf);
+    for (const line of txt.split(/\r?\n/)) {
+      if (/Registered tunnel connection/i.test(line)) console.log('Tunnel verbonden met Cloudflare ✓');
+      else if (/\b(ERR|error)\b/i.test(line) && shownErr < 15) { shownErr++; console.log('Tunnel-melding: ' + line.replace(/^\S+\s+/, '').slice(0, 200)); }
+    }
+    const m = txt.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/i);
+    if (m && m[0] !== publicUrl) {
+      publicUrl = m[0];
+      const line = '='.repeat(64);
+      console.log('\n' + line);
+      console.log('  De Dart Struners staat online!');
+      console.log('');
+      console.log('  Beheer (telefoon):  ' + publicUrl);
+      console.log('  Meekijken:          ' + publicUrl + '/kijk');
+      console.log('  Monitor (hier):     http://localhost:' + PORT + '/monitor');
+      console.log(line + '\n');
+      try { fs.writeFileSync(path.join(__dirname, 'link.txt'), publicUrl + '\r\n' + publicUrl + '/kijk\r\n'); } catch (e) {}
+    }
+  };
+  child.stdout.on('data', scan);
+  child.stderr.on('data', scan);
+  child.on('error', e => console.error('Kon cloudflared niet starten:', e.message));
+  child.on('exit', code => {
+    console.log('Tunnel gestopt (' + code + '). Over 5 seconden opnieuw…');
+    publicUrl = null;
+    setTimeout(startTunnel, 5000);
+  });
+  const stop = () => { try { child.kill(); } catch (e) {} process.exit(0); };
+  process.once('SIGINT', stop);
+  process.once('SIGTERM', stop);
+}
+
+// Met de tunnel alleen lokaal luisteren: dan vraagt Windows niet om de firewall
+// alwaysdata geeft het adres door via HOST of IP
+const HOST = process.env.HOST || process.env.IP || (process.env.TUNNEL === '1' ? '127.0.0.1' : undefined);
+server.listen(PORT, HOST, () => {
+  console.log('De Dart Struners draait op poort ' + PORT);
+  console.log('Op deze computer: http://localhost:' + PORT);
+  if (process.env.TUNNEL === '1') startTunnel();
+});
