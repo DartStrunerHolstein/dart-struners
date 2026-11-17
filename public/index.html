@@ -201,6 +201,10 @@ body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
 .kopf input{flex:1;min-width:0;width:auto;text-transform:uppercase;letter-spacing:.2em;font-weight:800;background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2)}
 .kopf .row{display:flex;gap:6px;flex-wrap:nowrap}
 .lnk{background:none;border:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer;padding:0;margin-left:4px}
+.invbar{align-items:center;margin:0 0 14px}
+.ikben{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:#f5bfd8;font-weight:600}
+.ikben button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);color:#fff;font:700 13px Inter,sans-serif;cursor:pointer}
+.ikben button.on{background:var(--pink);border-color:var(--pink)}
 .caminfo{font-size:13px;font-weight:600;border-radius:10px;padding:8px 10px;background:rgba(94,230,160,.1);color:#bff5d9}.caminfo.bad{background:rgba(255,107,107,.12);color:#ffc2c2}
 .hc{display:flex;align-items:center;gap:16px;padding:18px 18px;border-radius:20px;border:2px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none;text-align:left;font:inherit;cursor:pointer;width:100%;transition:border-color .15s,transform .15s}
 .hc:hover{border-color:var(--pink)}.hc:active{transform:scale(.99)}
@@ -515,6 +519,8 @@ const PATH=(location.pathname.slice(BP.length).replace(/\/+$/,'')||'/').toLowerC
 const KIJK=PATH==='/kijk',SPELP=!SID&&PATH==='/spel',HOME=!SID&&PATH==='/',SPELEN=!SID&&PATH==='/spelen';
 if(PATH==='/monitor'||KIJK)tv=true;
 if(KIJK){tvOn=true;tvSound=false;document.body.classList.add('kijk')}
+// Uitnodigingslink: /s/abc123#code=1234 zet de sessiecode klaar en haalt hem uit de adresbalk
+try{const hm=/[#&]code=(\d{4})/.exec(location.hash);if(SID&&hm){localStorage.setItem(PINKEY,hm[1]);history.replaceState(null,'',location.pathname)}}catch(e){}
 try{pin=localStorage.getItem(PINKEY)||''}catch(e){}
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.players))S=Object.assign(DEF(),s)}catch(e){}
 try{const h=location.hash.slice(1);if(h)tab=h}catch(e){}
@@ -653,8 +659,8 @@ function nextAudio(){const u=aq.shift();if(!u){acur=null;return}const a=new Audi
   const go=()=>{if(acur===a)nextAudio()};a.onended=go;a.onerror=go;a.play().catch(go)}
 function playUrls(l,cut){if(cut)stopAudio();aq.push(...l);if(!acur)nextAudio()}
 const DK=l=>l==='Mis'?[['outside'],['0']]:l==='Bull'?[['bullseye'],['50']]:l==='25'?[['bull'],['25']]:l[0]==='T'?[['t'+l.slice(1)]]:l[0]==='D'?[['d'+l.slice(1)]]:[['s'+l],[l]];
-function say(t,cut,seqs){
-  if(!tv&&t)ev(seqs?{k:'say',t:String(t),cut:!!cut,s:seqs}:{k:'say',t:String(t),cut:!!cut});
+function say(t,cut,seqs,stil){
+  if(!tv&&t&&!stil)ev(seqs?{k:'say',t:String(t),cut:!!cut,s:seqs}:{k:'say',t:String(t),cut:!!cut});
   if(tv?!tvSound:!S.sound)return;
   const pu=packUrls(seqs);
   if(pu){try{speechSynthesis.cancel()}catch(e){}playUrls(pu,cut);return}
@@ -707,6 +713,7 @@ document.addEventListener('change',e=>{const i=e.target;
   if(!i.dataset||!i.dataset.clip||!i.files||!i.files[0])return;
   const f=i.files[0];if(f.size>5e6){msg='Bestand is te groot (max 5 MB)';renderOv();return}
   clipPut(i.dataset.clip,f).then(renderOv)});
+const sideName2=(id,L,s)=>{const k=openId;openId=id;try{return sideName(L,s)}finally{openId=k}};
 const sideName=(L,s)=>openId==='X'?S.single.names[s]:(isC(openId)?S.comp.players:S.seeds)[s?L.o.b:L.o.a];
 function submit(v,ds){
   const L=live(openId);if(L.o.win!==null)return;
@@ -766,7 +773,7 @@ function renderOv(){
   const remC=L.rem[L.cur];
   const chips=[...(remC<=170&&checkout(remC)?[['Uit '+remC,remC]]:[]),...[26,41,45,60,81,85,100,140,180].map(v=>[v,v])];
   ov.innerHTML=`<div class="ovb">
-   <div class="ovh"><span>${SOLO(openId)?'Solo · '+o.need+(o.need>1?' legs':' leg'):openId==='X'?'Losse wedstrijd':isC(openId)?'Competitie · ronde '+cMatches()[+openId.slice(1)].rd:openId==='F'?'Finale':openId}${SOLO(openId)?'':' · Best of '+bo+' legs'} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'}</span><span class="ovr"><button class="snd${S.sound?' on':''}" data-a="sound" aria-label="Geluid ${S.sound?'uit':'aan'}zetten" aria-pressed="${S.sound?'true':'false'}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>${S.sound?'<path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>':'<path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'}</svg></button>${camBtn()}<button class="snd" data-a="sheet" aria-label="Geluiden instellen">Stem</button><button class="x" data-a="close" aria-label="Sluiten">×</button></span></div>${camInfo()}
+   <div class="ovh"><span>${SOLO(openId)?'Solo · '+o.need+(o.need>1?' legs':' leg'):openId==='X'?'Losse wedstrijd':isC(openId)?'Competitie · ronde '+cMatches()[+openId.slice(1)].rd:openId==='F'?'Finale':openId}${SOLO(openId)?'':' · Best of '+bo+' legs'} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'}</span><span class="ovr"><button class="snd${S.sound?' on':''}" data-a="sound" aria-label="Geluid ${S.sound?'uit':'aan'}zetten" aria-pressed="${S.sound?'true':'false'}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>${S.sound?'<path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>':'<path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'}</svg></button>${camBtn()}<button class="snd" data-a="sheet" aria-label="Geluiden instellen">Stem</button><button class="x" data-a="close" aria-label="Sluiten">×</button></span></div>${camInfo()}${ikHtml()}
    ${sheet?sheetHtml():''}${sheet?'':`<div class="pl${SOLO(openId)?' solo':''}">${panel(0)}${SOLO(openId)?'':panel(1)}</div>
    ${done?`<div class="wonb">${SOLO(openId)?`<small>Solo klaar</small><div class="cn">${o.need} ${o.need>1?'legs':'leg'}</div><p>${L.t.list.reduce((q,x)=>q+(x.d&&x.d.length?x.d.length:3),0)} pijlen · gemiddelde ${L.st[0].avg}</p>`:`<small>Wedstrijd gewonnen</small><div class="cn">${pn(o.win)}</div><p>${L.r.sa} – ${L.r.sb} in legs</p>`}<div class="row">${openId==='X'?'<button class="btn pri" data-a="rematch">'+(SOLO(openId)?'Nog een keer':'Nog een wedstrijd')+'</button><button class="btn" data-a="close">Sluiten</button>':'<button class="btn pri" data-a="close">Terug naar '+(isC(openId)?'competitie':'bracket')+'</button>'}<button class="btn" data-a="undo">Laatste beurt terug</button></div></div>`:L.bull?`
    <div class="bullb"><h3>Bullen</h3><p>Beide spelers gooien één pijl op de bull. Wie het dichtst bij zit, begint de eerste leg. Daarna wisselt het per leg.</p>
@@ -865,10 +872,16 @@ function camApply(e){
     else if(e.k==='takeout'){let g=0;while(SP().on&&SP().darts.length&&g++<3)spDart(0)}
     return}
   if(!openId)return;const L=live(openId);if(L.o.win!==null||L.bull)return;
+  const ik=ikSide();if(ik!==null&&L.cur!==ik)return; // niet mijn beurt: dit bord telt nu niet mee
   if(e.k==='dart'){if(S.inmode!=='pijl'){S.inmode='pijl';buf=''}sender=true;edit=null;mod=n===0?1:m;dart(n)}
   else if(e.k==='fix'){if(darts[e.i]){edit=e.i;mod=n===0?1:m;dart(n)}}
   else if(e.k==='takeout'){if(darts.length){edit=null;evalTurn(live(openId),true)}}
 }
+// Samen op afstand: elk apparaat telt met zijn eigen bord alleen in de beurt van 'zijn' speler
+const IKK=()=>'dartstruners-ik-'+(SID||'main')+'-'+openId;
+function ikSide(){try{const v=localStorage.getItem(IKK());return v==='0'?0:v==='1'?1:null}catch(e){return null}}
+function ikHtml(){if(!camOn||!openId||SOLO(openId))return'';const L=live(openId),ik=ikSide();
+  return`<div class="ikben"><span>Mijn camera telt voor:</span>${[0,1].map(i=>`<button data-ik="${i}" class="${ik===i?'on':''}">${pn(L.o[i?'b':'a'])}</button>`).join('')}<button data-ik="" class="${ik===null?'on':''}">Allebei</button></div>`}
 function camBtn(){const ok=camLive();
   return`<button class="snd cam${camOn?' on':''}" data-a="cam" aria-pressed="${camOn}" title="${camOn?'Camera telt mee op dit apparaat':'Camera tellen aanzetten'}"><i class="dot ${camOn?(ok?'ok':'bad'):''}"></i>Camera</button>`}
 function camInfo(){
@@ -1058,6 +1071,7 @@ function linksHtml(){
    <div>Bewaar deze gegevens. Met de link en de code kan iemand anders deze sessie ook beheren. Een sessie die 3 dagen niet gebruikt wordt, verdwijnt. Maak je op dit apparaat een nieuwe sessie, dan wordt deze verwijderd.</div>
    <div class="lk"><code>${esc(o)}</code><button class="btn" data-copy="${esc(o)}">Kopieer</button></div>
    <div class="lk"><code>Sessiecode: ${esc(pin)}</code><button class="btn" data-copy="${esc(pin)}">Kopieer</button></div>
+   <div class="row" style="align-items:center"><button class="btn pri" data-a="invite">Uitnodigen</button><span class="stat" style="margin:0">${esc(invMsg)||'Deelt een link waarmee je vriend meteen in deze sessie zit, zonder code te typen.'}</span></div>
    <div class="row" style="align-items:center"><button class="btn${S.zichtbaar===false?'':' pri'}" data-a="zicht">${S.zichtbaar===false?'Niet zichtbaar in Live kijken':'Zichtbaar in Live kijken'}</button><span class="stat" style="margin:0">${S.zichtbaar===false?'Alleen wie jullie kijklink heeft, kan meekijken.':'Iedereen ziet jullie wedstrijd bij Live kijken. Tik om te verbergen.'}</span></div>`:''}<h3${SID?' style="margin-top:12px"':''}>Delen en monitor</h3>
    ${SID?'':`<div>Startpagina voor iedereen, met Live kijken, Spelen en Monitor:</div>
    <div class="lk"><code>${esc(o)}/</code><button class="btn" data-copy="${esc(o)}/">Kopieer</button></div>`}
@@ -1084,11 +1098,13 @@ function vSpelers(){
   if(!SID){if(S.kind!=='comp'){S.kind='comp';save()}
     return vComp()+`<div style="margin-top:8px">${spTopBlok()}</div>`+`<p class="stat" style="margin-top:20px">Zelf een potje 1 tegen 1, solo, toernooi of het checkout-spel? Dat gaat via <a href="/spelen">Spelen</a>.</p>`+linksHtml()}
   if(SID&&S.kind==='comp')S.kind='single';
+  const join=remOpen&&!openId&&getO(remOpen)?`<div class="conf" style="max-width:760px;margin:0 0 14px"><p style="margin:0 0 10px">Er loopt een wedstrijd op een ander apparaat: <b>${(()=>{try{const L=live(remOpen);return esc(String(sideName2(remOpen,L,0)))+' – '+esc(String(sideName2(remOpen,L,1)))}catch(e){return'wedstrijd'}})()}</b></p><div class="row"><button class="btn pri" data-a="join">Meedoen</button></div></div>`:'';
+  const inv=join+`<div class="row invbar"><button class="btn pri" data-a="invite">Uitnodigen</button><span class="stat" style="margin:0">${esc(invMsg)||'Samen spelen of meetellen? Stuur je vriend een link.'}</span></div>`;
   const kt=`<div class="mode kind">${[['toernooi','Toernooi'],...(SID?[]:[['comp','Competitie']]),['single','1 tegen 1'],['spel','Checkout-spel']].map(([k,l])=>`<button data-kind="${k}" class="${S.kind===k?'on':''}">${l}</button>`).join('')}</div>`;
-  if(S.kind==='spel')return kt+vSpel()+linksHtml();
-  if(S.kind==='single')return kt+vSingle()+linksHtml();
+  if(S.kind==='spel')return inv+kt+vSpel()+linksHtml();
+  if(S.kind==='single')return inv+kt+vSingle()+linksHtml();
   if(S.kind==='comp')return kt+vComp()+linksHtml();
-  return kt+vToernooi()+linksHtml();
+  return inv+kt+vToernooi()+linksHtml();
 }
 function vToernooi(){
   if(S.started&&B){
@@ -1108,6 +1124,11 @@ function vToernooi(){
   ${gameSel()}</div>
   <div class="set" style="margin-top:-8px"><label>Loting<select id="lot"><option value="1"${S.lot?' selected':''}>Willekeurig bij start</option><option value="0"${S.lot?'':' selected'}>Volgorde van de lijst</option></select></label></div><div class="row"><button class="btn pri" data-a="start"${S.players.length<3?' disabled':''}>Start toernooi</button></div>`;
 }
+let invMsg='';
+async function invite(){const url=location.origin+'/s/'+SID+'#code='+encodeURIComponent(pin);
+  try{if(navigator.share){await navigator.share({title:'De Dart Struners',text:'Doe mee met mijn darts-sessie:',url});return}}catch(e){if(e&&e.name==='AbortError')return}
+  try{await navigator.clipboard.writeText(url);invMsg='Link gekopieerd. Plak hem in WhatsApp of een berichtje.'}catch(e){invMsg='Stuur deze link: '+url}
+  render()}
 let newErr='',versie='',updBusy=false,updMsg='',updErr=false;
 async function bijwerken(){updBusy=true;updMsg='Nieuwste versie ophalen…';updErr=false;render();
   try{const r=await fetch('/api/bijwerken',{method:'POST',headers:{'X-Pin':pin}});const d=await r.json().catch(()=>({}));
@@ -1177,6 +1198,7 @@ function render(){
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.topdel!==undefined){topAdmin({del:t.dataset.topdel});return}
+  if(t.dataset.ik!==undefined&&openId){try{if(t.dataset.ik==='')localStorage.removeItem(IKK());else localStorage.setItem(IKK(),t.dataset.ik)}catch(_){}renderOv();return}
   if(t.dataset.sn!==undefined){spDart(+t.dataset.sn);return}
   if(t.dataset.smod){const m=+t.dataset.smod;spMod=spMod===m?1:m;renderOv();return}
   if(t.dataset.solo!==undefined){const v=+t.dataset.solo;if(!!S.single.solo!==!!v){S.single.solo=v;delete S.results.X;delete S.turns.X;if(v&&![1,3,5,10].includes(+S.single.bo))S.single.bo=3;if(!v&&![1,3,5,7].includes(+S.single.bo))S.single.bo=3}save();render();return}
@@ -1227,6 +1249,8 @@ document.addEventListener('click',e=>{
       const r=await fetch('/api/sessie',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({oud:old?[{id:old,code}]:[]})});const d=await r.json().catch(()=>({}));
       if(!r.ok||!d.id){newErr=d.error||'Sessie maken lukte niet';render();return}
       try{if(old){localStorage.removeItem('dartstruners-pin-'+old);localStorage.removeItem('dartstruners-v1-'+old);dropSess(old)}localStorage.setItem('dartstruners-pin-'+d.id,d.code);localStorage.setItem(MIJNK,d.id)}catch(_){}addSess(d.id);location.href='/s/'+d.id}catch(_){newErr='Geen verbinding met de server';render()}})();return}
+  if(a==='invite'){invite();return}
+  if(a==='join'&&remOpen){openId=remOpen;darts=remDarts.filter(x=>x&&typeof x.lab==='string').map(x=>({lab:x.lab,v:+x.v||0,dbl:!!x.dbl}));mod=1;buf='';msg='';edit=null;render();return}
   if(a==='newno'){newConf=false;render();return}
   if(a==='spstart'){spConf=false;const p=SP();['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)p.names[i]=el.value.trim()});spHidden=false;spStart();return}
   if(a==='spnew'){const p=SP();p.on=false;p.done=false;save();render();return}
@@ -1290,14 +1314,15 @@ function importText(txt){
 
 /* ---------- verbinding met de server ---------- */
 function setNet(ok){netOk=ok;const n=document.getElementById('net');if(n)n.hidden=ok!==false||tv;if(tv)renderTV()}
-function ev(o){if(tv)return;o.id=Date.now()*100+(evN++%100);evs.push(o);if(evs.length>8)evs=evs.slice(-8);push()}
-function push(){if(tv||!admin||!sender)return;clearTimeout(pushT);pushT=setTimeout(flush,120)}
+function ev(o){if(tv)return;o.id=Date.now()*100+(evN++%100);myEvs.add(o.id);evs.push(o);if(evs.length>8)evs=evs.slice(-8);push()}
+let pushPending=false;const myEvs=new Set();let remSeen=null,remOpen=null,remDarts=[];
+function push(){if(tv||!admin||!sender)return;pushPending=true;clearTimeout(pushT);pushT=setTimeout(flush,120)}
 async function flush(){
   if(tv||!admin)return;
   if(wBusy){wNext=true;return}
   let sum=null;try{sum=liveSum()}catch(e){}
   const j=JSON.stringify({S,live:{openId:openId||null,darts,msg,evs,sum},by:myId});
-  if(j===wLast)return;
+  if(j===wLast){pushPending=false;return}
   wBusy=true;let ok=false;
   try{const r=await fetch(API+'/state',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:j});
     if(r.ok){wLast=j;const d=await r.json();ver=d.v;ok=true}
@@ -1305,11 +1330,13 @@ async function flush(){
   }catch(e){}
   wBusy=false;setNet(ok);
   if(wNext){wNext=false;flush()}
+  else if(ok)pushPending=false;
   else if(!ok&&admin)setTimeout(flush,3000);
 }
 async function loadState(){
   try{const r=await fetch(API+'/state',{cache:'no-store'});const d=await r.json();setNet(true);
-    if(d&&d.S&&Array.isArray(d.S.players)){S=Object.assign(DEF(),d.S);ver=d.v||0;sender=false;clearTimeout(pushT);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+    if(d&&d.S&&Array.isArray(d.S.players)){S=Object.assign(DEF(),d.S);ver=d.v||0;sender=false;clearTimeout(pushT);
+      if(d.live&&d.by!==myId){remOpen=typeof d.live.openId==='string'&&d.live.openId?d.live.openId:null;remDarts=Array.isArray(d.live.darts)?d.live.darts:[]}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
     return true}catch(e){setNet(false);return false}
 }
 async function login(p){
@@ -1358,8 +1385,17 @@ async function stream(){
       if(tv){if(changed||!tvGot){applyRemote(d);if(monLive()&&!monHasGame())liveFetch();renderTV()}else if(cch||tch)renderTV();continue}
       if(cch)chatAdm();if(tch)topRefresh();
       if(SPELP)continue;
-      // Beheerder op een ander apparaat heeft iets veranderd: haal de volledige stand op
-      if(changed&&admin&&d.by&&d.by!==myId&&d.v>ver&&!openId&&!wBusy){await loadState();render()}
+      // Een ander apparaat heeft iets veranderd: haal de volledige stand op.
+      // Staat er een wedstrijd open (samen spelen op afstand), neem dan ook de pijlen van de lopende beurt over.
+      if(changed&&admin&&d.by&&d.by!==myId&&d.v>ver&&!wBusy&&!pushPending){
+        const L=d.live||{};await loadState();
+        remOpen=typeof L.openId==='string'&&L.openId?L.openId:null;remDarts=Array.isArray(L.darts)?L.darts:[];
+        if(openId&&L.openId===openId){darts=Array.isArray(L.darts)?L.darts.filter(x=>x&&typeof x.lab==='string').map(x=>({lab:x.lab,v:+x.v||0,dbl:!!x.dbl})):[];msg=typeof L.msg==='string'?L.msg:'';edit=null;mod=1}
+        else if(!openId&&L.openId&&S.kind==='single'&&L.openId==='X'&&SID){/* wedstrijd op het andere apparaat gestart: hier niet automatisch openen */}
+        const E=Array.isArray(L.evs)?L.evs.filter(x=>x&&typeof x.id==='number'&&!myEvs.has(x.id)).sort((a,b)=>a.id-b.id):[];
+        if(remSeen===null)remSeen=E.reduce((m,x)=>Math.max(m,x.id),0);
+        else E.filter(x=>x.id>remSeen).forEach(x=>{remSeen=Math.max(remSeen,x.id);if(openId&&x.k==='say'&&typeof x.t==='string')say(x.t.slice(0,200),x.cut,Array.isArray(x.s)?x.s:null,true)});
+        render()}
     }catch(e){if(gen!==streamGen)return;setNet(false);await new Promise(r=>setTimeout(r,2000))}
   }
 }

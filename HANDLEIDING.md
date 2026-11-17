@@ -79,6 +79,9 @@ De hoofdlink (`dartstruners.alwaysdata.net`) opent de startpagina met drie knopp
 In **Beheer** staat alleen nog de **competitie**, plus het checkout-leaderboard, de chat, de links en **Website bijwerken**. Toernooi, 1 tegen 1, solo en het checkout-spel speel je via **Spelen**.
 **Live kijken** heeft drie tabbladen: **Live** (alle wedstrijden die nu bezig zijn, competitie en sessies van vrienden; tik op *Kijken*), **Competitie** (stand en alle wedstrijden) en **Checkout-top**. De chat staat er altijd bij. Op de **monitor** kies je de wedstrijd op het startscherm of met **Wissel wedstrijd**. Een sessie kan zich verbergen met de knop *Zichtbaar in Live kijken*.
 
+### Samen spelen op afstand
+In een sessie staat **Uitnodigen**: dat deelt een link waarmee je vriend meteen in de sessie zit (zonder code te typen). Start een wedstrijd; op het andere apparaat verschijnt **Meedoen**. Hebben jullie allebei een bord met camera's, koppel dan ieder zijn eigen camera en kies bij **Mijn camera telt voor:** je eigen naam. Dan telt elk bord alleen in de beurt van die speler, en zien jullie elkaars worpen live.
+
 ### Vriendensessies
 Op het inlogscherm staat **Nieuwe sessie starten**. Vrienden krijgen dan een eigen link (`…/s/abc123`) met een eigen sessiecode, los van de competitie. In een sessie kies je **Toernooi**, **1 tegen 1** of het **Checkout-spel**. Elke sessie heeft ook een eigen monitor- en meekijklink. Een sessie die 3 dagen niet gebruikt wordt, verdwijnt vanzelf. Maak je op hetzelfde apparaat een nieuwe sessie, dan wordt je vorige verwijderd (je krijgt eerst een melding). Op Spelen staat **Verder met je sessie**.
 

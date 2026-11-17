@@ -343,7 +343,7 @@ const server = http.createServer(async (req, res) => {
     if (sm) {
       const id = sm[1], x = sess[id], what = sm[2];
       if (!x) return send(res, 404, { error: 'Deze sessie bestaat niet (meer)' });
-      if (req.method === 'GET' && what === 'state') return send(res, 200, viewOf(x));
+      if (req.method === 'GET' && what === 'state') return send(res, 200, { v: x.v, by: x.by, S: x.S, live: x.live, top: topView(), cam: camView(x) }); // volledig, zodat een tweede apparaat niets kwijtraakt
       if (req.method === 'GET' && what === 'wait') {
         const kt = url.searchParams.get('tv');
         const kb = url.searchParams.get('bv');
