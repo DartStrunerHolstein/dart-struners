@@ -82,6 +82,33 @@ function chatPrune() {
 setInterval(() => { if (chatPrune()) chatChanged(); }, 60000);
 chatPrune();
 
+// ---------- leaderboard checkout-spel (voor iedereen, hoogste score per naam) ----------
+const TOP_FILE = path.join(DATA_DIR, 'spel.json');
+let top = { v: 0, list: {} };
+try {
+  if (fs.existsSync(TOP_FILE)) {
+    const d = JSON.parse(fs.readFileSync(TOP_FILE, 'utf8'));
+    if (d && d.list && typeof d.list === 'object') top = Object.assign(top, d);
+  }
+} catch (e) { console.error('Kon het leaderboard niet lezen:', e.message); }
+let topTimer = null;
+function persistTop() {
+  clearTimeout(topTimer);
+  topTimer = setTimeout(() => {
+    const tmp = TOP_FILE + '.tmp';
+    fs.writeFile(tmp, JSON.stringify(top), err => {
+      if (err) return console.error('Leaderboard opslaan mislukt:', err.message);
+      fs.rename(tmp, TOP_FILE, e => e && console.error('Leaderboard opslaan mislukt:', e.message));
+    });
+  }, 300);
+}
+const topView = () => ({ v: top.v, list: Object.entries(top.list).map(([k, x]) => ({ k, n: x.n, s: x.s, d: x.d })).sort((a, b) => b.s - a.s || a.d - b.d).slice(0, 200) });
+const topHits = new Map();
+function topChanged() {
+  top.v++; persistTop(); broadcast();
+  for (const id of Object.keys(sess)) if ((sessWait.get(id) || []).length) sessBroadcast(id);
+}
+
 let writeTimer = null;
 function persist() {
   clearTimeout(writeTimer);
@@ -99,7 +126,7 @@ function viewOf(st) {
   const S = st.S ? Object.assign({}, st.S) : null;
   const open = st.live && st.live.openId;
   if (S && S.turns) S.turns = open && S.turns[open] ? { [open]: S.turns[open] } : {};
-  return { v: st.v, by: st.by, S, live: st.live };
+  return { v: st.v, by: st.by, S, live: st.live, top: topView() };
 }
 function publicView() {
   return Object.assign(viewOf(state), { chat: { v: chat.v, on: chat.on, msgs: chat.msgs } });
@@ -244,7 +271,7 @@ const server = http.createServer(async (req, res) => {
   const ip = ipOf(req);
 
   try {
-    if (req.method === 'GET' && (p === '/' || p === '/monitor' || p === '/kijk' || /^\/s\/[a-z0-9]{6}(\/monitor|\/kijk)?$/.test(p))) {
+    if (req.method === 'GET' && (p === '/' || p === '/monitor' || p === '/kijk' || p === '/spel' || /^\/s\/[a-z0-9]{6}(\/monitor|\/kijk)?$/.test(p))) {
       return send(res, 200, page(), 'text/html; charset=utf-8');
     }
 
@@ -267,7 +294,8 @@ const server = http.createServer(async (req, res) => {
       if (!x) return send(res, 404, { error: 'Deze sessie bestaat niet (meer)' });
       if (req.method === 'GET' && what === 'state') return send(res, 200, viewOf(x));
       if (req.method === 'GET' && what === 'wait') {
-        if (Number(url.searchParams.get('v')) !== x.v) return send(res, 200, viewOf(x));
+        const kt = url.searchParams.get('tv');
+        if (Number(url.searchParams.get('v')) !== x.v || (kt !== null && Number(kt) !== top.v)) return send(res, 200, viewOf(x));
         const w = sessWait.get(id) || []; sessWait.set(id, w);
         if (w.length > 100) return send(res, 200, viewOf(x));
         const y = { res, t: setTimeout(() => { sessWait.set(id, (sessWait.get(id) || []).filter(z => z !== y)); send(res, 200, viewOf(x)); }, 25000) };
@@ -298,7 +326,8 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/api/wait') {
       const known = Number(url.searchParams.get('v'));
       const kc = url.searchParams.get('cv');
-      if (known !== state.v || (kc !== null && Number(kc) !== chat.v)) return send(res, 200, publicView());
+      const kt = url.searchParams.get('tv');
+      if (known !== state.v || (kc !== null && Number(kc) !== chat.v) || (kt !== null && Number(kt) !== top.v)) return send(res, 200, publicView());
       if (waiters.length > 500) return send(res, 200, publicView());
       const x = { res, t: setTimeout(() => { waiters = waiters.filter(y => y !== x); send(res, 200, publicView()); }, 25000) };
       waiters.push(x);
@@ -327,6 +356,28 @@ const server = http.createServer(async (req, res) => {
       if (role) { fails.delete(ip); return send(res, 200, { ok: true, role }); }
       failed(ip);
       return send(res, 401, { error: 'Onjuiste code' });
+    }
+
+    if (req.method === 'GET' && p === '/api/spel/top') return send(res, 200, topView());
+    if (req.method === 'POST' && p === '/api/spel/score') {
+      const b = await readBody(req);
+      const n = clean(b.name, 24), sc = Number(b.score);
+      if (!n || !Number.isInteger(sc) || sc < 0 || sc > 20) return send(res, 400, { error: 'Ongeldige score' });
+      const now = Date.now(), l = (topHits.get(ip) || []).filter(t => now - t < 3600e3);
+      if (l.length >= 60) return send(res, 429, { error: 'Te veel scores. Probeer het later opnieuw.' });
+      l.push(now); topHits.set(ip, l); if (topHits.size > 2000) topHits.clear();
+      const k = n.toLowerCase(), o = top.list[k], rec = !o || sc > o.s;
+      if (rec) { top.list[k] = { n: o ? o.n : n, s: sc, d: now }; topChanged(); }
+      return send(res, 200, { ok: true, record: rec, best: rec ? sc : o.s });
+    }
+    if (req.method === 'POST' && p === '/api/spel/beheer') {
+      if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+      if (roleOf(req.headers['x-pin']) !== 'admin') { failed(ip); return send(res, 401, { error: 'Onjuiste code' }); }
+      const b = await readBody(req);
+      if (typeof b.del === 'string') delete top.list[b.del];
+      if (b.clear === true) top.list = {};
+      topChanged();
+      return send(res, 200, { ok: true });
     }
 
     if (req.method === 'POST' && p === '/api/chat') {

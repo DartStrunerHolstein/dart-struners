@@ -413,7 +413,7 @@ body.started nav{padding-top:12px;padding-bottom:14px}
 {
 const SM=/^\/s\/([a-z0-9]{6})(?=\/|$)/i.exec(location.pathname),SID=SM?SM[1].toLowerCase():'',BP=SID?'/s/'+SID:'',API=SID?'/api/s/'+SID:'/api';
 const KEY='dartstruners-v1'+(SID?'-'+SID:''),PINKEY='dartstruners-pin'+(SID?'-'+SID:'');
-const DEF=()=>({players:[],started:false,seeds:[],bo:3,boF:5,results:{},name:'',turns:{},game:501,dout:1,inmode:'pijl',kind:SID?'single':'toernooi',single:{names:['',''],bo:3,solo:0},spel:{n:1,names:['',''],on:false,done:false,target:0,cur:0,darts:[],hits:[0,0],tries:[0,0],hist:[],order:[],idx:0},spelTop:{},sound:1,voice:'nl',lot:1,comp:{players:[],started:false}});
+const DEF=()=>({players:[],started:false,seeds:[],bo:3,boF:5,results:{},name:'',turns:{},game:501,dout:1,inmode:'pijl',kind:SID?'single':'toernooi',single:{names:['',''],bo:3,solo:0},spel:{n:1,names:['',''],on:false,done:false,target:0,cur:0,darts:[],hits:[0,0],tries:[0,0],hist:[],order:[],idx:0},sound:1,voice:'nl',lot:1,comp:{players:[],started:false}});
 let S=DEF();
 let tab='spelers',confirmReset=false;
 let tv=false,tvOn=false,tvSound=false,tvGot=false,tvSlow=false,tvEv=0,tvFx=null,tvFxT=0,tvTO=0,sender=false,pushT=0,wBusy=false,wNext=false,wLast='',evs=[],evN=0;
@@ -449,6 +449,7 @@ function chatPanel(scroll){if(!KIJK||SID)return;const f=chatForm(),show=tvGot&&c
   const k=document.getElementById('kchat'),atB=scroll||k.scrollHeight-k.scrollTop-k.clientHeight<60,h=chatList();
   if(k.dataset.h!==h){k.innerHTML=h;k.dataset.h=h}if(atB)k.scrollTop=k.scrollHeight;
   document.documentElement.style.setProperty('--chath',(show?f.offsetHeight:0)+'px')}
+async function topAdmin(body){try{await fetch('/api/spel/beheer',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:JSON.stringify(body)});const r=await fetch('/api/spel/top',{cache:'no-store'});topTake(await r.json())}catch(e){}render()}
 async function chatAdmin(body){try{const r=await fetch('/api/chat/beheer',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:JSON.stringify(body)});if(!r.ok)chatErr='Dat lukte niet';else chatErr=''}catch(e){chatErr='Geen verbinding'}chatAdm()}
 function chatAdmHtml(){
   return`<div class="row"><button class="btn" data-a="chaton">${chat.on?'Chat uitzetten':'Chat aanzetten'}</button>${chat.msgs.length?'<button class="btn" data-a="chatclear">Chat leegmaken</button>':''}</div>
@@ -462,7 +463,7 @@ let admin=false,ready=false,pin='',ver=0,netOk=null,loginErr='',role='admin';
 const ADM=()=>role==='admin';
 const myId=Math.random().toString(36).slice(2,10);
 const PATH=(location.pathname.slice(BP.length).replace(/\/+$/,'')||'/').toLowerCase();
-const KIJK=PATH==='/kijk';
+const KIJK=PATH==='/kijk',SPELP=!SID&&PATH==='/spel';
 if(PATH==='/monitor'||KIJK)tv=true;
 if(KIJK){tvOn=true;tvSound=false;document.body.classList.add('kijk')}
 try{pin=localStorage.getItem(PINKEY)||''}catch(e){}
@@ -701,7 +702,7 @@ function renderOv(){
   if(tv){renderTV();return}
   push();
   const ov=document.getElementById('ov');
-  if(admin&&!openId&&S.kind==='spel'&&SP().on&&!spHidden){ov.hidden=false;document.body.style.overflow='hidden';ov.innerHTML=spOv();return}
+  if((admin||SPELP)&&!openId&&(S.kind==='spel'||SPELP)&&SP().on&&!spHidden){ov.hidden=false;document.body.style.overflow='hidden';ov.innerHTML=spOv();return}
   const go=openId&&getO(openId);
   if(!admin||!go||typeof go.a!=='number'||typeof go.b!=='number'){openId=null;ov.hidden=true;ov.innerHTML='';document.body.style.overflow='';return}
   ov.hidden=false;document.body.style.overflow='hidden';
@@ -809,32 +810,39 @@ function spDart(n){const p=SP();if(!p.on)return;
     spNext();return}
   if(fail){p.tries[p.cur]++;p.hist.unshift({w:p.cur,t:p.target,r:p.darts.map(x=>x.lab),ok:0});p.hist=p.hist.slice(0,30);
     msg=rem<0||rem===1||rem===0?`Bust! ${p.n===2?who+' ':''}${p.target} niet uitgegooid`:`${p.n===2?who+': ':''}${p.target} niet uitgegooid`;spNext();return}
-  msg='';save();renderOv()}
+  msg='';spSave();renderOv()}
 function spShuffle(){const a=Array.from({length:20},(_,i)=>41+i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function spStart(){const p=SP();p.on=true;p.done=false;p.cur=0;p.darts=[];p.hits=[0,0];p.tries=[0,0];p.hist=[];p.order=spShuffle();p.idx=0;p.target=p.order[0];msg='';spMod=1;save();render();spSay()}
+function spStart(){const p=SP();p.on=true;p.done=false;p.cur=0;p.darts=[];p.hits=[0,0];p.tries=[0,0];p.hist=[];p.order=spShuffle();p.idx=0;p.target=p.order[0];msg='';spMod=1;spSave();render();spSay()}
 function spNext(){const p=SP();p.darts=[];
-  if(p.n===2&&p.cur===0){p.cur=1;save();renderOv();spSay();return}
+  if(p.n===2&&p.cur===0){p.cur=1;spSave();renderOv();spSay();return}
   p.cur=0;p.idx++;
   if(p.idx>=p.order.length){spFinish();return}
-  p.target=p.order[p.idx];save();renderOv();spSay()}
+  p.target=p.order[p.idx];spSave();renderOv();spSay()}
 const topKey=n=>String(n||'').trim().toLowerCase();
-function spFinish(){const p=SP();p.on=false;p.done=true;p.darts=[];spHidden=false;
-  if(!S.spelTop||typeof S.spelTop!=='object')S.spelTop={};
-  const rec=[];(p.n===2?[0,1]:[0]).forEach(i=>{const nm=String(p.names[i]||'').trim();if(!nm)return;const k=topKey(nm),o=S.spelTop[k];
-    if(!o||p.hits[i]>o.s){S.spelTop[k]={n:nm.slice(0,24),s:p.hits[i],d:Date.now()};if(o||p.hits[i]>0)rec.push(nm)}});
-  msg=rec.length?'Nieuw record voor '+rec.join(' en ')+'!':'';
+let top={v:-1,list:[]};
+function topTake(t){if(!t||!Array.isArray(t.list)||t.v===top.v)return false;top={v:+t.v||0,list:t.list.filter(x=>x&&typeof x.n==='string').map(x=>({k:String(x.k||''),n:x.n.slice(0,24),s:+x.s||0,d:+x.d||0}))};return true}
+function topRefresh(){const el=document.getElementById('sptop');if(el)el.innerHTML=spTopHtml()}
+async function spFinish(){const p=SP();p.on=false;p.done=true;p.darts=[];spHidden=false;msg='Score opslaan…';spSave();render();window.scrollTo(0,0);
+  const rec=[],todo=(p.n===2?[0,1]:[0]).filter(i=>String(p.names[i]||'').trim());
+  for(const i of todo){const nm=String(p.names[i]).trim();
+    try{const r=await fetch('/api/spel/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nm,score:p.hits[i]})});const d=await r.json().catch(()=>({}));
+      if(r.ok&&d.record&&p.hits[i]>0)rec.push(nm)}catch(e){}}
+  msg=rec.length?'Nieuw record voor '+rec.join(' en ')+'!':todo.length?'':'Zonder naam komt je score niet op het leaderboard.';
   if(rec.length)ev({k:'co',who:'Nieuw record: '+rec.join(' en ')});
-  save();render();window.scrollTo(0,0)}
-function spTop(){const t=S.spelTop&&typeof S.spelTop==='object'?S.spelTop:{};return Object.values(t).filter(x=>x&&typeof x.n==='string').sort((a,b)=>b.s-a.s||a.d-b.d)}
+  try{const r=await fetch('/api/spel/top',{cache:'no-store'});topTake(await r.json())}catch(e){}
+  spSave();render()}
+const spSave=()=>{if(SPELP){try{localStorage.setItem('dartstruners-spel',JSON.stringify({spel:S.spel,dout:S.dout,sound:S.sound,voice:S.voice}))}catch(e){}}else save()};
+function spTop(){return top.list}
 function spTopHtml(dark,max){const L=spTop().slice(0,max||50);
   if(!L.length)return`<p class="${dark?'kempty':'empty'}">Nog geen scores. Vul je naam in en speel een spel om op het leaderboard te komen.</p>`;
-  return`<table class="tbl sptbl${dark?' dk':''}"><thead><tr><th>#</th><th class="tn">Speler</th><th>Punten</th></tr></thead><tbody>${L.map((x,i)=>`<tr><td><span class="rk${i===0?' one':''}">${i+1}</span></td><td class="tn">${esc(x.n)}</td><td class="pt">${x.s}</td></tr>`).join('')}</tbody></table>`}
+  const del=!dark&&admin&&ADM()&&!SID&&!SPELP;
+  return`<table class="tbl sptbl${dark?' dk':''}"><thead><tr><th>#</th><th class="tn">Speler</th><th>Punten</th>${del?'<th></th>':''}</tr></thead><tbody>${L.map((x,i)=>`<tr><td><span class="rk${i===0?' one':''}">${i+1}</span></td><td class="tn">${esc(x.n)}</td><td class="pt">${x.s}</td>${del?`<td><button class="x" data-topdel="${esc(x.k)}" aria-label="Verwijder ${esc(x.n)}">×</button></td>`:''}</tr>`).join('')}</tbody></table>`}
 const pct=(h,t)=>t?Math.round(h/t*100)+'%':'–';
 function spTable(dark){const p=SP(),ix=p.n===2?[0,1]:[0];
   return`<table class="tbl sptbl${dark?' dk':''}"><thead><tr><th class="tn">Speler</th><th>Punten</th><th>Gespeeld</th><th>%</th></tr></thead><tbody>${ix.map(i=>`<tr><td class="tn">${esc(spN(i))}</td><td class="pt">${p.hits[i]}</td><td>${p.tries[i]} / 20</td><td>${pct(p.hits[i],p.tries[i])}</td></tr>`).join('')}</tbody></table>`}
 function vSpel(){const p=SP();
   if(p.on)return`<h2>Checkout-spel</h2><p class="stat">Bezig: ${esc(spN(0))}${p.n===2?' tegen '+esc(spN(1)):''}</p><div class="row"><button class="btn pri" data-a="spopen">Verder spelen</button></div>`;
-  const top=`<h2 style="margin-top:28px">Leaderboard</h2><p class="stat">Per speler de hoogste score (max. 20 punten).</p>${spTopHtml()}${spTop().length?(spConf?`<div class="conf"><p style="margin:0 0 10px">Het hele leaderboard wordt gewist.</p><div class="row"><button class="btn pri" data-a="sptopclear">Ja, wissen</button><button class="btn" data-a="sptopno">Annuleren</button></div></div>`:`<div class="row" style="margin-top:10px"><button class="btn" data-a="sptopask">Leaderboard wissen</button></div>`):''}`;
+  const top=`<h2 style="margin-top:28px">Leaderboard</h2><p class="stat">Voor iedereen samen: per speler de hoogste score (max. 20 punten).${SPELP?'':` Iedereen kan meespelen via <a href="/spel">${esc(location.origin)}/spel</a>.`}</p><div id="sptop">${spTopHtml()}</div>${spTop().length&&admin&&ADM()&&!SID&&!SPELP?(spConf?`<div class="conf"><p style="margin:0 0 10px">Het hele leaderboard wordt gewist.</p><div class="row"><button class="btn pri" data-a="sptopclear">Ja, wissen</button><button class="btn" data-a="sptopno">Annuleren</button></div></div>`:`<div class="row" style="margin-top:10px"><button class="btn" data-a="sptopask">Leaderboard wissen</button></div>`):''}`;
   if(p.done)return`<h2>Uitslag</h2>${msg?`<p class="stat" style="color:var(--pinkt)">${esc(msg)}</p>`:''}${p.n===2?`<p class="stat">${p.hits[0]===p.hits[1]?'Gelijkspel!':esc(spN(p.hits[0]>p.hits[1]?0:1))+' wint met '+Math.max(...p.hits)+' – '+Math.min(...p.hits)+' punten'}</p>`:`<p class="stat">${p.hits[0]} van de 20 punten</p>`}${spTable()}
    <div class="row" style="margin:12px 0 0"><button class="btn pri" data-a="spstart">Opnieuw met dezelfde spelers</button><button class="btn" data-a="spnew">Nieuw spel</button></div>${top}`;
   return`<h2>Checkout-spel</h2><p class="stat">Alle 20 getallen van 41 tot en met 60 komen één keer langs, in willekeurige volgorde. Je hebt 3 pijlen per getal. Uitgegooid = 1 punt, dus maximaal 20 punten.</p>
@@ -975,6 +983,9 @@ function vLogin(){
    <div class="err">${esc(loginErr)}</div>
    <p>Alleen kijken? Dat kan zonder code.</p>
    <div class="row"><a class="btn" href="/kijk">Meekijken</a><a class="btn" href="/monitor">Monitor-weergave</a></div>
+   <h2 style="margin-top:28px">Checkout-spel</h2>
+   <p>Iedereen kan meedoen: vul je naam in, gooi 41 tot en met 60 uit en kom op het leaderboard.</p>
+   <div class="row"><a class="btn pri" href="/spel">Checkout-spel spelen</a></div>
    <h2 style="margin-top:28px">Zelf spelen met vrienden</h2>
    <p>Start een eigen sessie voor een toernooi, 1 tegen 1, solo of het checkout-spel. Je krijgt een eigen link en code, los van de competitie.</p>
    <div class="row"><button class="btn pri" data-a="newsess">Nieuwe sessie starten</button></div>
@@ -983,6 +994,11 @@ function vLogin(){
 function render(){
   if(tv){refresh();renderTV();return}
   if(!ready){return}
+  if(SPELP){document.body.classList.remove('started');document.getElementById('nav').innerHTML='';
+    document.getElementById('app').innerHTML=`<p class="stat" style="margin-top:8px"><a href="/">← De Dart Struners</a></p>`+vSpel();
+    ['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)el.addEventListener('input',()=>{SP().names[i]=el.value;spSave()})});
+    const dz=document.getElementById('dout');if(dz)dz.addEventListener('change',()=>{S.dout=+dz.value;spSave();render()});
+    renderOv();return}
   if(!admin){document.body.classList.remove('started');document.getElementById('nav').innerHTML='';document.getElementById('app').innerHTML=vLogin();
     const fl=document.getElementById("flogin");if(fl)fl.addEventListener('submit',e=>{e.preventDefault();login(document.getElementById('pin').value)});
     renderOv();return}
@@ -1013,6 +1029,7 @@ function render(){
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.topdel!==undefined){topAdmin({del:t.dataset.topdel});return}
   if(t.dataset.sn!==undefined){spDart(+t.dataset.sn);return}
   if(t.dataset.smod){const m=+t.dataset.smod;spMod=spMod===m?1:m;renderOv();return}
   if(t.dataset.solo!==undefined){const v=+t.dataset.solo;if(!!S.single.solo!==!!v){S.single.solo=v;delete S.results.X;delete S.turns.X;if(v&&![1,3,5,10].includes(+S.single.bo))S.single.bo=3;if(!v&&![1,3,5,7].includes(+S.single.bo))S.single.bo=3}save();render();return}
@@ -1067,7 +1084,7 @@ document.addEventListener('click',e=>{
   if(a==='spstop'){spFinish();return}
   if(a==='sptopask'){spConf=true;render();return}
   if(a==='sptopno'){spConf=false;render();return}
-  if(a==='sptopclear'){S.spelTop={};spConf=false;save();render();return}
+  if(a==='sptopclear'){spConf=false;topAdmin({clear:true});return}
   if(a==='chaton'){chatAdmin({on:!chat.on});return}
   if(a==='chatclear'){chatAdmin({clear:true});return}
   if(a==='export'){exportFile();return}
@@ -1164,13 +1181,14 @@ async function stream(){
   let v=-1;
   for(;;){
     try{
-      const r=await fetch(API+'/wait?v='+v+'&cv='+chat.v+'&c='+myId,{cache:'no-store'});
+      const r=await fetch(API+'/wait?v='+v+'&cv='+chat.v+'&tv='+top.v+'&c='+myId,{cache:'no-store'});
       if(!r.ok)throw new Error(r.status);
       const d=await r.json();
       clearTimeout(tvTO);tvSlow=false;setNet(true);
-      const changed=d.v!==v;v=d.v;const cch=chatTake(d.chat);
-      if(tv){if(changed||!tvGot){applyRemote(d);renderTV()}else if(cch)renderTV();continue}
-      if(cch)chatAdm();
+      const changed=d.v!==v;v=d.v;const cch=chatTake(d.chat),tch=topTake(d.top);
+      if(tv){if(changed||!tvGot){applyRemote(d);renderTV()}else if(cch||tch)renderTV();continue}
+      if(cch)chatAdm();if(tch)topRefresh();
+      if(SPELP)continue;
       // Beheerder op een ander apparaat heeft iets veranderd: haal de volledige stand op
       if(changed&&admin&&d.by&&d.by!==myId&&d.v>ver&&!openId&&!wBusy){await loadState();render()}
     }catch(e){setNet(false);await new Promise(r=>setTimeout(r,2000))}
@@ -1255,17 +1273,21 @@ function renderTV(){
   try{
     if(!tvGot)c={ctx:'',html:`<div class="tvch"><small>Verbinden</small><div class="tvwait">Even geduld, de stand wordt opgehaald</div></div>`};
     else if(KIJK&&kijkTab==='stand')c={ctx:'',html:`<div class="kscroll">${kStand()}</div>`};
+    else if(KIJK&&kijkTab==='top')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Checkout-top</h2><p class="kempty" style="margin:0 0 12px">Hoogste score per speler, max. 20 punten. Zelf spelen? Ga naar ${esc(location.origin)}/spel</p>${spTopHtml(true)}</div>`};
     else if(KIJK&&kijkTab==='wedstrijden')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Wedstrijden</h2>${kMatches()}</div>`};
     else if(S.kind==='spel'&&(SP().on||SP().done))c=tvSpel();
     else{const go=openId&&getO(openId);c=go&&typeof go.a==='number'&&typeof go.b==='number'?tvMatch():tvOverview()}
   }catch(e){c={ctx:'',html:'<div class="tvch"><small>Even geduld</small></div>'}}
-  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
+  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['top','Checkout-top']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
   chatPanel();
 }
 
 /* ---------- opstarten ---------- */
 (async()=>{
   if(tv){tvTO=setTimeout(()=>{tvSlow=true;renderTV()},10000);renderTV();stream();return}
+  if(SPELP){S=DEF();S.kind='spel';try{const o=JSON.parse(localStorage.getItem('dartstruners-spel'));if(o&&o.spel){S.spel=o.spel;if(o.dout!==undefined)S.dout=o.dout;if(o.sound!==undefined)S.sound=o.sound;if(o.voice)S.voice=o.voice}}catch(e){}
+    try{const r=await fetch('/api/spel/top',{cache:'no-store'});topTake(await r.json());setNet(true)}catch(e){}
+    ready=true;render();stream();return}
   try{const r=await fetch('/api/info',{cache:'no-store'});const d=await r.json();if(d&&typeof d.publicUrl==='string'&&/^https:\/\//.test(d.publicUrl))publicUrl=d.publicUrl}catch(e){}
   if(pin){await login(pin)}else{await loadState();ready=true;render()}
   stream();

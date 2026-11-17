@@ -77,7 +77,7 @@ Op het inlogscherm staat **Nieuwe sessie starten**. Vrienden krijgen dan een eig
 
 ### Checkout-spel
 Voor 1 of 2 spelers. Alle 20 getallen van 41 tot en met 60 komen één keer langs, in willekeurige volgorde. Je hebt 3 pijlen per getal en de app toont de mogelijke routes. Uitgegooid = 1 punt, dus maximaal 20 punten. Bij 2 spelers gooien ze om de beurt op hetzelfde getal.
-Het **leaderboard** bewaart per naam de hoogste score. Vul dus een naam in om erop te komen. Met **Leaderboard wissen** begin je opnieuw.
+Iedereen kan zonder code spelen via **`…/spel`** (ook te vinden op het inlogscherm). Het **leaderboard** is voor iedereen samen: het bewaart per naam de hoogste score, ook van spellen in vriendensessies. Kijkers zien het onder **Checkout-top**. Als beheerder kun je losse scores verwijderen (×) of het leaderboard wissen.
 
 ### Solo en korte spellen
 Onder **1 tegen 1** kies je ook **Solo**: alleen oefenen met een aantal legs (1, 3, 5 of 10). Je ziet je gemiddelde en het aantal pijlen. Bij elk spel kun je nu ook **101** en **201** kiezen.
