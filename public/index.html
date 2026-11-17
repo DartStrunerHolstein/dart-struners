@@ -164,6 +164,9 @@ nav:empty{display:none}
 .lk .btn{min-height:40px;padding:0 14px;font-size:14px}
 .login{max-width:440px;display:grid;gap:12px}
 .hgrid{display:grid;gap:12px;max-width:760px}
+.snd.cam{display:inline-flex;align-items:center;gap:6px}.snd.cam .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35)}.snd.cam .dot.ok{background:#5ee6a0}.snd.cam .dot.bad{background:#ff6b6b}
+.snd.cam.on{background:rgba(94,230,160,.15);border-color:rgba(94,230,160,.5)}
+.caminfo{font-size:13px;font-weight:600;border-radius:10px;padding:8px 10px;background:rgba(94,230,160,.1);color:#bff5d9}.caminfo.bad{background:rgba(255,107,107,.12);color:#ffc2c2}
 .hc{display:flex;align-items:center;gap:16px;padding:18px 18px;border-radius:20px;border:2px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none;text-align:left;font:inherit;cursor:pointer;width:100%;transition:border-color .15s,transform .15s}
 .hc:hover{border-color:var(--pink)}.hc:active{transform:scale(.99)}
 .hc .hi{flex:none;width:56px;height:56px;border-radius:16px;display:grid;place-items:center;background:var(--pink);color:#fff}
@@ -727,7 +730,7 @@ function renderOv(){
   const remC=L.rem[L.cur];
   const chips=[...(remC<=170&&checkout(remC)?[['Uit '+remC,remC]]:[]),...[26,41,45,60,81,85,100,140,180].map(v=>[v,v])];
   ov.innerHTML=`<div class="ovb">
-   <div class="ovh"><span>${SOLO(openId)?'Solo · '+o.need+(o.need>1?' legs':' leg'):openId==='X'?'Losse wedstrijd':isC(openId)?'Competitie · ronde '+cMatches()[+openId.slice(1)].rd:openId==='F'?'Finale':openId}${SOLO(openId)?'':' · Best of '+bo+' legs'} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'}</span><span class="ovr"><button class="snd${S.sound?' on':''}" data-a="sound" aria-label="Geluid ${S.sound?'uit':'aan'}zetten" aria-pressed="${S.sound?'true':'false'}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>${S.sound?'<path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>':'<path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'}</svg></button><button class="snd" data-a="sheet" aria-label="Geluiden instellen">Stem</button><button class="x" data-a="close" aria-label="Sluiten">×</button></span></div>
+   <div class="ovh"><span>${SOLO(openId)?'Solo · '+o.need+(o.need>1?' legs':' leg'):openId==='X'?'Losse wedstrijd':isC(openId)?'Competitie · ronde '+cMatches()[+openId.slice(1)].rd:openId==='F'?'Finale':openId}${SOLO(openId)?'':' · Best of '+bo+' legs'} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'}</span><span class="ovr"><button class="snd${S.sound?' on':''}" data-a="sound" aria-label="Geluid ${S.sound?'uit':'aan'}zetten" aria-pressed="${S.sound?'true':'false'}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>${S.sound?'<path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>':'<path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'}</svg></button>${camBtn()}<button class="snd" data-a="sheet" aria-label="Geluiden instellen">Stem</button><button class="x" data-a="close" aria-label="Sluiten">×</button></span></div>${camInfo()}
    ${sheet?sheetHtml():''}${sheet?'':`<div class="pl${SOLO(openId)?' solo':''}">${panel(0)}${SOLO(openId)?'':panel(1)}</div>
    ${done?`<div class="wonb">${SOLO(openId)?`<small>Solo klaar</small><div class="cn">${o.need} ${o.need>1?'legs':'leg'}</div><p>${L.t.list.reduce((q,x)=>q+(x.d&&x.d.length?x.d.length:3),0)} pijlen · gemiddelde ${L.st[0].avg}</p>`:`<small>Wedstrijd gewonnen</small><div class="cn">${pn(o.win)}</div><p>${L.r.sa} – ${L.r.sb} in legs</p>`}<div class="row">${openId==='X'?'<button class="btn pri" data-a="rematch">'+(SOLO(openId)?'Nog een keer':'Nog een wedstrijd')+'</button><button class="btn" data-a="close">Sluiten</button>':'<button class="btn pri" data-a="close">Terug naar '+(isC(openId)?'competitie':'bracket')+'</button>'}<button class="btn" data-a="undo">Laatste beurt terug</button></div></div>`:L.bull?`
    <div class="bullb"><h3>Bullen</h3><p>Beide spelers gooien één pijl op de bull. Wie het dichtst bij zit, begint de eerste leg. Daarna wisselt het per leg.</p>
@@ -795,6 +798,34 @@ function vSingle(){
 }
 const gameSel=()=>`<label>Spel<select id="game">${[101,201,301,501,701].map(v=>`<option value="${v}"${v==S.game?' selected':''}>${v}</option>`).join('')}</select></label>
   <label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label>`;
+/* ---------- camera's: pijlen van Autodarts via het doorgeefprogramma ---------- */
+const CAMK='dartstruners-cam'+(SID?'-'+SID:'');
+let cam={seq:-1,at:0,st:null,ev:[]},camOn=false,camLast=null,camSkew=0;
+try{camOn=localStorage.getItem(CAMK)==='1'}catch(e){}
+const camLive=()=>cam.at&&Date.now()-camSkew-cam.at<25000;
+function camTake(c){if(!c||typeof c!=='object'||c.seq===cam.seq)return false;cam={seq:+c.seq||0,at:+c.at||0,st:c.st&&typeof c.st==='object'?c.st:null,ev:Array.isArray(c.ev)?c.ev:[]};
+  const evs=cam.ev.filter(e=>e&&typeof e.id==='number').sort((a,b)=>a.id-b.id);
+  if(camLast===null){camLast=evs.reduce((m,e)=>Math.max(m,e.id),0);return true}
+  const nw=evs.filter(e=>e.id>camLast);if(nw.length)camLast=Math.max(...nw.map(e=>e.id));
+  if(camOn&&admin&&!tv)nw.forEach(camApply);
+  return true}
+function camApply(e){
+  const n=e.m===0?0:e.n,m=e.n===25?(e.m>=2?2:1):Math.max(1,e.m);
+  // checkout-spel
+  if(!openId&&S.kind==='spel'&&SP().on){const p=SP();
+    if(e.k==='dart'){spMod=n===0?1:m;spDart(n)}
+    else if(e.k==='fix'&&p.darts[e.i]){p.darts.splice(e.i);spMod=n===0?1:m;spDart(n)}
+    else if(e.k==='takeout'){let g=0;while(SP().on&&SP().darts.length&&g++<3)spDart(0)}
+    return}
+  if(!openId)return;const L=live(openId);if(L.o.win!==null||L.bull)return;
+  if(e.k==='dart'){if(S.inmode!=='pijl'){S.inmode='pijl';buf=''}sender=true;edit=null;mod=n===0?1:m;dart(n)}
+  else if(e.k==='fix'){if(darts[e.i]){edit=e.i;mod=n===0?1:m;dart(n)}}
+  else if(e.k==='takeout'){if(darts.length){edit=null;evalTurn(live(openId),true)}}
+}
+function camBtn(){if(!camOn&&!cam.at)return'';const ok=camLive();
+  return`<button class="snd cam${camOn?' on':''}" data-a="cam" aria-pressed="${camOn}" title="${camOn?'Camera telt mee op dit apparaat':'Camera tellen aanzetten'}"><i class="dot ${camOn?(ok?'ok':'bad'):''}"></i>Camera</button>`}
+function camInfo(){if(!camOn)return'';const ok=camLive(),st=cam.st;
+  return`<div class="caminfo ${ok?'ok':'bad'}">${ok?(st&&st.running===false?'Camera\'s verbonden, maar Autodarts telt niet (gestopt)':'Camera\'s tellen mee. Klopt een pijl niet? Tik op het vakje om hem te verbeteren.'):'Geen verbinding met het doorgeefprogramma op de laptop'}</div>`}
 /* ---------- startpagina en spelen ---------- */
 const SESSK='dartstruners-sessies';
 function mySess(){try{const l=JSON.parse(localStorage.getItem(SESSK));return Array.isArray(l)?l.filter(x=>x&&/^[a-z0-9]{6}$/.test(x.id)).slice(0,10):[]}catch(e){return[]}}
@@ -884,8 +915,8 @@ function vSpel(){const p=SP();
   <div class="row"><button class="btn pri" data-a="spstart">Start spel</button></div>${top}`}
 function spOv(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,left=3-p.darts.length,rs=routes(rem,left);
   return`<div class="ovb">
-   <div class="ovh"><span>Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen</span><span class="ovr"><button class="btn" data-a="sound">${S.sound?'Geluid aan':'Geluid uit'}</button><button class="btn" data-a="spclose">Menu</button></span></div>
-   <div class="spt"><small>Getal ${Math.min(p.idx+1,20)} van 20 · ${p.n===2?esc(spN(p.cur))+' gooit uit':'gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog '+left+(left>1?' pijlen':' pijl'):'3 pijlen'}</small></div>
+   <div class="ovh"><span>Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen</span><span class="ovr">${SPELP?'':camBtn()}<button class="btn" data-a="sound">${S.sound?'Geluid aan':'Geluid uit'}</button><button class="btn" data-a="spclose">Menu</button></span></div>
+   ${SPELP?'':camInfo()}<div class="spt"><small>Getal ${Math.min(p.idx+1,20)} van 20 · ${p.n===2?esc(spN(p.cur))+' gooit uit':'gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog '+left+(left>1?' pijlen':' pijl'):'3 pijlen'}</small></div>
    <div class="slots sp2">${[0,1,2].map(i=>p.darts[i]?`<button disabled>${esc(p.darts[i].lab)}</button>`:`<span>Pijl ${i+1}</span>`).join('')}</div>
    <div class="msg">${esc(msg)}</div>
    <div class="sprt"><small>${rs.length?'Mogelijke routes':left===1?'Met 1 pijl niet uit te gooien':'Niet meer uit te gooien'}</small><div>${rs.slice(0,8).map(r=>`<span>${r.map(esc).join(' · ')}</span>`).join('')}${rs.length>8?`<span class="more">+${rs.length-8} meer</span>`:''}</div></div>
@@ -1115,6 +1146,7 @@ document.addEventListener('click',e=>{
   if(a==='sptopask'){spConf=true;render();return}
   if(a==='sptopno'){spConf=false;render();return}
   if(a==='sptopclear'){spConf=false;topAdmin({clear:true});return}
+  if(a==='cam'){camOn=!camOn;try{localStorage.setItem(CAMK,camOn?'1':'0')}catch(_){}msg=camOn?'Camera telt mee op dit apparaat':'Camera uit, je vult zelf in';renderOv();return}
   if(a==='chaton'){chatAdmin({on:!chat.on});return}
   if(a==='chatclear'){chatAdmin({clear:true});return}
   if(a==='export'){exportFile();return}
@@ -1211,13 +1243,15 @@ async function stream(){
   let v=-1;
   for(;;){
     try{
-      const r=await fetch(API+'/wait?v='+v+'&cv='+chat.v+'&tv='+top.v+'&c='+myId,{cache:'no-store'});
+      const r=await fetch(API+'/wait?v='+v+'&cv='+chat.v+'&tv='+top.v+(admin&&!tv?'&bv='+cam.seq:'')+'&c='+myId,{cache:'no-store'});
       if(!r.ok)throw new Error(r.status);
       const d=await r.json();
       clearTimeout(tvTO);tvSlow=false;setNet(true);
       const changed=d.v!==v;v=d.v;const cch=chatTake(d.chat),tch=topTake(d.top);
       if(tv){if(changed||!tvGot){applyRemote(d);renderTV()}else if(cch||tch)renderTV();continue}
       if(cch)chatAdm();if(tch)topRefresh();
+      const sk=r.headers.get('date');if(sk){const t=Date.parse(sk);if(t)camSkew=Date.now()-t}
+      if(admin&&camTake(d.cam)&&(openId||S.kind==='spel'))renderOv();
       if(SPELP)continue;
       // Beheerder op een ander apparaat heeft iets veranderd: haal de volledige stand op
       if(changed&&admin&&d.by&&d.by!==myId&&d.v>ver&&!openId&&!wBusy){await loadState();render()}

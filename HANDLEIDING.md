@@ -105,6 +105,6 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 
 ---
 
-## Later: automatisch tellen met de camera's
+## Automatisch tellen met de camera's (Autodarts)
 
-Als je Autodarts-camera's thuis goed werken, bouwen we hierop verder. De online server krijgt dan een koppeling met Autodarts, zodat pijlen automatisch binnenkomen, ook op andere locaties met Autodarts-camera's.
+In de map **bord** staat het doorgeefprogramma. Het draait op de laptop bij het bord, naast Autodarts, en stuurt elke herkende pijl door naar de website. Zet op je telefoon in de wedstrijd de knop **Camera** aan; de telefoon telt dan vanzelf mee en je kunt een verkeerde pijl gewoon verbeteren. Alles staat uitgelegd in `bord/LEESMIJ.md`.

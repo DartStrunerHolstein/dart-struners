@@ -19,6 +19,7 @@ const { spawn } = require('child_process');
 const PORT = +process.env.PORT || 3000;
 const PIN = String(process.env.ADMIN_PIN || '').trim();
 const TPIN = String(process.env.TELLER_PIN || '').trim();
+const BPIN = String(process.env.BORD_PIN || '').trim(); // optioneel: code die alleen pijlen van het bord mag doorgeven
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const STATE_FILE = path.join(DATA_DIR, 'stand.json');
 const PUBLIC = path.join(__dirname, 'public');
@@ -114,11 +115,31 @@ function persist() {
   clearTimeout(writeTimer);
   writeTimer = setTimeout(() => {
     const tmp = STATE_FILE + '.tmp';
-    fs.writeFile(tmp, JSON.stringify(state), err => {
+    fs.writeFile(tmp, JSON.stringify(state, noCam), err => {
       if (err) return console.error('Opslaan mislukt:', err.message);
       fs.rename(tmp, STATE_FILE, e => e && console.error('Opslaan mislukt:', e.message));
     });
   }, 300);
+}
+
+// ---------- camera's (Autodarts via het doorgeefprogramma) ----------
+// Elke kamer (hoofdstand of sessie) krijgt een rij met de laatste pijlen; niet opgeslagen op schijf
+const noCam = (k, v) => (k === 'cam' ? undefined : v);
+function camOf(room) { if (!room.cam) room.cam = { seq: 0, at: 0, st: null, ev: [] }; return room.cam; }
+function camView(room) { const c = camOf(room); return { seq: c.seq, at: c.at, st: c.st, ev: c.ev.slice(-12) }; }
+function camPush(room, events, st) {
+  const c = camOf(room), now = Date.now();
+  c.at = now;
+  if (st && typeof st === 'object') c.st = { connected: !!st.connected, running: !!st.running, status: String(st.status || '').slice(0, 40) };
+  for (const e of Array.isArray(events) ? events.slice(0, 20) : []) {
+    if (!e || typeof e !== 'object') continue;
+    const k = String(e.k || '');
+    if (!['dart', 'takeout', 'fix'].includes(k)) continue;
+    const n = Math.max(0, Math.min(25, Math.floor(Number(e.n) || 0))), m = Math.max(0, Math.min(3, Math.floor(Number(e.m) || 0)));
+    c.ev.push({ id: ++c.seq, k, n, m, i: Math.max(0, Math.min(2, Math.floor(Number(e.i) || 0))), name: String(e.name || '').slice(0, 12), at: now });
+  }
+  if (c.ev.length > 40) c.ev = c.ev.slice(-40);
+  c.seq++; // ook een 'ping' telt als verandering, zodat de status live bijwerkt
 }
 
 // Voor meekijkers alleen de beurten van de wedstrijd die nu bezig is
@@ -126,7 +147,7 @@ function viewOf(st) {
   const S = st.S ? Object.assign({}, st.S) : null;
   const open = st.live && st.live.openId;
   if (S && S.turns) S.turns = open && S.turns[open] ? { [open]: S.turns[open] } : {};
-  return { v: st.v, by: st.by, S, live: st.live, top: topView() };
+  return { v: st.v, by: st.by, S, live: st.live, top: topView(), cam: camView(st) };
 }
 function publicView() {
   return Object.assign(viewOf(state), { chat: { v: chat.v, on: chat.on, msgs: chat.msgs } });
@@ -148,7 +169,7 @@ function persistSess() {
   clearTimeout(sessTimer);
   sessTimer = setTimeout(() => {
     const tmp = SESS_FILE + '.tmp';
-    fs.writeFile(tmp, JSON.stringify(sess), err => {
+    fs.writeFile(tmp, JSON.stringify(sess, noCam), err => {
       if (err) return console.error('Sessies opslaan mislukt:', err.message);
       fs.rename(tmp, SESS_FILE, e => e && console.error('Sessies opslaan mislukt:', e.message));
     });
@@ -288,20 +309,29 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { id, code });
     }
 
-    const sm = /^\/api\/s\/([a-z0-9]{6})\/(state|wait|login)$/.exec(p);
+    const sm = /^\/api\/s\/([a-z0-9]{6})\/(state|wait|login|bord)$/.exec(p);
     if (sm) {
       const id = sm[1], x = sess[id], what = sm[2];
       if (!x) return send(res, 404, { error: 'Deze sessie bestaat niet (meer)' });
       if (req.method === 'GET' && what === 'state') return send(res, 200, viewOf(x));
       if (req.method === 'GET' && what === 'wait') {
         const kt = url.searchParams.get('tv');
-        if (Number(url.searchParams.get('v')) !== x.v || (kt !== null && Number(kt) !== top.v)) return send(res, 200, viewOf(x));
+        const kb = url.searchParams.get('bv');
+        if (Number(url.searchParams.get('v')) !== x.v || (kt !== null && Number(kt) !== top.v) || (kb !== null && Number(kb) !== camOf(x).seq)) return send(res, 200, viewOf(x));
         const w = sessWait.get(id) || []; sessWait.set(id, w);
         if (w.length > 100) return send(res, 200, viewOf(x));
         const y = { res, t: setTimeout(() => { sessWait.set(id, (sessWait.get(id) || []).filter(z => z !== y)); send(res, 200, viewOf(x)); }, 25000) };
         w.push(y);
         req.on('close', () => { clearTimeout(y.t); sessWait.set(id, (sessWait.get(id) || []).filter(z => z !== y)); });
         return;
+      }
+      if (req.method === 'POST' && what === 'bord') {
+        if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+        if (!sessOk(x, req.headers['x-pin'])) { failed(ip); return send(res, 401, { error: 'Onjuiste sessiecode' }); }
+        const b = await readBody(req);
+        camPush(x, b.events, b.status);
+        sessBroadcast(id);
+        return send(res, 200, { ok: true });
       }
       if (req.method === 'POST' && (what === 'login' || what === 'state')) {
         if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
@@ -327,7 +357,8 @@ const server = http.createServer(async (req, res) => {
       const known = Number(url.searchParams.get('v'));
       const kc = url.searchParams.get('cv');
       const kt = url.searchParams.get('tv');
-      if (known !== state.v || (kc !== null && Number(kc) !== chat.v) || (kt !== null && Number(kt) !== top.v)) return send(res, 200, publicView());
+      const kb = url.searchParams.get('bv');
+      if (known !== state.v || (kc !== null && Number(kc) !== chat.v) || (kt !== null && Number(kt) !== top.v) || (kb !== null && Number(kb) !== camOf(state).seq)) return send(res, 200, publicView());
       if (waiters.length > 500) return send(res, 200, publicView());
       const x = { res, t: setTimeout(() => { waiters = waiters.filter(y => y !== x); send(res, 200, publicView()); }, 25000) };
       waiters.push(x);
@@ -356,6 +387,16 @@ const server = http.createServer(async (req, res) => {
       if (role) { fails.delete(ip); return send(res, 200, { ok: true, role }); }
       failed(ip);
       return send(res, 401, { error: 'Onjuiste code' });
+    }
+
+    if (req.method === 'POST' && p === '/api/bord') {
+      if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+      const given = req.headers['x-pin'];
+      if (!(roleOf(given) === 'admin' || (BPIN.length >= 4 && same(given, BPIN)))) { failed(ip); return send(res, 401, { error: 'Onjuiste code' }); }
+      const b = await readBody(req);
+      camPush(state, b.events, b.status);
+      broadcast();
+      return send(res, 200, { ok: true });
     }
 
     if (req.method === 'GET' && p === '/api/spel/top') return send(res, 200, topView());
@@ -416,7 +457,8 @@ const server = http.createServer(async (req, res) => {
         S: role === 'admin' ? b.S : mergeTeller(state.S, b.S),
         live: b.live && typeof b.live === 'object' ? b.live : null,
         by: typeof b.by === 'string' ? b.by.slice(0, 40) : null,
-        at: new Date().toISOString()
+        at: new Date().toISOString(),
+        cam: state.cam
       };
       persist();
       broadcast();
