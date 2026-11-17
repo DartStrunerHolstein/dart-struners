@@ -118,16 +118,58 @@ async function instellen(oud) {
 }
 
 // ---------- pijlen omzetten ----------
-// Autodarts-segment: { name: 'T20', number: 20, multiplier: 3, bed: 'Triple' }
+// Autodarts geeft pijlen in verschillende vormen door, afhankelijk van de versie, bijv.
+//   { segment: { name: 'T20', number: 20, multiplier: 3, bed: 'Triple' } }
+//   { segmentName: 'T20', number: 20, multiplier: 3 }   of   { name: 'D16', score: 32 }
+// We lezen alles wat er is en vallen terug op de naam van het vak.
+const getal = v => { const x = Number(v); return v === null || v === undefined || v === '' || !Number.isFinite(x) ? null : x; };
+function uitNaam(name) {
+  const a = String(name || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (!a) return null;
+  if (/^(BULL|BULLSEYE|DB|D25|DBULL|INNERBULL|50)$/.test(a)) return { n: 25, m: 2 };
+  if (/^(25|SB|OB|S25|SBULL|OUTERBULL|SINGLEBULL)$/.test(a)) return { n: 25, m: 1 };
+  if (/^(M\d*|MISS|MIS|OUT|OUTSIDE|BOUNCE|BOUNCER|0)$/.test(a)) return { n: 0, m: 0 };
+  let x = /^(SO|SI|S|D|T|TRIPLE|DOUBLE|SINGLE)?-?(\d{1,2})$/.exec(a);
+  if (x && +x[2] >= 1 && +x[2] <= 20) { const p = x[1] || 'S'; return { n: +x[2], m: p[0] === 'T' ? 3 : p[0] === 'D' ? 2 : 1 }; }
+  return null;
+}
+function uitBed(bed) {
+  const b = String(bed || '').toLowerCase();
+  if (!b) return null;
+  if (b.includes('outside') || b.includes('miss')) return 0;
+  if (b.includes('triple') || b.includes('treble')) return 3;
+  if (b.includes('double')) return 2;
+  if (b.includes('single')) return 1;
+  return null;
+}
 function omzet(t) {
-  const sg = (t && t.segment) || {};
-  let n = Number(sg.number) || 0, m = Number(sg.multiplier);
-  const name = String(sg.name || '');
-  if (!Number.isFinite(m)) m = 1;
-  if (/^(bull|db|bullseye|d?bull50)$/i.test(name) || (n === 25 && m >= 2) || n === 50) { n = 25; m = 2; }
-  if (t && t.bouncer) { n = 0; m = 0; }
-  if (m === 0) n = 0;
+  t = t && typeof t === 'object' ? t : {};
+  const sg = t.segment && typeof t.segment === 'object' ? t.segment : {};
+  const naam = sg.name ?? sg.segmentName ?? t.segmentName ?? t.segment_name ?? (typeof t.segment === 'string' ? t.segment : undefined) ?? t.name ?? t.field ?? '';
+  let n = getal(sg.number ?? t.number ?? t.segmentNumber ?? t.sector);
+  let m = getal(sg.multiplier ?? t.multiplier ?? t.mult);
+  if (m === null) m = uitBed(sg.bed ?? t.bed);
+  const score = getal(t.score ?? sg.score ?? t.points ?? t.value);
+  const vn = uitNaam(naam);
+  if (vn && (n === null || m === null)) { if (n === null) n = vn.n; if (m === null) m = vn.m; }
+  if (n !== null && m === null) m = n === 0 ? 0 : 1;
+  if (n === null && score !== null && m) n = score / m;
+  if (n === null && vn) { n = vn.n; m = vn.m; }
+  if (n === null) { n = 0; m = 0; }
+  if (n === 50) { n = 25; m = 2; }
+  if (n === 25 && m >= 2) m = 2;
+  if (t.bouncer === true || t.bounceOut === true) { n = 0; m = 0; }
+  if (m === 0 || !(n === 25 || (n >= 1 && n <= 20))) { n = 0; m = 0; }
   return { n, m, name: n === 0 ? 'Mis' : n === 25 ? (m === 2 ? 'Bull' : '25') : (m === 3 ? 'T' : m === 2 ? 'D' : '') + n };
+}
+// Ruwe gegevens van de eerste pijlen bewaren, zodat we kunnen zien wat Autodarts precies stuurt
+const LOGF = path.join(__dirname, 'bord-log.txt');
+let gelogd = 0;
+function bewaarRuw(t, p) {
+  if (gelogd >= 60) return;
+  gelogd++;
+  try { fs.appendFileSync(LOGF, `[${new Date().toISOString()}] ${p.name}  <=  ${JSON.stringify(t)}\n`); } catch (e) {}
+  if (gelogd <= 3 || p.name === 'Mis') console.log('   (Autodarts gaf: ' + JSON.stringify(t).slice(0, 220) + ')');
 }
 
 // ---------- hoofdlus ----------
@@ -157,8 +199,8 @@ async function luisterNaarBord(cfg) {
     try {
       const d = await (await get(cfg.board + '/api/state', 2000)).json();
       if (weg) { log('Autodarts weer bereikbaar ✓'); weg = 0; }
-      const throws = Array.isArray(d.throws) ? d.throws : [];
-      const num = Number.isFinite(d.numThrows) ? d.numThrows : throws.length;
+      const throws = Array.isArray(d.throws) ? d.throws : Array.isArray(d.darts) ? d.darts : Array.isArray(d.data && d.data.throws) ? d.data.throws : [];
+      const num = Math.max(Number.isFinite(d.numThrows) ? d.numThrows : 0, throws.length);
       const nu = { num, names: throws.map(t => omzet(t).name), status: d.status, event: d.event };
       laatsteStatus = { connected: d.connected !== false, running: d.running !== false, status: String(d.status || '') };
       if (vorige === null) {
@@ -173,6 +215,7 @@ async function luisterNaarBord(cfg) {
           if (!throws[i]) continue;
           const p = omzet(throws[i]);
           log(`Pijl ${i + 1}: ${p.name}`);
+          bewaarRuw(throws[i], p);
           pijl(cfg, { k: 'dart', i, ...p });
         }
         // pijlen uit het bord gehaald
