@@ -72,6 +72,21 @@ Je spelers, competitie en uitslagen staan nu online.
 
 Onderaan de app staan de links met een **Kopieer**-knop, zodat je ze makkelijk kunt delen.
 
+### Vriendensessies
+Op het inlogscherm staat **Nieuwe sessie starten**. Vrienden krijgen dan een eigen link (`…/s/abc123`) met een eigen sessiecode, los van de competitie. In een sessie kies je **Toernooi**, **1 tegen 1** of het **Checkout-spel**. Elke sessie heeft ook een eigen monitor- en meekijklink. Een sessie die 30 dagen niet gebruikt wordt, verdwijnt vanzelf.
+
+### Checkout-spel
+Voor 1 of 2 spelers. Je krijgt een getal tussen 41 en 60 en hebt 2 pijlen om uit te gooien. De app toont de mogelijke routes. Gelukt? Dan volgt een nieuw getal. Mis je, dan blijft het getal staan (bij 2 spelers is de ander aan de beurt). Met **Stoppen** zie je de uitslag.
+
+### Bullen
+Bij elke wedstrijd vraagt de app eerst wie het dichtst bij de bull gooide. Die speler begint de eerste leg; daarna wisselt het per leg.
+
+### Chat voor kijkers
+Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten verschijnen ook even op de monitor. Je kunt als beheerder berichten verwijderen of de chat uitzetten. Elke ochtend om 6 uur begint de chat leeg.
+
+### Stemmenpakket
+Op het startscherm van de monitor kun je onder **Stem** een map met caller-geluiden laden (bijvoorbeeld van *darts-caller*). De geluiden blijven alleen op die computer staan.
+
 **Tip:** zet de app op het beginscherm van je telefoon. Open de link, kies in het menu van je browser **Toevoegen aan beginscherm**, en hij opent voortaan als een gewone app.
 
 ---

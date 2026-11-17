@@ -270,6 +270,31 @@ body.kijk .tvr{font-size:min(15vw,19vh)}
 .ktabs button.on{background:var(--pink);border-color:var(--pink);color:#fff}
 .kscroll{flex:1;min-height:0;overflow-y:auto;padding-bottom:24px}
 .kchat{padding-bottom:110px}
+.spt{text-align:center;background:rgba(255,255,255,.05);border-radius:12px;padding:10px}
+.spt small{display:block;font-size:13px;color:#f5bfd8;font-weight:600}
+.spn{font:clamp(64px,22vw,110px)/1 Anton,Impact,sans-serif;color:#fff}
+.slots.sp2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.slots.sp2 button{cursor:default}
+.sprt small{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.sprt div{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.sprt span{padding:6px 10px;border-radius:999px;background:rgba(255,45,138,.15);border:1px solid rgba(255,45,138,.4);font-weight:700;font-size:14px}
+.sprt span.more{background:none;border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.6)}
+.sptbl.dk{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);color:#fff}.sptbl.dk th{color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.12)}.sptbl.dk td{border-color:rgba(255,255,255,.08)}
+.tvsp{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:2vw}
+.tvspm{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.4vh;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:1.4vw;min-height:0;overflow:hidden;padding:2vh 1vw}
+.tvspm small{font-size:clamp(14px,min(2vw,3.4vh),40px);font-weight:800;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.06em}
+.tvspn{font:min(20vw,30vh)/1 Anton,Impact,sans-serif;color:#fff}
+.tvspw{font:clamp(32px,min(6vw,10vh),120px)/1.1 Anton,Impact,sans-serif;color:var(--pink);text-align:center}
+.tvsprt{display:flex;flex-wrap:wrap;justify-content:center;gap:.8vw}
+.tvsprt span{padding:.6vh 1.2vw;border-radius:999px;background:rgba(255,45,138,.15);border:1px solid rgba(255,45,138,.45);font-weight:800;font-size:clamp(13px,min(1.8vw,3vh),34px)}
+.tvspr{display:flex;flex-direction:column;gap:1.6vh;min-height:0;overflow:hidden}
+.tvspb{display:grid;gap:1.2vh}
+.tvspp{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-left:6px solid transparent;border-radius:1vw;padding:1.4vh 1.2vw;display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 1vw}
+.tvspp.on{border-left-color:var(--pink);background:rgba(255,45,138,.1)}
+.tvspp b{font-size:clamp(16px,min(2.6vw,4.4vh),52px)}.tvspp span{grid-row:1/3;grid-column:2;font:clamp(28px,min(5vw,9vh),110px)/1 Anton,Impact,sans-serif;color:var(--pink)}
+.tvspp small{font-size:clamp(11px,min(1.2vw,2vh),22px);color:rgba(255,255,255,.6);font-weight:600}
+.tvh li.ok b{color:#5ee6a0}
+@media(max-width:760px){.tvsp{grid-template-columns:1fr}.tvspn{font-size:30vw}}
 .bullb{display:flex;flex-direction:column;gap:12px;text-align:center;padding:8px 0}
 .bullb h3{font:28px Anton,Impact,sans-serif;text-transform:uppercase;color:var(--pink);margin:0}
 .bullb p{margin:0;color:#f5bfd8;font-size:15px}
@@ -369,8 +394,9 @@ body.started nav{padding-top:12px;padding-bottom:14px}
 <div id="net" class="net" hidden>Geen verbinding met de server</div>
 <script>
 {
-const KEY='dartstruners-v1',PINKEY='dartstruners-pin';
-const DEF=()=>({players:[],started:false,seeds:[],bo:3,boF:5,results:{},name:'',turns:{},game:501,dout:1,inmode:'pijl',kind:'toernooi',single:{names:['',''],bo:3},sound:1,voice:'nl',lot:1,comp:{players:[],started:false}});
+const SM=/^\/s\/([a-z0-9]{6})(?=\/|$)/i.exec(location.pathname),SID=SM?SM[1].toLowerCase():'',BP=SID?'/s/'+SID:'',API=SID?'/api/s/'+SID:'/api';
+const KEY='dartstruners-v1'+(SID?'-'+SID:''),PINKEY='dartstruners-pin'+(SID?'-'+SID:'');
+const DEF=()=>({players:[],started:false,seeds:[],bo:3,boF:5,results:{},name:'',turns:{},game:501,dout:1,inmode:'pijl',kind:SID?'single':'toernooi',single:{names:['',''],bo:3},spel:{n:1,names:['',''],on:false,done:false,target:0,cur:0,darts:[],hits:[0,0],tries:[0,0],hist:[]},sound:1,voice:'nl',lot:1,comp:{players:[],started:false}});
 let S=DEF();
 let tab='spelers',confirmReset=false;
 let tv=false,tvOn=false,tvSound=false,tvGot=false,tvSlow=false,tvEv=0,tvFx=null,tvFxT=0,tvTO=0,sender=false,pushT=0,wBusy=false,wNext=false,wLast='',evs=[],evN=0;
@@ -402,7 +428,7 @@ async function chatAdmin(body){try{const r=await fetch('/api/chat/beheer',{metho
 function chatAdmHtml(){
   return`<div class="row"><button class="btn" data-a="chaton">${chat.on?'Chat uitzetten':'Chat aanzetten'}</button>${chat.msgs.length?'<button class="btn" data-a="chatclear">Chat leegmaken</button>':''}</div>
    ${chatErr?`<div class="cerr">${esc(chatErr)}</div>`:''}
-   ${chat.msgs.length?`<ul class="clist cadm">${chat.msgs.slice(-30).map(m=>`<li><b>${esc(m.n)}</b><span>${esc(m.t)}</span><time>${hhmm(m.at)}</time><button data-cdel="${m.id}" aria-label="Verwijder bericht">×</button></li>`).join('')}</ul>`:`<div>${chat.on?'Nog geen berichten vandaag.':'De chat staat uit.'}</div>`}`}
+   ${chat.msgs.length?`<ul class="clist cadm">${chat.msgs.slice(-30).map(m=>`<li><b>${esc(m.n)}</b><span>${esc(m.t)}</span><time>${hhmm(m.at)}</time><button data-chdel="${m.id}" aria-label="Verwijder bericht">×</button></li>`).join('')}</ul>`:`<div>${chat.on?'Nog geen berichten vandaag.':'De chat staat uit.'}</div>`}`}
 function chatAdm(){const el=document.getElementById('chatadm');if(el)el.innerHTML=chatAdmHtml()}
 function tvChatHtml(){clearTimeout(chatTT);if(!chat.on)return'';const now=Date.now(),L=chat.msgs.filter(m=>now-m.at<90000).slice(-3);
   if(!L.length)return'';chatTT=setTimeout(renderTV,Math.max(1000,Math.min(...L.map(m=>m.at+90000-now))+50));
@@ -410,7 +436,7 @@ function tvChatHtml(){clearTimeout(chatTT);if(!chat.on)return'';const now=Date.n
 let admin=false,ready=false,pin='',ver=0,netOk=null,loginErr='',role='admin';
 const ADM=()=>role==='admin';
 const myId=Math.random().toString(36).slice(2,10);
-const PATH=(location.pathname.replace(/\/+$/,'')||'/').toLowerCase();
+const PATH=(location.pathname.slice(BP.length).replace(/\/+$/,'')||'/').toLowerCase();
 const KIJK=PATH==='/kijk';
 if(PATH==='/monitor'||KIJK)tv=true;
 if(KIJK){tvOn=true;tvSound=false;document.body.classList.add('kijk')}
@@ -648,6 +674,7 @@ function renderOv(){
   if(tv){renderTV();return}
   push();
   const ov=document.getElementById('ov');
+  if(admin&&!openId&&S.kind==='spel'&&SP().on&&!spHidden){ov.hidden=false;document.body.style.overflow='hidden';ov.innerHTML=spOv();return}
   const go=openId&&getO(openId);
   if(!admin||!go||typeof go.a!=='number'||typeof go.b!=='number'){openId=null;ov.hidden=true;ov.innerHTML='';document.body.style.overflow='';return}
   ov.hidden=false;document.body.style.overflow='hidden';
@@ -728,6 +755,67 @@ function vSingle(){
 }
 const gameSel=()=>`<label>Spel<select id="game">${[301,501,701].map(v=>`<option value="${v}"${v==S.game?' selected':''}>${v}</option>`).join('')}</select></label>
   <label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label>`;
+/* ---------- checkout-spel: getal 41-60, 2 pijlen, uitgooien ---------- */
+const SEGS=(()=>{const a=[];for(let i=1;i<=20;i++){a.push({l:String(i),v:i,d:0,t:0},{l:'D'+i,v:2*i,d:1,t:2},{l:'T'+i,v:3*i,d:0,t:1})}a.push({l:'25',v:25,d:0,t:1.5},{l:'Bull',v:50,d:1,t:3});return a})();
+const FPREF=['D20','D16','D10','D8','D18','D12','D4','D14','D6','D2','D19','D17','D15','D13','D11','D9','D7','D5','D3','D1','Bull'];
+function routes(t,left){
+  const fin=SEGS.filter(x=>S.dout?x.d:1),fp=l=>{const i=FPREF.indexOf(l);return i<0?30:i},out=[];
+  fin.filter(f=>f.v===t).forEach(f=>out.push({r:[f.l],k:fp(f.l)-100}));
+  if(left>1)SEGS.forEach(a=>fin.forEach(f=>{if(a.v+f.v===t)out.push({r:[a.l,f.l],k:a.t*25+fp(f.l)})}));
+  const seen=new Set();return out.sort((x,y)=>x.k-y.k).filter(x=>{const k=x.r.join(' ');if(seen.has(k))return false;seen.add(k);return true}).map(x=>x.r)}
+const SP=()=>{if(!S.spel||typeof S.spel!=='object')S.spel=DEF().spel;const p=S.spel,d=DEF().spel;for(const k in d)if(!(k in p))p[k]=d[k];if(!Array.isArray(p.darts))p.darts=[];if(!Array.isArray(p.hist))p.hist=[];if(!Array.isArray(p.hits))p.hits=[0,0];if(!Array.isArray(p.tries))p.tries=[0,0];if(!Array.isArray(p.names))p.names=['',''];return p};
+const spN=i=>{const p=SP(),n=String(p.names[i]||'').trim();return n||(p.n===2?'Speler '+(i+1):'Jij')};
+function spTarget(prev){let t;do{t=41+Math.floor(Math.random()*20)}while(t===prev);return t}
+let spMod=1,spHidden=false;
+function spSay(){const p=SP();if(!p.on)return;const rem=p.target-p.darts.reduce((q,x)=>q+x.v,0);
+  say(caller()?(p.n===2?spN(p.cur)+', you require '+rem:'You require '+rem):(p.n===2?spN(p.cur)+', gooi '+rem+' uit':'Gooi '+rem+' uit'),false,[['yr_'+rem],['you_require',String(rem)]])}
+function spDart(n){const p=SP();if(!p.on)return;
+  if(n===25&&spMod===3){msg='Triple bull bestaat niet';renderOv();return}
+  const lab=n===0?'Mis':n===25?(spMod===2?'Bull':'25'):(spMod===3?'T':spMod===2?'D':'')+n,d={lab,v:n*spMod,dbl:spMod===2&&n>0};spMod=1;
+  p.darts.push(d);say(T.dart(lab),true,DK(lab));
+  const sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,who=spN(p.cur);
+  const ok=rem===0&&(!S.dout||d.dbl),fail=!ok&&(rem<0||rem===0||(S.dout&&rem===1)||p.darts.length>=2);
+  if(ok){p.hits[p.cur]++;p.tries[p.cur]++;p.hist.unshift({w:p.cur,t:p.target,r:p.darts.map(x=>x.lab),ok:1});p.hist=p.hist.slice(0,30);
+    msg=`Uitgegooid! ${p.n===2?who+': ':''}${p.target} via ${p.darts.map(x=>x.lab).join(' · ')}`;ev({k:'co',who:(p.n===2?who+' gooit ':'')+p.target+' uit'});
+    say('Game shot!',false,[['gameshot']]);
+    p.target=spTarget(p.target);p.darts=[];if(p.n===2)p.cur=1-p.cur;save();renderOv();spSay();return}
+  if(fail){p.tries[p.cur]++;p.hist.unshift({w:p.cur,t:p.target,r:p.darts.map(x=>x.lab),ok:0});p.hist=p.hist.slice(0,30);
+    msg=rem<0||rem===1||rem===0?`Bust! ${p.target} blijft staan`:`Niet uitgegooid, ${p.target} blijft staan`;p.darts=[];if(p.n===2)p.cur=1-p.cur;save();renderOv();spSay();return}
+  msg='';save();renderOv()}
+function spStart(){const p=SP();p.on=true;p.done=false;p.cur=0;p.darts=[];p.hits=[0,0];p.tries=[0,0];p.hist=[];p.target=spTarget(0);msg='';spMod=1;save();render();spSay()}
+const pct=(h,t)=>t?Math.round(h/t*100)+'%':'–';
+function spTable(dark){const p=SP(),ix=p.n===2?[0,1]:[0];
+  return`<table class="tbl sptbl${dark?' dk':''}"><thead><tr><th class="tn">Speler</th><th>Uit</th><th>Pogingen</th><th>%</th></tr></thead><tbody>${ix.map(i=>`<tr><td class="tn">${esc(spN(i))}</td><td class="pt">${p.hits[i]}</td><td>${p.tries[i]}</td><td>${pct(p.hits[i],p.tries[i])}</td></tr>`).join('')}</tbody></table>`}
+function vSpel(){const p=SP();
+  if(p.on)return`<h2>Checkout-spel</h2><p class="stat">Bezig: ${esc(spN(0))}${p.n===2?' tegen '+esc(spN(1)):''}</p><div class="row"><button class="btn pri" data-a="spopen">Verder spelen</button></div>`;
+  if(p.done)return`<h2>Uitslag</h2>${p.n===2?`<p class="stat">${p.hits[0]===p.hits[1]?'Gelijkspel!':esc(spN(p.hits[0]>p.hits[1]?0:1))+' wint met '+Math.max(...p.hits)+' – '+Math.min(...p.hits)}</p>`:`<p class="stat">${p.hits[0]} keer uitgegooid in ${p.tries[0]} pogingen</p>`}${spTable()}
+   <div class="row" style="margin:12px 0 24px"><button class="btn pri" data-a="spstart">Opnieuw met dezelfde spelers</button><button class="btn" data-a="spnew">Nieuw spel</button></div>`;
+  return`<h2>Checkout-spel</h2><p class="stat">Je krijgt een getal tussen 41 en 60 en hebt 2 pijlen om uit te gooien. Gelukt? Dan komt er een nieuw getal. Stoppen kan wanneer je wilt.</p>
+  <div class="mode"><button data-spn="1" class="${p.n===1?'on':''}">1 speler</button><button data-spn="2" class="${p.n===2?'on':''}">2 spelers</button></div>
+  <div style="max-width:560px;display:grid;gap:8px;margin:12px 0"><input type="text" id="sp1" maxlength="24" placeholder="${p.n===2?'Speler 1':'Je naam (mag leeg)'}" value="${esc(p.names[0])}" aria-label="Speler 1">${p.n===2?`<input type="text" id="sp2" maxlength="24" placeholder="Speler 2" value="${esc(p.names[1])}" aria-label="Speler 2">`:''}</div>
+  <div class="set"><label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label></div>
+  <div class="row"><button class="btn pri" data-a="spstart">Start spel</button></div>`}
+function spOv(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,left=2-p.darts.length,rs=routes(rem,left);
+  return`<div class="ovb">
+   <div class="ovh"><span>Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 2 pijlen</span><span class="ovr"><button class="btn" data-a="sound">${S.sound?'Geluid aan':'Geluid uit'}</button><button class="btn" data-a="spclose">Menu</button></span></div>
+   <div class="spt"><small>${p.n===2?esc(spN(p.cur))+' gooit uit':'Gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog 1 pijl':'2 pijlen'}</small></div>
+   <div class="slots sp2">${[0,1].map(i=>p.darts[i]?`<button disabled>${esc(p.darts[i].lab)}</button>`:`<span>Pijl ${i+1}</span>`).join('')}</div>
+   <div class="msg">${esc(msg)}</div>
+   <div class="sprt"><small>${rs.length?'Mogelijke routes':'Met 1 pijl niet uit te gooien'}</small><div>${rs.slice(0,8).map(r=>`<span>${r.map(esc).join(' · ')}</span>`).join('')}${rs.length>8?`<span class="more">+${rs.length-8} meer</span>`:''}</div></div>
+   <div class="mods">${[[1,'Single'],[2,'Dubbel'],[3,'Triple']].map(([m,l])=>`<button data-smod="${m}" class="${spMod===m&&m>1?'on':''}">${l}</button>`).join('')}</div>
+   <div class="nums">${Array.from({length:20},(_,i)=>`<button data-sn="${i+1}">${spMod===3?'T':spMod===2?'D':''}${i+1}</button>`).join('')}<button data-sn="25" class="w2">${spMod===2?'Bull 50':'25'}</button><button data-sn="0" class="w2">Mis</button><button data-a="spundo" class="w1" aria-label="Pijl terug">⌫</button></div>
+   ${spTable(true)}
+   <div class="row"><button class="btn" data-a="spskip">Ander getal</button><button class="btn" data-a="spstop">Stoppen</button></div></div>`}
+function tvSpel(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,rs=p.on?routes(rem,2-p.darts.length):[],ix=p.n===2?[0,1]:[0];
+  const ctx=`Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 2 pijlen`;
+  const board=`<div class="tvspb">${ix.map(i=>`<div class="tvspp${p.on&&p.cur===i&&p.n===2?' on':''}"><b>${esc(spN(i))}</b><span>${p.hits[i]}</span><small>uitgegooid · ${p.tries[i]} pogingen · ${pct(p.hits[i],p.tries[i])}</small></div>`).join('')}</div>`;
+  if(!p.on){const w=p.n===2&&p.hits[0]!==p.hits[1]?spN(p.hits[0]>p.hits[1]?0:1)+' wint!':p.n===2?'Gelijkspel!':'Klaar!';
+    return{ctx,html:`<div class="tvsp"><div class="tvspm"><small>Uitslag</small><div class="tvspw">${esc(w)}</div></div><div class="tvspr">${board}</div></div>`}}
+  const hist=p.hist.slice(0,6).map(h=>`<li class="${h.ok?'ok':''}"><span>${p.n===2?esc(spN(h.w))+' · ':''}${h.t}</span><b>${h.ok?'✓ ':''}${h.r.map(esc).join(' · ')}</b></li>`).join('');
+  return{ctx,html:`<div class="tvsp"><div class="tvspm"><small>${p.n===2?esc(spN(p.cur))+' gooit uit':'Gooi uit'}</small><div class="tvspn">${rem}</div>
+    <div class="tvsl">${[0,1].map(i=>`<span class="${p.darts[i]?'f':''}">${p.darts[i]?esc(p.darts[i].lab):''}</span>`).join('')}</div>
+    <div class="tvsprt">${rs.slice(0,6).map(r=>`<span>${r.map(esc).join(' · ')}</span>`).join('')||'<span>Niet meer uit te gooien</span>'}</div></div>
+    <div class="tvspr">${board}${hist?`<ul class="tvh">${hist}</ul>`:''}</div></div>`}}
 /* ---------- competitie ---------- */
 let ctab='stand',cConf=false,pasteOpen=false;
 function cMatches(){
@@ -779,24 +867,29 @@ function vComp(){
 }
 let publicUrl=null;
 function linksHtml(){
-  const o=publicUrl||location.origin;
-  return`<div class="monb"><h3>Delen en monitor</h3>
+  const o=(SID?location.origin:publicUrl||location.origin)+BP;
+  return`<div class="monb">${SID?`<h3>Jullie sessie</h3>
+   <div>Bewaar deze gegevens. Met de link en de code kan iemand anders deze sessie ook beheren. Een sessie die 30 dagen niet gebruikt wordt, verdwijnt.</div>
+   <div class="lk"><code>${esc(o)}</code><button class="btn" data-copy="${esc(o)}">Kopieer</button></div>
+   <div class="lk"><code>Sessiecode: ${esc(pin)}</code><button class="btn" data-copy="${esc(pin)}">Kopieer</button></div>`:''}<h3${SID?' style="margin-top:12px"':''}>Delen en monitor</h3>
    <div>Monitor in de dartruimte: open deze link op de computer aan de monitor.</div>
    <div class="lk"><code>${esc(o)}/monitor</code><button class="btn" data-copy="${esc(o)}/monitor">Kopieer</button></div>
    <div>Meekijken voor medespelers, zonder code of account. Ze kunnen niets veranderen.</div>
    <div class="lk"><code>${esc(o)}/kijk</code><button class="btn" data-copy="${esc(o)}/kijk">Kopieer</button></div>
    ${ADM()?'':'<div>Je bent ingelogd als <b>teller</b>: je kunt wedstrijden tellen, maar niets aan spelers, toernooien of competities veranderen.</div>'}
-   ${ADM()?`<h3 style="margin-top:12px">Chat voor kijkers</h3>
+   ${ADM()&&!SID?`<h3 style="margin-top:12px">Chat voor kijkers</h3>
    <div>Kijkers kunnen op de meekijkpagina met elkaar chatten. Berichten zie je ook op de monitor. Elke ochtend om 6 uur begint de chat weer leeg.</div>
    <div id="chatadm">${chatAdmHtml()}</div>`:''}
    <h3 style="margin-top:12px">Gegevens</h3>
-   <div>Maak af en toe een reservekopie. Met importeren zet je ook de gegevens over vanuit de claude.ai-versie.</div>
+   <div>Maak af en toe een reservekopie.${SID?'':' Met importeren zet je ook de gegevens over vanuit de claude.ai-versie.'}</div>
    <div class="row"><button class="btn" data-a="export">Exporteren</button>${ADM()?`<label class="btn" style="cursor:pointer">Importeren uit bestand<input type="file" accept="application/json,.json,.txt" data-import hidden></label><button class="btn" data-a="pasteopen">Importeren door plakken</button>`:''}<button class="btn" data-a="logout">Uitloggen</button></div>
    ${pasteOpen&&ADM()?`<textarea id="pastebox" rows="5" placeholder="Plak hier de tekst die je in de claude.ai-versie hebt gekopieerd" style="font:13px ui-monospace,monospace;padding:10px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)"></textarea><div class="row"><button class="btn pri" data-a="pastego">Importeren</button><button class="btn" data-a="pasteopen">Annuleren</button></div>`:''}
   </div>`;
 }
 function vSpelers(){
-  const kt=`<div class="mode kind"><button data-kind="toernooi" class="${S.kind==='toernooi'?'on':''}">Toernooi</button><button data-kind="comp" class="${S.kind==='comp'?'on':''}">Competitie</button><button data-kind="single" class="${S.kind==='single'?'on':''}">1 tegen 1</button></div>`;
+  if(SID&&S.kind==='comp')S.kind='single';
+  const kt=`<div class="mode kind">${[['toernooi','Toernooi'],...(SID?[]:[['comp','Competitie']]),['single','1 tegen 1'],['spel','Checkout-spel']].map(([k,l])=>`<button data-kind="${k}" class="${S.kind===k?'on':''}">${l}</button>`).join('')}</div>`;
+  if(S.kind==='spel')return kt+vSpel()+linksHtml();
   if(S.kind==='single')return kt+vSingle()+linksHtml();
   if(S.kind==='comp')return kt+vComp()+linksHtml();
   return kt+vToernooi()+linksHtml();
@@ -819,13 +912,25 @@ function vToernooi(){
   ${gameSel()}</div>
   <div class="set" style="margin-top:-8px"><label>Loting<select id="lot"><option value="1"${S.lot?' selected':''}>Willekeurig bij start</option><option value="0"${S.lot?'':' selected'}>Volgorde van de lijst</option></select></label></div><div class="row"><button class="btn pri" data-a="start"${S.players.length<3?' disabled':''}>Start toernooi</button></div>`;
 }
+let newErr='';
 function vLogin(){
+  if(SID)return`<div class="login"><h2>Sessie ${esc(SID)}</h2>
+   <p>Vul de sessiecode in om deze sessie te beheren en scores in te voeren.</p>
+   <form id="flogin" class="row"><input type="password" id="pin" inputmode="numeric" autocomplete="off" placeholder="Sessiecode" aria-label="Sessiecode"><button class="btn pri">Openen</button></form>
+   <div class="err">${esc(loginErr)}</div>
+   <p>Alleen kijken? Dat kan zonder code.</p>
+   <div class="row"><a class="btn" href="${BP}/kijk">Meekijken</a><a class="btn" href="${BP}/monitor">Monitor-weergave</a></div>
+   <p style="margin-top:18px"><a href="/">Naar De Dart Struners</a></p></div>`;
   return`<div class="login"><h2>Inloggen</h2>
    <p>Vul de beheerderscode in om scores in te voeren en wedstrijden te beheren.</p>
    <form id="flogin" class="row"><input type="password" id="pin" autocomplete="current-password" placeholder="Beheerderscode" aria-label="Beheerderscode"><button class="btn pri">Inloggen</button></form>
    <div class="err">${esc(loginErr)}</div>
    <p>Alleen kijken? Dat kan zonder code.</p>
-   <div class="row"><a class="btn" href="/kijk">Meekijken</a><a class="btn" href="/monitor">Monitor-weergave</a></div></div>`;
+   <div class="row"><a class="btn" href="/kijk">Meekijken</a><a class="btn" href="/monitor">Monitor-weergave</a></div>
+   <h2 style="margin-top:28px">Zelf spelen met vrienden</h2>
+   <p>Start een eigen sessie voor een toernooi, 1 tegen 1 of het checkout-spel. Je krijgt een eigen link en code, los van de competitie.</p>
+   <div class="row"><button class="btn pri" data-a="newsess">Nieuwe sessie starten</button></div>
+   <div class="err">${esc(newErr)}</div></div>`;
 }
 function render(){
   if(tv){refresh();renderTV();return}
@@ -853,13 +958,17 @@ function render(){
   if(fs)fs.addEventListener('submit',e=>{e.preventDefault();
     S.single.names=[document.getElementById('p1').value.trim()||'Thuis',document.getElementById('p2').value.trim()||'Uit'];
     delete S.results.X;delete S.turns.X;save();openId='X';darts=[];mod=1;buf='';msg='';render()});
+  ['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)el.addEventListener('input',()=>{SP().names[i]=el.value;save()})});
   ['p1','p2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)el.addEventListener('input',()=>{S.single.names[i]=el.value;save()})});
   const sb=document.getElementById('sbo');if(sb)sb.addEventListener('change',()=>{S.single.bo=+sb.value;save()});
   ['bo','boF','game','dout','lot'].forEach(k=>{const el=document.getElementById(k);if(el)el.addEventListener('change',()=>{S[k]=+el.value;save();render()})});
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
-  if(t.dataset.cdel){chatAdmin({del:+t.dataset.cdel});return}
+  if(t.dataset.sn!==undefined){spDart(+t.dataset.sn);return}
+  if(t.dataset.smod){const m=+t.dataset.smod;spMod=spMod===m?1:m;renderOv();return}
+  if(t.dataset.spn){const p=SP();p.n=+t.dataset.spn;save();render();return}
+  if(t.dataset.chdel){chatAdmin({del:+t.dataset.chdel});return}
   if(t.dataset.ktab){kijkTab=t.dataset.ktab;renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
   if(t.dataset.copy){const v=t.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>{t.textContent='Gekopieerd';setTimeout(()=>t.textContent='Kopieer',1500)})}catch(_){}return}
   if(t.dataset.tab){tab=t.dataset.tab;try{history.replaceState(null,'','#'+tab)}catch(_){}render();window.scrollTo(0,0);return}
@@ -895,9 +1004,19 @@ document.addEventListener('click',e=>{
     try{const r=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(r&&r.catch)r.catch(()=>{})}catch(_){}
     try{if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(()=>{})}catch(_){}
     if(tvSound)say(caller()?'Game on!':'Daar gaan we!',true,[['gameon']]);renderTV();return}
-  if(a==='tvstop'){try{if(document.fullscreenElement)document.exitFullscreen()}catch(_){}location.href='/';return}
+  if(a==='tvstop'){try{if(document.fullscreenElement)document.exitFullscreen()}catch(_){}location.href=BP||'/';return}
   if(a==='packtest'){const was=S.sound;S.sound=1;const pu=packUrls([['gameon'],['180'],['gameshot']]);S.sound=was;if(pu)playUrls(pu,true);else{packMsg='In dit pakket zit geen gameon, 180 of gameshot';(tv?renderTV:renderOv)()}return}
   if(a==='packdel'){packDel().then(()=>(tv?renderTV:renderOv)());return}
+  if(a==='newsess'){newErr='';(async()=>{try{const r=await fetch('/api/sessie',{method:'POST'});const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.id){newErr=d.error||'Sessie maken lukte niet';render();return}
+      try{localStorage.setItem('dartstruners-pin-'+d.id,d.code)}catch(_){}location.href='/s/'+d.id}catch(_){newErr='Geen verbinding met de server';render()}})();return}
+  if(a==='spstart'){const p=SP();['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)p.names[i]=el.value.trim()});spHidden=false;spStart();return}
+  if(a==='spnew'){const p=SP();p.on=false;p.done=false;save();render();return}
+  if(a==='spopen'){spHidden=false;render();return}
+  if(a==='spclose'){spHidden=true;render();return}
+  if(a==='spundo'){const p=SP();if(p.darts.length){p.darts.pop();msg='';save()}renderOv();return}
+  if(a==='spskip'){const p=SP();p.target=spTarget(p.target);p.darts=[];msg='Nieuw getal';save();renderOv();spSay();return}
+  if(a==='spstop'){const p=SP();p.on=false;p.done=true;p.darts=[];msg='';spHidden=false;save();render();window.scrollTo(0,0);return}
   if(a==='chaton'){chatAdmin({on:!chat.on});return}
   if(a==='chatclear'){chatAdmin({clear:true});return}
   if(a==='export'){exportFile();return}
@@ -949,7 +1068,7 @@ async function flush(){
   const j=JSON.stringify({S,live:{openId:openId||null,darts,msg,evs},by:myId});
   if(j===wLast)return;
   wBusy=true;let ok=false;
-  try{const r=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:j});
+  try{const r=await fetch(API+'/state',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:j});
     if(r.ok){wLast=j;const d=await r.json();ver=d.v;ok=true}
     else if(r.status===401){logout('De beheerderscode klopt niet meer. Log opnieuw in.')}
   }catch(e){}
@@ -958,20 +1077,20 @@ async function flush(){
   else if(!ok&&admin)setTimeout(flush,3000);
 }
 async function loadState(){
-  try{const r=await fetch('/api/state',{cache:'no-store'});const d=await r.json();setNet(true);
+  try{const r=await fetch(API+'/state',{cache:'no-store'});const d=await r.json();setNet(true);
     if(d&&d.S&&Array.isArray(d.S.players)){S=Object.assign(DEF(),d.S);ver=d.v||0;sender=false;clearTimeout(pushT);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
     return true}catch(e){setNet(false);return false}
 }
 async function login(p){
   loginErr='';
-  try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:p})});
+  try{const r=await fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:p})});
     if(r.ok){const d0=await r.json().catch(()=>({}));role=d0.role==='teller'?'teller':'admin';pin=p;try{localStorage.setItem(PINKEY,p)}catch(e){}admin=true;await loadState();ready=true;render();window.scrollTo(0,0);return true}
     const d=await r.json().catch(()=>({}));loginErr=d.error||'Inloggen mislukt';
   }catch(e){loginErr='Geen verbinding met de server'}
   admin=false;ready=true;render();return false;
 }
 function logout(m){admin=false;pin='';openId=null;try{localStorage.removeItem(PINKEY)}catch(e){}loginErr=m||'';render()}
-const FXK=['180','ton','bust','leg','match','bull'];
+const FXK=['180','ton','bust','leg','match','bull','co'];
 function applyRemote(c){
   if(!c||!c.S||typeof c.S!=='object'||!Array.isArray(c.S.players))return;
   S=Object.assign(DEF(),c.S);
@@ -994,7 +1113,7 @@ async function stream(){
   let v=-1;
   for(;;){
     try{
-      const r=await fetch('/api/wait?v='+v+'&cv='+chat.v+'&c='+myId,{cache:'no-store'});
+      const r=await fetch(API+'/wait?v='+v+'&cv='+chat.v+'&c='+myId,{cache:'no-store'});
       if(!r.ok)throw new Error(r.status);
       const d=await r.json();
       clearTimeout(tvTO);tvSlow=false;setNet(true);
@@ -1048,7 +1167,7 @@ function tvOverview(){
 function fxHtml(){
   const d=tvFx,w=esc(d.who);
   const big=d.k==='180'?'180':d.k==='ton'?esc(String(d.v)):d.k==='bust'?'BUST':d.k==='bull'?'BULL':'GAME SHOT';
-  const sub=d.k==='bull'?w+' begint':d.k==='leg'?'Leg voor '+w:d.k==='match'?w+' wint de wedstrijd!':w;
+  const sub=d.k==='co'?w:d.k==='bull'?w+' begint':d.k==='leg'?'Leg voor '+w:d.k==='match'?w+' wint de wedstrijd!':w;
   return`<div class="tvfx k-${d.k}"><div>${big}</div><small>${sub}</small></div>`;
 }
 function kRow(id,small,h,u,o,isNow){
@@ -1087,12 +1206,13 @@ function renderTV(){
     else if(KIJK&&kijkTab==='stand')c={ctx:'',html:`<div class="kscroll">${kStand()}</div>`};
     else if(KIJK&&kijkTab==='chat'){chatSeen=chat.msgs.reduce((m,x)=>Math.max(m,x.id),chatSeen);c={ctx:'',html:`<div class="kscroll kchat" id="kchat"><h2 class="tvh2">Chat</h2>${chatList()}</div>`}}
     else if(KIJK&&kijkTab==='wedstrijden')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Wedstrijden</h2>${kMatches()}</div>`};
+    else if(S.kind==='spel'&&(SP().on||SP().done))c=tvSpel();
     else{const go=openId&&getO(openId);c=go&&typeof go.a==='number'&&typeof go.b==='number'?tvMatch():tvOverview()}
   }catch(e){c={ctx:'',html:'<div class="tvch"><small>Even geduld</small></div>'}}
   const ko=document.getElementById('kchat'),kb=!ko||ko.scrollHeight-ko.scrollTop-ko.clientHeight<80;
-  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['chat','Chat']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='chat'||chat.on||chat.msgs.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}${k==='chat'&&kijkTab!=='chat'&&chatNew()?`<i class="cbadge">${Math.min(99,chatNew())}</i>`:''}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
+  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['chat','Chat']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='chat'||(!SID&&(chat.on||chat.msgs.length)))&&(k!=='wedstrijden'||S.kind!=='spel')).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}${k==='chat'&&kijkTab!=='chat'&&chatNew()?`<i class="cbadge">${Math.min(99,chatNew())}</i>`:''}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
   const kn=document.getElementById('kchat');if(kn&&kb)kn.scrollTop=kn.scrollHeight;
-  if(KIJK){const f=chatForm(),show=tvGot&&kijkTab==='chat'&&chat.on;f.hidden=!show;document.body.classList.toggle('chatopen',show)}
+  if(KIJK&&!SID){const f=chatForm(),show=tvGot&&kijkTab==='chat'&&chat.on;f.hidden=!show;document.body.classList.toggle('chatopen',show)}
 }
 
 /* ---------- opstarten ---------- */

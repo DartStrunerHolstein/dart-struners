@@ -95,11 +95,59 @@ function persist() {
 }
 
 // Voor meekijkers alleen de beurten van de wedstrijd die nu bezig is
-function publicView() {
-  const S = state.S ? Object.assign({}, state.S) : null;
-  const open = state.live && state.live.openId;
+function viewOf(st) {
+  const S = st.S ? Object.assign({}, st.S) : null;
+  const open = st.live && st.live.openId;
   if (S && S.turns) S.turns = open && S.turns[open] ? { [open]: S.turns[open] } : {};
-  return { v: state.v, by: state.by, S, live: state.live, chat: { v: chat.v, on: chat.on, msgs: chat.msgs } };
+  return { v: st.v, by: st.by, S, live: st.live };
+}
+function publicView() {
+  return Object.assign(viewOf(state), { chat: { v: chat.v, on: chat.on, msgs: chat.msgs } });
+}
+
+// ---------- sessies van vrienden (eigen link + code, los van de hoofdstand) ----------
+const SESS_FILE = path.join(DATA_DIR, 'sessies.json');
+const SESS_DAYS = 30, SESS_MAX = 300;
+let sess = {}; // id -> { v, S, live, by, h, c, u }
+try {
+  if (fs.existsSync(SESS_FILE)) {
+    const d = JSON.parse(fs.readFileSync(SESS_FILE, 'utf8'));
+    if (d && typeof d === 'object') sess = d;
+  }
+} catch (e) { console.error('Kon de sessies niet lezen:', e.message); }
+const sessWait = new Map(); // id -> [waiters]
+let sessTimer = null;
+function persistSess() {
+  clearTimeout(sessTimer);
+  sessTimer = setTimeout(() => {
+    const tmp = SESS_FILE + '.tmp';
+    fs.writeFile(tmp, JSON.stringify(sess), err => {
+      if (err) return console.error('Sessies opslaan mislukt:', err.message);
+      fs.rename(tmp, SESS_FILE, e => e && console.error('Sessies opslaan mislukt:', e.message));
+    });
+  }, 300);
+}
+function sessClean() {
+  const old = Date.now() - SESS_DAYS * 864e5; let n = 0;
+  for (const [id, x] of Object.entries(sess)) if ((x.u || x.c || 0) < old) { delete sess[id]; n++; }
+  if (n) persistSess();
+}
+setInterval(sessClean, 3600 * 1000); sessClean();
+const hashCode = c => crypto.createHash('sha256').update(String(c || '')).digest('hex');
+function sessOk(x, given) {
+  const a = Buffer.from(hashCode(given), 'hex'), b = Buffer.from(String(x.h || ''), 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+function sessBroadcast(id) {
+  const x = sess[id]; if (!x) return;
+  const view = viewOf(x), w = sessWait.get(id) || [];
+  sessWait.set(id, []);
+  for (const y of w) { clearTimeout(y.t); try { send(y.res, 200, view); } catch (e) {} }
+}
+const newHits = new Map();
+function newId() {
+  const ch = 'abcdefghjkmnpqrstuvwxyz23456789';
+  for (;;) { let id = ''; for (let i = 0; i < 6; i++) id += ch[crypto.randomInt(ch.length)]; if (!sess[id]) return id; }
 }
 
 // ---------- live verbindingen ----------
@@ -196,8 +244,50 @@ const server = http.createServer(async (req, res) => {
   const ip = ipOf(req);
 
   try {
-    if (req.method === 'GET' && (p === '/' || p === '/monitor' || p === '/kijk')) {
+    if (req.method === 'GET' && (p === '/' || p === '/monitor' || p === '/kijk' || /^\/s\/[a-z0-9]{6}(\/monitor|\/kijk)?$/.test(p))) {
       return send(res, 200, page(), 'text/html; charset=utf-8');
+    }
+
+    // Nieuwe vriendensessie: geeft een eigen link en code terug
+    if (req.method === 'POST' && p === '/api/sessie') {
+      const now = Date.now(), l = (newHits.get(ip) || []).filter(t => now - t < 3600e3);
+      if (l.length >= 10) return send(res, 429, { error: 'Te veel sessies gemaakt. Probeer het later opnieuw.' });
+      sessClean();
+      if (Object.keys(sess).length >= SESS_MAX) return send(res, 503, { error: 'Er zijn nu te veel sessies. Probeer het later opnieuw.' });
+      l.push(now); newHits.set(ip, l);
+      const id = newId(), code = String(crypto.randomInt(1000, 10000));
+      sess[id] = { v: 1, S: null, live: null, by: null, h: hashCode(code), c: now, u: now };
+      persistSess();
+      return send(res, 200, { id, code });
+    }
+
+    const sm = /^\/api\/s\/([a-z0-9]{6})\/(state|wait|login)$/.exec(p);
+    if (sm) {
+      const id = sm[1], x = sess[id], what = sm[2];
+      if (!x) return send(res, 404, { error: 'Deze sessie bestaat niet (meer)' });
+      if (req.method === 'GET' && what === 'state') return send(res, 200, viewOf(x));
+      if (req.method === 'GET' && what === 'wait') {
+        if (Number(url.searchParams.get('v')) !== x.v) return send(res, 200, viewOf(x));
+        const w = sessWait.get(id) || []; sessWait.set(id, w);
+        if (w.length > 100) return send(res, 200, viewOf(x));
+        const y = { res, t: setTimeout(() => { sessWait.set(id, (sessWait.get(id) || []).filter(z => z !== y)); send(res, 200, viewOf(x)); }, 25000) };
+        w.push(y);
+        req.on('close', () => { clearTimeout(y.t); sessWait.set(id, (sessWait.get(id) || []).filter(z => z !== y)); });
+        return;
+      }
+      if (req.method === 'POST' && (what === 'login' || what === 'state')) {
+        if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+        const b = await readBody(req);
+        const given = what === 'login' ? b.pin : req.headers['x-pin'];
+        if (!sessOk(x, given)) { failed(ip); return send(res, 401, { error: 'Onjuiste sessiecode' }); }
+        if (what === 'login') { fails.delete(ip); x.u = Date.now(); persistSess(); return send(res, 200, { ok: true, role: 'admin' }); }
+        if (!b || typeof b.S !== 'object' || !b.S || !Array.isArray(b.S.players)) return send(res, 400, { error: 'Ongeldige stand' });
+        if (JSON.stringify(b).length > 1024 * 1024) return send(res, 413, { error: 'Te groot' });
+        Object.assign(x, { v: x.v + 1, S: b.S, live: b.live && typeof b.live === 'object' ? b.live : null, by: typeof b.by === 'string' ? b.by.slice(0, 40) : null, u: Date.now() });
+        persistSess();
+        sessBroadcast(id);
+        return send(res, 200, { ok: true, v: x.v });
+      }
     }
     if (req.method === 'GET' && p === '/healthz') return send(res, 200, { ok: true });
 
