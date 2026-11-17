@@ -413,7 +413,7 @@ body.started nav{padding-top:12px;padding-bottom:14px}
 {
 const SM=/^\/s\/([a-z0-9]{6})(?=\/|$)/i.exec(location.pathname),SID=SM?SM[1].toLowerCase():'',BP=SID?'/s/'+SID:'',API=SID?'/api/s/'+SID:'/api';
 const KEY='dartstruners-v1'+(SID?'-'+SID:''),PINKEY='dartstruners-pin'+(SID?'-'+SID:'');
-const DEF=()=>({players:[],started:false,seeds:[],bo:3,boF:5,results:{},name:'',turns:{},game:501,dout:1,inmode:'pijl',kind:SID?'single':'toernooi',single:{names:['',''],bo:3,solo:0},spel:{n:1,names:['',''],on:false,done:false,target:0,cur:0,darts:[],hits:[0,0],tries:[0,0],hist:[]},sound:1,voice:'nl',lot:1,comp:{players:[],started:false}});
+const DEF=()=>({players:[],started:false,seeds:[],bo:3,boF:5,results:{},name:'',turns:{},game:501,dout:1,inmode:'pijl',kind:SID?'single':'toernooi',single:{names:['',''],bo:3,solo:0},spel:{n:1,names:['',''],on:false,done:false,target:0,cur:0,darts:[],hits:[0,0],tries:[0,0],hist:[],order:[],idx:0},spelTop:{},sound:1,voice:'nl',lot:1,comp:{players:[],started:false}});
 let S=DEF();
 let tab='spelers',confirmReset=false;
 let tv=false,tvOn=false,tvSound=false,tvGot=false,tvSlow=false,tvEv=0,tvFx=null,tvFxT=0,tvTO=0,sender=false,pushT=0,wBusy=false,wNext=false,wLast='',evs=[],evN=0;
@@ -794,8 +794,7 @@ function routes(t,left){
   const seen=new Set();return out.sort((x,y)=>x.k-y.k).filter(x=>{const k=x.r.join(' ');if(seen.has(k))return false;seen.add(k);return true}).map(x=>x.r)}
 const SP=()=>{if(!S.spel||typeof S.spel!=='object')S.spel=DEF().spel;const p=S.spel,d=DEF().spel;for(const k in d)if(!(k in p))p[k]=d[k];if(!Array.isArray(p.darts))p.darts=[];if(!Array.isArray(p.hist))p.hist=[];if(!Array.isArray(p.hits))p.hits=[0,0];if(!Array.isArray(p.tries))p.tries=[0,0];if(!Array.isArray(p.names))p.names=['',''];return p};
 const spN=i=>{const p=SP(),n=String(p.names[i]||'').trim();return n||(p.n===2?'Speler '+(i+1):'Jij')};
-function spTarget(prev){let t;do{t=41+Math.floor(Math.random()*20)}while(t===prev);return t}
-let spMod=1,spHidden=false;
+let spMod=1,spHidden=false,spConf=false;
 function spSay(){const p=SP();if(!p.on)return;const rem=p.target-p.darts.reduce((q,x)=>q+x.v,0);
   say(caller()?(p.n===2?spN(p.cur)+', you require '+rem:'You require '+rem):(p.n===2?spN(p.cur)+', gooi '+rem+' uit':'Gooi '+rem+' uit'),false,[['yr_'+rem],['you_require',String(rem)]])}
 function spDart(n){const p=SP();if(!p.on)return;
@@ -807,44 +806,64 @@ function spDart(n){const p=SP();if(!p.on)return;
   if(ok){p.hits[p.cur]++;p.tries[p.cur]++;p.hist.unshift({w:p.cur,t:p.target,r:p.darts.map(x=>x.lab),ok:1});p.hist=p.hist.slice(0,30);
     msg=`Uitgegooid! ${p.n===2?who+': ':''}${p.target} via ${p.darts.map(x=>x.lab).join(' · ')}`;ev({k:'co',who:(p.n===2?who+' gooit ':'')+p.target+' uit'});
     say('Game shot!',false,[['gameshot']]);
-    p.target=spTarget(p.target);p.darts=[];if(p.n===2)p.cur=1-p.cur;save();renderOv();spSay();return}
+    spNext();return}
   if(fail){p.tries[p.cur]++;p.hist.unshift({w:p.cur,t:p.target,r:p.darts.map(x=>x.lab),ok:0});p.hist=p.hist.slice(0,30);
-    msg=rem<0||rem===1||rem===0?`Bust! ${p.target} blijft staan`:`Niet uitgegooid, ${p.target} blijft staan`;p.darts=[];if(p.n===2)p.cur=1-p.cur;save();renderOv();spSay();return}
+    msg=rem<0||rem===1||rem===0?`Bust! ${p.n===2?who+' ':''}${p.target} niet uitgegooid`:`${p.n===2?who+': ':''}${p.target} niet uitgegooid`;spNext();return}
   msg='';save();renderOv()}
-function spStart(){const p=SP();p.on=true;p.done=false;p.cur=0;p.darts=[];p.hits=[0,0];p.tries=[0,0];p.hist=[];p.target=spTarget(0);msg='';spMod=1;save();render();spSay()}
+function spShuffle(){const a=Array.from({length:20},(_,i)=>41+i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function spStart(){const p=SP();p.on=true;p.done=false;p.cur=0;p.darts=[];p.hits=[0,0];p.tries=[0,0];p.hist=[];p.order=spShuffle();p.idx=0;p.target=p.order[0];msg='';spMod=1;save();render();spSay()}
+function spNext(){const p=SP();p.darts=[];
+  if(p.n===2&&p.cur===0){p.cur=1;save();renderOv();spSay();return}
+  p.cur=0;p.idx++;
+  if(p.idx>=p.order.length){spFinish();return}
+  p.target=p.order[p.idx];save();renderOv();spSay()}
+const topKey=n=>String(n||'').trim().toLowerCase();
+function spFinish(){const p=SP();p.on=false;p.done=true;p.darts=[];spHidden=false;
+  if(!S.spelTop||typeof S.spelTop!=='object')S.spelTop={};
+  const rec=[];(p.n===2?[0,1]:[0]).forEach(i=>{const nm=String(p.names[i]||'').trim();if(!nm)return;const k=topKey(nm),o=S.spelTop[k];
+    if(!o||p.hits[i]>o.s){S.spelTop[k]={n:nm.slice(0,24),s:p.hits[i],d:Date.now()};if(o||p.hits[i]>0)rec.push(nm)}});
+  msg=rec.length?'Nieuw record voor '+rec.join(' en ')+'!':'';
+  if(rec.length)ev({k:'co',who:'Nieuw record: '+rec.join(' en ')});
+  save();render();window.scrollTo(0,0)}
+function spTop(){const t=S.spelTop&&typeof S.spelTop==='object'?S.spelTop:{};return Object.values(t).filter(x=>x&&typeof x.n==='string').sort((a,b)=>b.s-a.s||a.d-b.d)}
+function spTopHtml(dark,max){const L=spTop().slice(0,max||50);
+  if(!L.length)return`<p class="${dark?'kempty':'empty'}">Nog geen scores. Vul je naam in en speel een spel om op het leaderboard te komen.</p>`;
+  return`<table class="tbl sptbl${dark?' dk':''}"><thead><tr><th>#</th><th class="tn">Speler</th><th>Punten</th></tr></thead><tbody>${L.map((x,i)=>`<tr><td><span class="rk${i===0?' one':''}">${i+1}</span></td><td class="tn">${esc(x.n)}</td><td class="pt">${x.s}</td></tr>`).join('')}</tbody></table>`}
 const pct=(h,t)=>t?Math.round(h/t*100)+'%':'–';
 function spTable(dark){const p=SP(),ix=p.n===2?[0,1]:[0];
-  return`<table class="tbl sptbl${dark?' dk':''}"><thead><tr><th class="tn">Speler</th><th>Uit</th><th>Pogingen</th><th>%</th></tr></thead><tbody>${ix.map(i=>`<tr><td class="tn">${esc(spN(i))}</td><td class="pt">${p.hits[i]}</td><td>${p.tries[i]}</td><td>${pct(p.hits[i],p.tries[i])}</td></tr>`).join('')}</tbody></table>`}
+  return`<table class="tbl sptbl${dark?' dk':''}"><thead><tr><th class="tn">Speler</th><th>Punten</th><th>Gespeeld</th><th>%</th></tr></thead><tbody>${ix.map(i=>`<tr><td class="tn">${esc(spN(i))}</td><td class="pt">${p.hits[i]}</td><td>${p.tries[i]} / 20</td><td>${pct(p.hits[i],p.tries[i])}</td></tr>`).join('')}</tbody></table>`}
 function vSpel(){const p=SP();
   if(p.on)return`<h2>Checkout-spel</h2><p class="stat">Bezig: ${esc(spN(0))}${p.n===2?' tegen '+esc(spN(1)):''}</p><div class="row"><button class="btn pri" data-a="spopen">Verder spelen</button></div>`;
-  if(p.done)return`<h2>Uitslag</h2>${p.n===2?`<p class="stat">${p.hits[0]===p.hits[1]?'Gelijkspel!':esc(spN(p.hits[0]>p.hits[1]?0:1))+' wint met '+Math.max(...p.hits)+' – '+Math.min(...p.hits)}</p>`:`<p class="stat">${p.hits[0]} keer uitgegooid in ${p.tries[0]} pogingen</p>`}${spTable()}
-   <div class="row" style="margin:12px 0 24px"><button class="btn pri" data-a="spstart">Opnieuw met dezelfde spelers</button><button class="btn" data-a="spnew">Nieuw spel</button></div>`;
-  return`<h2>Checkout-spel</h2><p class="stat">Je krijgt een getal tussen 41 en 60 en hebt 3 pijlen om uit te gooien. Gelukt? Dan komt er een nieuw getal. Stoppen kan wanneer je wilt.</p>
+  const top=`<h2 style="margin-top:28px">Leaderboard</h2><p class="stat">Per speler de hoogste score (max. 20 punten).</p>${spTopHtml()}${spTop().length?(spConf?`<div class="conf"><p style="margin:0 0 10px">Het hele leaderboard wordt gewist.</p><div class="row"><button class="btn pri" data-a="sptopclear">Ja, wissen</button><button class="btn" data-a="sptopno">Annuleren</button></div></div>`:`<div class="row" style="margin-top:10px"><button class="btn" data-a="sptopask">Leaderboard wissen</button></div>`):''}`;
+  if(p.done)return`<h2>Uitslag</h2>${msg?`<p class="stat" style="color:var(--pinkt)">${esc(msg)}</p>`:''}${p.n===2?`<p class="stat">${p.hits[0]===p.hits[1]?'Gelijkspel!':esc(spN(p.hits[0]>p.hits[1]?0:1))+' wint met '+Math.max(...p.hits)+' – '+Math.min(...p.hits)+' punten'}</p>`:`<p class="stat">${p.hits[0]} van de 20 punten</p>`}${spTable()}
+   <div class="row" style="margin:12px 0 0"><button class="btn pri" data-a="spstart">Opnieuw met dezelfde spelers</button><button class="btn" data-a="spnew">Nieuw spel</button></div>${top}`;
+  return`<h2>Checkout-spel</h2><p class="stat">Alle 20 getallen van 41 tot en met 60 komen één keer langs, in willekeurige volgorde. Je hebt 3 pijlen per getal. Uitgegooid = 1 punt, dus maximaal 20 punten.</p>
   <div class="mode"><button data-spn="1" class="${p.n===1?'on':''}">1 speler</button><button data-spn="2" class="${p.n===2?'on':''}">2 spelers</button></div>
-  <div style="max-width:560px;display:grid;gap:8px;margin:12px 0"><input type="text" id="sp1" maxlength="24" placeholder="${p.n===2?'Speler 1':'Je naam (mag leeg)'}" value="${esc(p.names[0])}" aria-label="Speler 1">${p.n===2?`<input type="text" id="sp2" maxlength="24" placeholder="Speler 2" value="${esc(p.names[1])}" aria-label="Speler 2">`:''}</div>
+  <div style="max-width:560px;display:grid;gap:8px;margin:12px 0"><input type="text" id="sp1" maxlength="24" placeholder="${p.n===2?'Speler 1':'Je naam'}" value="${esc(p.names[0])}" aria-label="Speler 1">${p.n===2?`<input type="text" id="sp2" maxlength="24" placeholder="Speler 2" value="${esc(p.names[1])}" aria-label="Speler 2">`:''}</div>
   <div class="set"><label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label></div>
-  <div class="row"><button class="btn pri" data-a="spstart">Start spel</button></div>`}
+  <p class="stat" style="margin:4px 0 12px">Vul een naam in om op het leaderboard te komen.</p>
+  <div class="row"><button class="btn pri" data-a="spstart">Start spel</button></div>${top}`}
 function spOv(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,left=3-p.darts.length,rs=routes(rem,left);
   return`<div class="ovb">
    <div class="ovh"><span>Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen</span><span class="ovr"><button class="btn" data-a="sound">${S.sound?'Geluid aan':'Geluid uit'}</button><button class="btn" data-a="spclose">Menu</button></span></div>
-   <div class="spt"><small>${p.n===2?esc(spN(p.cur))+' gooit uit':'Gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog '+left+(left>1?' pijlen':' pijl'):'3 pijlen'}</small></div>
+   <div class="spt"><small>Getal ${Math.min(p.idx+1,20)} van 20 · ${p.n===2?esc(spN(p.cur))+' gooit uit':'gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog '+left+(left>1?' pijlen':' pijl'):'3 pijlen'}</small></div>
    <div class="slots sp2">${[0,1,2].map(i=>p.darts[i]?`<button disabled>${esc(p.darts[i].lab)}</button>`:`<span>Pijl ${i+1}</span>`).join('')}</div>
    <div class="msg">${esc(msg)}</div>
    <div class="sprt"><small>${rs.length?'Mogelijke routes':left===1?'Met 1 pijl niet uit te gooien':'Niet meer uit te gooien'}</small><div>${rs.slice(0,8).map(r=>`<span>${r.map(esc).join(' · ')}</span>`).join('')}${rs.length>8?`<span class="more">+${rs.length-8} meer</span>`:''}</div></div>
    <div class="mods">${[[1,'Single'],[2,'Dubbel'],[3,'Triple']].map(([m,l])=>`<button data-smod="${m}" class="${spMod===m&&m>1?'on':''}">${l}</button>`).join('')}</div>
    <div class="nums">${Array.from({length:20},(_,i)=>`<button data-sn="${i+1}">${spMod===3?'T':spMod===2?'D':''}${i+1}</button>`).join('')}<button data-sn="25" class="w2">${spMod===2?'Bull 50':'25'}</button><button data-sn="0" class="w2">Mis</button><button data-a="spundo" class="w1" aria-label="Pijl terug">⌫</button></div>
    ${spTable(true)}
-   <div class="row"><button class="btn" data-a="spskip">Ander getal</button><button class="btn" data-a="spstop">Stoppen</button></div></div>`}
+   <div class="row"><button class="btn" data-a="spstop">Stoppen</button></div></div>`}
 function tvSpel(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,rs=p.on?routes(rem,3-p.darts.length):[],ix=p.n===2?[0,1]:[0];
   const ctx=`Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen`;
-  const board=`<div class="tvspb">${ix.map(i=>`<div class="tvspp${p.on&&p.cur===i&&p.n===2?' on':''}"><b>${esc(spN(i))}</b><span>${p.hits[i]}</span><small>uitgegooid · ${p.tries[i]} pogingen · ${pct(p.hits[i],p.tries[i])}</small></div>`).join('')}</div>`;
+  const board=`<div class="tvspb">${ix.map(i=>`<div class="tvspp${p.on&&p.cur===i&&p.n===2?' on':''}"><b>${esc(spN(i))}</b><span>${p.hits[i]}</span><small>${p.hits[i]===1?'punt':'punten'} · ${p.tries[i]} van 20 gespeeld</small></div>`).join('')}</div>`;
   if(!p.on){const w=p.n===2&&p.hits[0]!==p.hits[1]?spN(p.hits[0]>p.hits[1]?0:1)+' wint!':p.n===2?'Gelijkspel!':'Klaar!';
-    return{ctx,html:`<div class="tvgm"><div class="tvspm"><small>Uitslag</small><div class="tvspw">${esc(w)}</div></div><div class="tvspr">${board}</div></div>`}}
+    return{ctx,html:`<div class="tvgm"><div class="tvspm"><small>Uitslag</small><div class="tvspw">${esc(w)}</div></div><div class="tvspr">${board}<h3 class="kh">Leaderboard</h3>${spTopHtml(true,8)}</div></div>`}}
   const hist=p.hist.slice(0,6).map(h=>`<li class="${h.ok?'ok':''}"><span>${p.n===2?esc(spN(h.w))+' · ':''}${h.t}</span><b>${h.ok?'✓ ':''}${h.r.map(esc).join(' · ')}</b></li>`).join('');
-  return{ctx,html:`<div class="tvgm"><div class="tvspm"><small>${p.n===2?esc(spN(p.cur))+' gooit uit':'Gooi uit'}</small><div class="tvspn">${rem}</div>
+  return{ctx,html:`<div class="tvgm"><div class="tvspm"><small>Getal ${Math.min(p.idx+1,20)} van 20 · ${p.n===2?esc(spN(p.cur))+' gooit uit':'gooi uit'}</small><div class="tvspn">${rem}</div>
     <div class="tvsl">${[0,1,2].map(i=>`<span class="${p.darts[i]?'f':''}">${p.darts[i]?esc(p.darts[i].lab):''}</span>`).join('')}</div>
     <div class="tvsprt">${rs.slice(0,6).map(r=>`<span>${r.map(esc).join(' · ')}</span>`).join('')||'<span>Niet meer uit te gooien</span>'}</div></div>
-    <div class="tvspr">${board}${hist?`<ul class="tvh">${hist}</ul>`:''}</div></div>`}}
+    <div class="tvspr">${board}${hist?`<ul class="tvh">${hist}</ul>`:''}${spTop().length?`<h3 class="kh">Leaderboard</h3>${spTopHtml(true,5)}`:''}</div></div>`}}
 /* ---------- competitie ---------- */
 let ctab='stand',cConf=false,pasteOpen=false;
 function cMatches(){
@@ -1040,13 +1059,15 @@ document.addEventListener('click',e=>{
   if(a==='newsess'){newErr='';(async()=>{try{const r=await fetch('/api/sessie',{method:'POST'});const d=await r.json().catch(()=>({}));
       if(!r.ok||!d.id){newErr=d.error||'Sessie maken lukte niet';render();return}
       try{localStorage.setItem('dartstruners-pin-'+d.id,d.code)}catch(_){}location.href='/s/'+d.id}catch(_){newErr='Geen verbinding met de server';render()}})();return}
-  if(a==='spstart'){const p=SP();['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)p.names[i]=el.value.trim()});spHidden=false;spStart();return}
+  if(a==='spstart'){spConf=false;const p=SP();['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)p.names[i]=el.value.trim()});spHidden=false;spStart();return}
   if(a==='spnew'){const p=SP();p.on=false;p.done=false;save();render();return}
   if(a==='spopen'){spHidden=false;render();return}
   if(a==='spclose'){spHidden=true;render();return}
   if(a==='spundo'){const p=SP();if(p.darts.length){p.darts.pop();msg='';save()}renderOv();return}
-  if(a==='spskip'){const p=SP();p.target=spTarget(p.target);p.darts=[];msg='Nieuw getal';save();renderOv();spSay();return}
-  if(a==='spstop'){const p=SP();p.on=false;p.done=true;p.darts=[];msg='';spHidden=false;save();render();window.scrollTo(0,0);return}
+  if(a==='spstop'){spFinish();return}
+  if(a==='sptopask'){spConf=true;render();return}
+  if(a==='sptopno'){spConf=false;render();return}
+  if(a==='sptopclear'){S.spelTop={};spConf=false;save();render();return}
   if(a==='chaton'){chatAdmin({on:!chat.on});return}
   if(a==='chatclear'){chatAdmin({clear:true});return}
   if(a==='export'){exportFile();return}

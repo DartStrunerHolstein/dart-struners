@@ -76,7 +76,8 @@ Onderaan de app staan de links met een **Kopieer**-knop, zodat je ze makkelijk k
 Op het inlogscherm staat **Nieuwe sessie starten**. Vrienden krijgen dan een eigen link (`…/s/abc123`) met een eigen sessiecode, los van de competitie. In een sessie kies je **Toernooi**, **1 tegen 1** of het **Checkout-spel**. Elke sessie heeft ook een eigen monitor- en meekijklink. Een sessie die 30 dagen niet gebruikt wordt, verdwijnt vanzelf.
 
 ### Checkout-spel
-Voor 1 of 2 spelers. Je krijgt een getal tussen 41 en 60 en hebt 3 pijlen om uit te gooien. De app toont de mogelijke routes. Gelukt? Dan volgt een nieuw getal. Mis je, dan blijft het getal staan (bij 2 spelers is de ander aan de beurt). Met **Stoppen** zie je de uitslag.
+Voor 1 of 2 spelers. Alle 20 getallen van 41 tot en met 60 komen één keer langs, in willekeurige volgorde. Je hebt 3 pijlen per getal en de app toont de mogelijke routes. Uitgegooid = 1 punt, dus maximaal 20 punten. Bij 2 spelers gooien ze om de beurt op hetzelfde getal.
+Het **leaderboard** bewaart per naam de hoogste score. Vul dus een naam in om erop te komen. Met **Leaderboard wissen** begin je opnieuw.
 
 ### Solo en korte spellen
 Onder **1 tegen 1** kies je ook **Solo**: alleen oefenen met een aantal legs (1, 3, 5 of 10). Je ziet je gemiddelde en het aantal pijlen. Bij elk spel kun je nu ook **101** en **201** kiezen.
