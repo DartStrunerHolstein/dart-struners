@@ -134,6 +134,10 @@ input[type=text],input[type=password]{flex:1 1 200px}
 .clips button,.pick{min-width:44px;min-height:44px;display:grid;place-items:center;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:none;color:#fff;font:800 14px Inter,sans-serif;cursor:pointer;padding:0 10px}
 .pick{background:var(--pink);border-color:var(--pink)}
 .clips button:disabled{opacity:.3;cursor:default}
+.packbox{display:flex;flex-direction:column;gap:8px}.packbox .row{display:flex;flex-wrap:wrap;gap:8px}
+.pick.alt{background:none;border-color:rgba(255,255,255,.3)}
+.tvpk{max-width:min(560px,90vw);text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px 14px}
+.tvpk summary{cursor:pointer;font-weight:700;color:rgba(255,255,255,.8)}.tvpk .packbox{margin-top:10px}
 .hist{list-style:none;margin:0;padding:0;font-size:14px;color:#f5bfd8}
 .hist li{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.08)}
 .hist b{color:#fff}
@@ -449,23 +453,59 @@ function live(id){
 }
 /* ---------- stem en eigen geluiden ---------- */
 let vNL=null,vEN=null,sheet=false;const clipUrl={};
+const GOOD=/natural|online|neural|premium|enhanced|verbeterd|siri/i;
+function best(vs,re,male){const m=vs.filter(v=>re.test(v.lang));if(!m.length)return null;
+  const sc=v=>(GOOD.test(v.name)?4:0)+(male&&/male|daniel|arthur|george|oliver|ryan|thomas|alfie/i.test(v.name)&&!/female/i.test(v.name)?2:0)+(v.localService===false?1:0);
+  return m.slice().sort((a,b)=>sc(b)-sc(a))[0]}
 function pickVoice(){try{const vs=speechSynthesis.getVoices();
-  vNL=vs.find(v=>/^nl[-_]NL/i.test(v.lang))||vs.find(v=>/^nl/i.test(v.lang))||null;
-  vEN=vs.find(v=>/^en[-_]GB/i.test(v.lang)&&/male|daniel|arthur|george|oliver/i.test(v.name))||vs.find(v=>/^en[-_]GB/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang))||null}catch(e){}}
+  vNL=best(vs,/^nl[-_]NL/i)||best(vs,/^nl/i);
+  vEN=best(vs,/^en[-_]GB/i,true)||best(vs,/^en/i,true)}catch(e){}}
 try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice}catch(e){}
 const caller=()=>S.voice==='caller';
-function say(t,cut){
-  if(!tv&&t)ev({k:'say',t:String(t),cut:!!cut});
+/* stemmenpakket: map met mp3's (darts-caller-namen: 0-180, gameshot, busted, yr_40, t20 ...), alleen op dit apparaat bewaard */
+let pack={},packName='',packMsg='',aq=[],acur=null;
+function packDb(){return new Promise((res,rej)=>{try{const r=indexedDB.open('dartstruners-stem',1);r.onupgradeneeded=()=>r.result.createObjectStore('pack');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+const packN=()=>Object.keys(pack).length;
+function packClear(){Object.values(pack).forEach(l=>l.forEach(u=>URL.revokeObjectURL(u)));pack={};packName=''}
+function packKey(n){const m=/^(.*)\.(mp3|wav|ogg|m4a|aac)$/i.exec(n);if(!m)return null;return m[1].toLowerCase().trim().split('+')[0].replace(/\s+/g,'_')}
+async function packLoad(files){
+  const fs=[...files].filter(f=>packKey(f.name)&&f.size<5e6);
+  if(!fs.length){packMsg='Geen geluidsbestanden gevonden (mp3 of wav)';return}
+  const dir=f=>(f.webkitRelativePath||'').split('/').slice(0,-1).join('/');
+  const g={};fs.forEach(f=>(g[dir(f)]=g[dir(f)]||[]).push(f));
+  const d=Object.keys(g).sort((a,b)=>g[b].length-g[a].length)[0],use=g[d];
+  const map={};use.forEach(f=>(map[packKey(f.name)]=map[packKey(f.name)]||[]).push(f));
+  packClear();packName=(d.split('/').pop()||'Eigen stem');
+  Object.entries(map).forEach(([k,l])=>pack[k]=l.map(f=>URL.createObjectURL(f)));
+  packMsg=packN()+' geluiden geladen';
+  try{const db=await packDb(),st=db.transaction('pack','readwrite').objectStore('pack');st.clear();
+    Object.entries(map).forEach(([k,l])=>st.put(l,k));st.put(packName,'__naam')}catch(e){packMsg+=' (niet bewaard in deze browser)'}}
+async function packDel(){packClear();packMsg='Stemmenpakket verwijderd';try{const db=await packDb();db.transaction('pack','readwrite').objectStore('pack').clear()}catch(e){}}
+(async()=>{try{const db=await packDb(),st=db.transaction('pack').objectStore('pack'),r=st.openCursor();
+  r.onsuccess=()=>{const c=r.result;if(!c){if(packN()){if(tv&&!tvOn)renderTV();else if(sheet)renderOv()}return}
+    if(c.key==='__naam')packName=c.value;else if(Array.isArray(c.value))pack[c.key]=c.value.map(b=>URL.createObjectURL(b));c.continue()}}catch(e){}})();
+function packUrls(seqs){if(!packN()||!Array.isArray(seqs))return null;
+  for(const q of seqs){if(Array.isArray(q)&&q.length&&q.every(k=>pack[k]))return q.map(k=>{const l=pack[k];return l[Math.floor(Math.random()*l.length)]})}return null}
+function stopAudio(){aq=[];if(acur){try{acur.pause()}catch(e){}acur=null}}
+function nextAudio(){const u=aq.shift();if(!u){acur=null;return}const a=new Audio(u);acur=a;
+  const go=()=>{if(acur===a)nextAudio()};a.onended=go;a.onerror=go;a.play().catch(go)}
+function playUrls(l,cut){if(cut)stopAudio();aq.push(...l);if(!acur)nextAudio()}
+const DK=l=>l==='Mis'?[['outside'],['0']]:l==='Bull'?[['bullseye'],['50']]:l==='25'?[['bull'],['25']]:l[0]==='T'?[['t'+l.slice(1)]]:l[0]==='D'?[['d'+l.slice(1)]]:[['s'+l],[l]];
+function say(t,cut,seqs){
+  if(!tv&&t)ev(seqs?{k:'say',t:String(t),cut:!!cut,s:seqs}:{k:'say',t:String(t),cut:!!cut});
   if(tv?!tvSound:!S.sound)return;
+  const pu=packUrls(seqs);
+  if(pu){try{speechSynthesis.cancel()}catch(e){}playUrls(pu,cut);return}
+  if(cut)stopAudio();
   try{if(cut)speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);
     if(caller()){u.lang='en-GB';if(vEN)u.voice=vEN;u.rate=.9;u.pitch=.8}else{u.lang='nl-NL';if(vNL)u.voice=vNL;u.rate=1.05}
     speechSynthesis.speak(u)}catch(e){}
 }
 const EVENTS=[['180','180'],['ton','100 of meer'],['noscore','Geen score (0)'],['bust','Bust'],['leg','Leg gewonnen'],['match','Wedstrijd gewonnen']];
-function play(evk,text){
+function play(evk,text,seqs){
   const u=clipUrl[evk];
-  if(S.sound&&u){if(text)ev({k:'say',t:String(text),cut:true});try{speechSynthesis.cancel()}catch(e){}try{const a=new Audio(u);a.play().catch(()=>say(text))}catch(e){say(text)}return true}
-  say(text);return false;
+  if(S.sound&&u){if(text)ev(seqs?{k:'say',t:String(text),cut:true,s:seqs}:{k:'say',t:String(text),cut:true});try{speechSynthesis.cancel()}catch(e){}stopAudio();try{const a=new Audio(u);a.play().catch(()=>say(text))}catch(e){say(text)}return true}
+  say(text,false,seqs);return false;
 }
 const T={
   dart:l=>caller()?(l==='Mis'?'miss':l==='Bull'?'bullseye':l==='25'?'twenty five':l[0]==='T'?'treble '+l.slice(1):l[0]==='D'?'double '+l.slice(1):l)
@@ -484,10 +524,14 @@ async function clipDel(k){if(clipUrl[k])URL.revokeObjectURL(clipUrl[k]);delete c
   try{const d=await idb();d.transaction('clips','readwrite').objectStore('clips').delete(k)}catch(e){}}
 (async()=>{try{const d=await idb(),st=d.transaction('clips').objectStore('clips');
   EVENTS.forEach(([k])=>{const r=st.get(k);r.onsuccess=()=>{if(r.result){clipUrl[k]=URL.createObjectURL(r.result);if(sheet)renderOv()}}})}catch(e){}})();
+function packHtml(){const n=packN();
+  return`<div class="packbox"><p class="hint">${n?`<b>${esc(packName)}</b> · ${n} geluiden. Scores, bust, game shot en uitchecks klinken nu met deze stem.`:'Laad een map met geluidsbestanden van een darts-caller (bijvoorbeeld een Engelse caller van darts-caller). De bestanden blijven alleen op dit apparaat.'}</p>
+  <div class="row"><label class="pick">Map kiezen<input type="file" data-pack webkitdirectory multiple hidden></label><label class="pick alt">Losse bestanden<input type="file" data-pack accept="audio/*,.mp3,.wav" multiple hidden></label>${n?`<button class="btn" data-a="packtest">▶ Test</button><button class="btn" data-a="packdel">Verwijder</button>`:''}</div>${packMsg?`<p class="hint">${esc(packMsg)}</p>`:''}</div>`}
 function sheetHtml(){
   return`<div class="sheet"><h3>Stem</h3>
   <div class="mode"><button data-voice="nl" class="${caller()?'':'on'}">Nederlands</button><button data-voice="caller" class="${caller()?'on':''}">Caller (Engels)</button></div>
   <p class="hint">${caller()?'Engelse omroeper-stijl: "One hundred and eighty!", "Game shot, and the leg!", "Patrick, you require 40".':'Nederlandse stem: noemt elke pijl, het totaal en wat de volgende speler nog moet.'}</p>
+  <h3>Stemmenpakket</h3>${packHtml()}
   <h3>Eigen geluiden</h3>
   <p class="hint">Kies voor een moment een geluidsbestand van je telefoon, bijvoorbeeld je eigen opname. Dat speelt dan af in plaats van de stem. Geluiden blijven bewaard in deze browser.</p>
   <ul class="clips">${EVENTS.map(([k,l])=>`<li><div><b>${l}</b><small>${clipUrl[k]?'Eigen geluid':'Stem'}</small></div>
@@ -498,6 +542,7 @@ function sheetHtml(){
 }
 document.addEventListener('change',e=>{const i=e.target;
   if(i.dataset&&i.dataset.import!==undefined&&i.files&&i.files[0]){importFile(i.files[0]);i.value='';return}
+  if(i.dataset&&i.dataset.pack!==undefined&&i.files&&i.files.length){packMsg='Bezig met laden…';(tv?renderTV:renderOv)();packLoad(i.files).then(()=>{i.value='';(tv?renderTV:renderOv)()});return}
   if(!i.dataset||!i.dataset.clip||!i.files||!i.files[0])return;
   const f=i.files[0];if(f.size>5e6){msg='Bestand is te groot (max 5 MB)';renderOv();return}
   clipPut(i.dataset.clip,f).then(renderOv)});
@@ -511,11 +556,11 @@ function submit(v,ds){
   if(out){L.r[L.cur?'sb':'sa']++;S.results[openId]=L.r;msg=`Leg voor ${who}!`}
   else msg=bust?(ds&&v===rem?`Bust! Uitgooien moet op een dubbel. ${who} blijft op ${rem}`:`Bust! ${who} blijft op ${rem}`):'';
   buf='';save();render();
-  if(out){const L2=live(openId);if(L2.o.win!==null){ev({k:'match',who});play('match',T.match(who))}else{ev({k:'leg',who});play('leg',T.leg(who))}}
-  else if(bust){ev({k:'bust',who});play('bust',T.bust())}
-  else{let clip=false;
-    if(v===180){ev({k:'180',who});clip=play('180',T.score(v))}else if(v===0)clip=play('noscore',T.noscore());else if(v>=100){ev({k:'ton',who,v});clip=play('ton',T.score(v))}else say(T.score(v));
-    const L2=live(openId),nx=L2.cur,r2=L2.rem[nx];if(!clip&&r2<=170&&checkout(r2))say(T.req(sideName(L2,nx),r2))}
+  if(out){const L2=live(openId);if(L2.o.win!==null){ev({k:'match',who});play('match',T.match(who),[['matchshot'],['gameshot']])}else{ev({k:'leg',who});play('leg',T.leg(who),[['gameshot']])}}
+  else if(bust){ev({k:'bust',who});play('bust',T.bust(),[['busted']])}
+  else{let clip=false;const sk=[[String(v)]];
+    if(v===180){ev({k:'180',who});clip=play('180',T.score(v),sk)}else if(v===0)clip=play('noscore',T.noscore(),sk);else if(v>=100){ev({k:'ton',who,v});clip=play('ton',T.score(v),sk)}else say(T.score(v),false,sk);
+    const L2=live(openId),nx=L2.cur,r2=L2.rem[nx];if(!clip&&r2<=170&&checkout(r2))say(T.req(sideName(L2,nx),r2),false,[['yr_'+r2],['you_require',String(r2)]])}
 }
 function dart(n){
   sender=true;
@@ -524,7 +569,7 @@ function dart(n){
   const v=n*mod,lab=n===0?'Mis':n===25?(mod===2?'Bull':'25'):(mod===3?'T':mod===2?'D':'')+n;
   const d={lab,v,dbl:mod===2};mod=1;msg='';
   if(edit!==null&&darts[edit]){msg=`Pijl ${edit+1} aangepast: ${darts[edit].lab} → ${lab}`;darts[edit]=d;edit=null}else darts.push(d);
-  say(T.dart(lab),true);
+  say(T.dart(lab),true,DK(lab));
   evalTurn(L);
 }
 function evalTurn(L,force){
@@ -781,8 +826,10 @@ document.addEventListener('click',e=>{
   if(a==='tvgo'||a==='tvgo0'){tvOn=true;tvSound=a==='tvgo';
     try{const r=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(r&&r.catch)r.catch(()=>{})}catch(_){}
     try{if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(()=>{})}catch(_){}
-    if(tvSound)say(caller()?'Game on!':'Daar gaan we!',true);renderTV();return}
+    if(tvSound)say(caller()?'Game on!':'Daar gaan we!',true,[['gameon']]);renderTV();return}
   if(a==='tvstop'){try{if(document.fullscreenElement)document.exitFullscreen()}catch(_){}location.href='/';return}
+  if(a==='packtest'){const was=S.sound;S.sound=1;const pu=packUrls([['gameon'],['180'],['gameshot']]);S.sound=was;if(pu)playUrls(pu,true);else{packMsg='In dit pakket zit geen gameon, 180 of gameshot';(tv?renderTV:renderOv)()}return}
+  if(a==='packdel'){packDel().then(()=>(tv?renderTV:renderOv)());return}
   if(a==='export'){exportFile();return}
   if(a==='pasteopen'){pasteOpen=!pasteOpen;render();return}
   if(a==='pastego'){const v=(document.getElementById('pastebox')||{}).value||'';importText(v);return}
@@ -868,7 +915,7 @@ function applyRemote(c){
   const E=Array.isArray(L.evs)?L.evs.filter(x=>x&&typeof x.id==='number'):[];
   if(!tvGot){tvGot=true;tvEv=E.reduce((m,x)=>Math.max(m,x.id),tvEv)}
   else E.filter(x=>x.id>tvEv).sort((a,b)=>a.id-b.id).forEach(x=>{tvEv=Math.max(tvEv,x.id);
-    if(x.k==='say'&&typeof x.t==='string')say(x.t.slice(0,200),x.cut);
+    if(x.k==='say'&&typeof x.t==='string')say(x.t.slice(0,200),x.cut,Array.isArray(x.s)?x.s.slice(0,4).filter(q=>Array.isArray(q)).map(q=>q.slice(0,4).map(k=>String(k).slice(0,20))):null);
     else if(FXK.includes(x.k)){tvFx={k:x.k,who:String(x.who||'').slice(0,40),v:+x.v||0};clearTimeout(tvFxT);tvFxT=setTimeout(()=>{tvFx=null;renderTV()},2600)}});
   try{refresh()}catch(e){}
 }
@@ -961,7 +1008,7 @@ function renderTV(){
   const el=document.getElementById('tv');if(!el)return;
   document.body.classList.add('tvm');el.hidden=false;document.getElementById('ov').hidden=true;
   const con=netOk===false||tvSlow?'<span class="dot bad"></span>Geen verbinding':tvGot?'<span class="dot ok"></span>Live':'<span class="dot"></span>Verbinden…';
-  if(!tvOn){el.innerHTML=`<div class="tvs"><svg class="tvlogo" viewBox="0 0 460 320" aria-hidden="true">${TVLOGO}</svg><h1>De Dart <span>Struners</span></h1><p>Monitor-weergave. Wat op de telefoon wordt ingevuld, verschijnt hier live.</p><div class="row" style="justify-content:center"><button class="btn pri" data-a="tvgo">Start met geluid</button><button class="btn" data-a="tvgo0">Start zonder geluid</button></div><p class="tvc">${con}</p><button class="done" data-a="tvstop">Naar de app</button></div>`;return}
+  if(!tvOn){el.innerHTML=`<div class="tvs"><svg class="tvlogo" viewBox="0 0 460 320" aria-hidden="true">${TVLOGO}</svg><h1>De Dart <span>Struners</span></h1><p>Monitor-weergave. Wat op de telefoon wordt ingevuld, verschijnt hier live.</p><div class="row" style="justify-content:center"><button class="btn pri" data-a="tvgo">Start met geluid</button><button class="btn" data-a="tvgo0">Start zonder geluid</button></div><details class="tvpk"${packMsg?' open':''}><summary>Stem: ${packN()?esc(packName)+' ('+packN()+' geluiden)':'gewone computerstem'}</summary>${packHtml()}</details><p class="tvc">${con}</p><button class="done" data-a="tvstop">Naar de app</button></div>`;return}
   let c;
   try{
     if(!tvGot)c={ctx:'',html:`<div class="tvch"><small>Verbinden</small><div class="tvwait">Even geduld, de stand wordt opgehaald</div></div>`};
