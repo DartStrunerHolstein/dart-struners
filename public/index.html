@@ -269,7 +269,7 @@ body.kijk .tvr{font-size:min(15vw,19vh)}
 .ktabs button{flex:none;font:800 15px Inter,sans-serif;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#ffd6e8;cursor:pointer}
 .ktabs button.on{background:var(--pink);border-color:var(--pink);color:#fff}
 .kscroll{flex:1;min-height:0;overflow-y:auto;padding-bottom:24px}
-.kchat{padding-bottom:110px}
+
 .spt{text-align:center;background:rgba(255,255,255,.05);border-radius:12px;padding:10px}
 .spt small{display:block;font-size:13px;color:#f5bfd8;font-weight:600}
 .spn{font:clamp(64px,22vw,110px)/1 Anton,Impact,sans-serif;color:#fff}
@@ -311,11 +311,26 @@ body.kijk .tvr{font-size:min(15vw,19vh)}
 .clist.cadm button{grid-row:1/3;grid-column:3;min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:none;color:inherit;font:800 18px Inter,sans-serif;cursor:pointer}
 .cempty{color:rgba(255,255,255,.6);margin:0}
 .cerr{color:#ff8fb8;font-size:13px;margin:0 0 6px;min-height:0}.cerr:empty{display:none}
-.chatf{position:fixed;left:0;right:0;bottom:0;z-index:1000;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(20,6,14,.96);border-top:1px solid rgba(255,255,255,.12)}
+.chatf{position:fixed;left:0;right:0;bottom:0;z-index:1000;padding:8px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(20,6,14,.97);border-top:1px solid rgba(255,45,138,.35);display:flex;flex-direction:column;gap:6px;color:#fff}
+.chd{display:flex;align-items:center;justify-content:space-between}.chd b{font:18px Anton,Impact,sans-serif;text-transform:uppercase;color:var(--pink);letter-spacing:.03em;font-weight:400}
+.chd button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:none;color:#ffd6e8;font:700 13px Inter,sans-serif;cursor:pointer}
+.kcl{max-height:22vh;overflow-y:auto;overscroll-behavior:contain}
+.kcl .clist{gap:6px}.kcl .clist li{padding:6px 10px;border-radius:10px;display:block}.kcl .clist b{font-size:13px;margin-right:6px}.kcl .clist span{font-size:15px}.kcl .clist time{float:right;margin-left:8px}
+.kcl .cempty{font-size:14px}
+.chatf.min .kcl{display:none}
+body.kijk.chaton #tv{bottom:var(--chath,0px)}
+@media (min-width:761px) and (min-aspect-ratio:1/1){
+ .chatf{left:auto;top:0;width:340px;border-top:0;border-left:1px solid rgba(255,45,138,.35);padding:16px 14px 14px}
+ .kcl{max-height:none;flex:1;min-height:0}
+ .crow{flex-wrap:wrap}.chatf #cnaam{flex:1 1 100%}.chatf #ctekst{flex:1 1 0}
+ .chatf.min{top:auto;width:340px}
+ body.kijk.chaton #tv{bottom:0;right:340px}
+ body.kijk.chaton .chatf.min ~ #tv,body.kijk.chaton:has(.chatf.min) #tv{right:0;bottom:var(--chath,0px)}
+}
 .chatf[hidden]{display:none}
-.crow{display:flex;gap:8px;max-width:760px;margin:0 auto}
+.crow{display:flex;gap:8px;width:100%;max-width:760px;margin:0 auto}
 .crow input{min-width:0;min-height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font:16px Inter,sans-serif;padding:0 12px}
-#cnaam{flex:0 0 28%}#ctekst{flex:1}
+#cnaam{flex:0 0 26%;width:auto}#ctekst{flex:1 1 auto;width:auto}.crow .btn{flex:none;padding:0 14px}
 .cbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:6px;border-radius:10px;background:#fff;color:var(--pink);font:800 12px Inter,sans-serif;font-style:normal;padding:0 5px}
 .tvchat{position:fixed;left:1.4vw;bottom:2vh;z-index:15;display:flex;flex-direction:column;gap:.8vh;max-width:min(34vw,520px);pointer-events:none}
 .tvchat div{background:rgba(20,6,14,.88);border:1px solid rgba(255,45,138,.5);border-radius:1vw;padding:.9vh 1vw;font-size:clamp(13px,min(1.4vw,2.4vh),26px);color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.4);animation:cin .35s ease-out}
@@ -415,9 +430,12 @@ function chatList(){
   return`<ul class="clist">${chat.msgs.map(m=>`<li><b>${esc(m.n)}</b><span>${esc(m.t)}</span><time>${hhmm(m.at)}</time></li>`).join('')}</ul>`}
 function chatForm(){let f=document.getElementById('chatf');
   if(!f){f=document.createElement('form');f.id='chatf';f.className='chatf';f.hidden=true;f.autocomplete='off';
-    f.innerHTML=`<p class="cerr" id="cerr"></p><div class="crow"><input id="cnaam" maxlength="20" placeholder="Je naam" aria-label="Je naam"><input id="ctekst" maxlength="200" placeholder="Typ een bericht" aria-label="Bericht" enterkeyhint="send"><button class="btn pri" type="submit">Stuur</button></div>`;
+    f.innerHTML=`<div class="chd"><b>Chat</b><button type="button" id="cmin" aria-expanded="true">Verbergen</button></div><div class="kcl" id="kchat"></div><p class="cerr" id="cerr"></p><div class="crow"><input id="cnaam" maxlength="20" placeholder="Je naam" aria-label="Je naam"><input id="ctekst" maxlength="200" placeholder="Typ een bericht" aria-label="Bericht" enterkeyhint="send"><button class="btn pri" type="submit">Stuur</button></div>`;
     document.body.appendChild(f);
     try{document.getElementById('cnaam').value=localStorage.getItem(CHATN)||''}catch(e){}
+    try{if(localStorage.getItem('dartstruners-chatmin')==='1')f.classList.add('min')}catch(e){}
+    document.getElementById('cmin').addEventListener('click',()=>{const m=f.classList.toggle('min');try{localStorage.setItem('dartstruners-chatmin',m?'1':'0')}catch(_){}chatPanel(true)});
+    window.addEventListener('resize',()=>chatPanel());
     f.addEventListener('submit',async e=>{e.preventDefault();const n=document.getElementById('cnaam'),t=document.getElementById('ctekst'),er=document.getElementById('cerr');
       const name=n.value.trim(),text=t.value.trim();er.textContent='';
       if(!name){er.textContent='Vul eerst je naam in';n.focus();return}if(!text)return;
@@ -426,6 +444,11 @@ function chatForm(){let f=document.getElementById('chatf');
         if(r.ok){t.value='';t.focus()}else{const d=await r.json().catch(()=>({}));er.textContent=d.error||'Versturen lukte niet'}}
       catch(_){er.textContent='Geen verbinding, probeer het opnieuw'}})}
   return f}
+function chatPanel(scroll){if(!KIJK||SID)return;const f=chatForm(),show=tvGot&&chat.on;f.hidden=!show;document.body.classList.toggle('chaton',show);
+  const b=document.getElementById('cmin');b.textContent=f.classList.contains('min')?'Tonen':'Verbergen';b.setAttribute('aria-expanded',f.classList.contains('min')?'false':'true');
+  const k=document.getElementById('kchat'),atB=scroll||k.scrollHeight-k.scrollTop-k.clientHeight<60,h=chatList();
+  if(k.dataset.h!==h){k.innerHTML=h;k.dataset.h=h}if(atB)k.scrollTop=k.scrollHeight;
+  document.documentElement.style.setProperty('--chath',(show?f.offsetHeight:0)+'px')}
 async function chatAdmin(body){try{const r=await fetch('/api/chat/beheer',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:JSON.stringify(body)});if(!r.ok)chatErr='Dat lukte niet';else chatErr=''}catch(e){chatErr='Geen verbinding'}chatAdm()}
 function chatAdmHtml(){
   return`<div class="row"><button class="btn" data-a="chaton">${chat.on?'Chat uitzetten':'Chat aanzetten'}</button>${chat.msgs.length?'<button class="btn" data-a="chatclear">Chat leegmaken</button>':''}</div>
@@ -1211,15 +1234,12 @@ function renderTV(){
   try{
     if(!tvGot)c={ctx:'',html:`<div class="tvch"><small>Verbinden</small><div class="tvwait">Even geduld, de stand wordt opgehaald</div></div>`};
     else if(KIJK&&kijkTab==='stand')c={ctx:'',html:`<div class="kscroll">${kStand()}</div>`};
-    else if(KIJK&&kijkTab==='chat'){chatSeen=chat.msgs.reduce((m,x)=>Math.max(m,x.id),chatSeen);c={ctx:'',html:`<div class="kscroll kchat" id="kchat"><h2 class="tvh2">Chat</h2>${chatList()}</div>`}}
     else if(KIJK&&kijkTab==='wedstrijden')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Wedstrijden</h2>${kMatches()}</div>`};
     else if(S.kind==='spel'&&(SP().on||SP().done))c=tvSpel();
     else{const go=openId&&getO(openId);c=go&&typeof go.a==='number'&&typeof go.b==='number'?tvMatch():tvOverview()}
   }catch(e){c={ctx:'',html:'<div class="tvch"><small>Even geduld</small></div>'}}
-  const ko=document.getElementById('kchat'),kb=!ko||ko.scrollHeight-ko.scrollTop-ko.clientHeight<80;
-  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['chat','Chat']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='chat'||(!SID&&(chat.on||chat.msgs.length)))&&(k!=='wedstrijden'||S.kind!=='spel')).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}${k==='chat'&&kijkTab!=='chat'&&chatNew()?`<i class="cbadge">${Math.min(99,chatNew())}</i>`:''}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
-  const kn=document.getElementById('kchat');if(kn&&kb)kn.scrollTop=kn.scrollHeight;
-  if(KIJK&&!SID){const f=chatForm(),show=tvGot&&kijkTab==='chat'&&chat.on;f.hidden=!show;document.body.classList.toggle('chatopen',show)}
+  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
+  chatPanel();
 }
 
 /* ---------- opstarten ---------- */
