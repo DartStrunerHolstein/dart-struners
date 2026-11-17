@@ -121,6 +121,7 @@ input[type=text],input[type=password]{flex:1 1 200px}
 .kind{background:var(--card);border:2px solid var(--line);max-width:520px;margin-bottom:22px}
 .kind button{color:var(--mut);min-height:44px;font-size:15px;padding:0 8px}
 .kind button.on{background:var(--pink);color:#fff}
+#app .mode:not(.kind){background:var(--card);border:2px solid var(--line);max-width:560px}#app .mode:not(.kind) button{color:var(--mut);min-height:40px}#app .mode:not(.kind) button.on{background:var(--pink);color:#fff}
 .ovr{display:flex;align-items:center;gap:4px}
 .snd{white-space:nowrap;flex:none;display:flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:none;color:#fff;font:700 13px Inter,sans-serif;cursor:pointer}
 .snd.on{background:rgba(255,255,255,.1)}
@@ -1090,7 +1091,7 @@ function linksHtml(){
    ${updMsg?`<div class="${updErr?'err':'stat'}" style="margin:0">${esc(updMsg)}</div>`:''}`:''}
    <h3 style="margin-top:12px">Gegevens</h3>
    <div>Maak af en toe een reservekopie.${SID?'':' Met importeren zet je ook de gegevens over vanuit de claude.ai-versie.'}</div>
-   <div class="row"><button class="btn" data-a="export">Exporteren</button>${ADM()?`<label class="btn" style="cursor:pointer">Importeren uit bestand<input type="file" accept="application/json,.json,.txt" data-import hidden></label><button class="btn" data-a="pasteopen">Importeren door plakken</button>`:''}<button class="btn" data-a="logout">Uitloggen</button></div>
+   <div class="row"><button class="btn" data-a="export">Exporteren</button>${ADM()&&!SID?`<label class="btn" style="cursor:pointer">Importeren uit bestand<input type="file" accept="application/json,.json,.txt" data-import hidden></label><button class="btn" data-a="pasteopen">Importeren door plakken</button>`:''}<button class="btn" data-a="logout">Uitloggen</button></div>
    ${pasteOpen&&ADM()?`<textarea id="pastebox" rows="5" placeholder="Plak hier de tekst die je in de claude.ai-versie hebt gekopieerd" style="font:13px ui-monospace,monospace;padding:10px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)"></textarea><div class="row"><button class="btn pri" data-a="pastego">Importeren</button><button class="btn" data-a="pasteopen">Annuleren</button></div>`:''}
   </div>`;
 }
