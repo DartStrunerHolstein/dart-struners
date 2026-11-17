@@ -176,6 +176,7 @@ nav:empty{display:none}
 .lsw button b,.lswin button b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#ffb3d4}
 .lsw button span,.lswin button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px}
 .lsw button.on,.lswin button.on{border-color:var(--pink);background:rgba(255,45,138,.22)}
+.tvlive{margin-bottom:1vh}.tvlive button{font-size:clamp(14px,1.3vw,26px);max-width:none}.tvlive button span{max-width:none}
 .lsws{justify-content:center;flex-wrap:wrap;max-width:min(900px,92vw)}
 .lswb{margin-left:auto;flex:none;font:700 clamp(12px,1.1vw,22px) Inter,sans-serif;padding:.6vh 1vw;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
 .lswb+i{margin-left:1vw}
@@ -1470,7 +1471,7 @@ function kMatches(){
 function renderTV(){
   const el=document.getElementById('tv');if(!el)return;
   document.body.classList.add('tvm');el.hidden=false;document.getElementById('ov').hidden=true;
-  const con=netOk===false||tvSlow?'<span class="dot bad"></span>Geen verbinding':tvGot?'<span class="dot ok"></span>Live':'<span class="dot"></span>Verbinden…';
+  const con=netOk===false||tvSlow?'<span class="dot bad"></span>Geen verbinding':tvGot?'<span class="dot ok"></span>Verbonden':'<span class="dot"></span>Verbinden…';
   if(!tvOn){el.innerHTML=`<div class="tvs"><svg class="tvlogo" viewBox="0 0 460 320" aria-hidden="true">${TVLOGO}</svg><h1>De Dart <span>Struners</span></h1><p>Monitor-weergave. Wat op de telefoon wordt ingevuld, verschijnt hier live.</p><div class="row" style="justify-content:center"><button class="btn pri" data-a="tvgo">Start met geluid</button><button class="btn" data-a="tvgo0">Start zonder geluid</button></div>${liveList.length>1?`<div class="lsw lsws"><small>Kies de wedstrijd</small>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}</div>`:''}<p class="tvc">${con}</p><button class="done" data-a="tvstop">Naar de app</button></div>`;return}
   let c;
   try{
@@ -1485,7 +1486,13 @@ function renderTV(){
     else if(KIJK&&kijkTab==='top')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Checkout-top</h2><p class="kempty" style="margin:0 0 12px">Hoogste score per speler, max. 20 punten. Zelf spelen? Ga naar ${esc(location.origin)}/spel</p>${spTopHtml(true)}</div>`};
     else if(KIJK&&kijkTab==='wedstrijden')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Wedstrijden</h2>${kMatches()}</div>`};
     else if(S.kind==='spel'&&(SP().on||SP().done))c=tvSpel();
-    else{const go=openId&&getO(openId);c=go&&typeof go.a==='number'&&typeof go.b==='number'?tvMatch():tvOverview()}
+    else{const go=openId&&getO(openId);
+      if(go&&typeof go.a==='number'&&typeof go.b==='number')c=tvMatch();
+      else{c=tvOverview();
+        // Monitor: hier is nu niets bezig, maar elders wel? Toon die wedstrijden bovenaan om naar over te stappen
+        const el2=liveList.filter(x=>x.sid!==TSID);
+        if(!KIJK&&el2.length)c={ctx:c.ctx,html:`<div class="lsw tvlive"><small>Nu live</small>${el2.map(x=>`<button data-live="${x.sid}">${liveLbl(x)}</button>`).join('')}</div>`+c.html};
+        if(!KIJK)c.ctx=(TSID?'Sessie · ':'')+((c.ctx||'').split(' · ')[0]||'Overzicht')+' · nu geen wedstrijd bezig'}}
   }catch(e){c={ctx:'',html:'<div class="tvch"><small>Even geduld</small></div>'}}
   el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em>${!KIJK&&liveList.length>1?`<button class="lswb" data-a="lswopen">Wissel wedstrijd (${liveList.length})</button>`:''}<i>${con}</i></div>${KIJK&&!KMAIN()?lswHtml():''}${KMAIN()&&mainD?`<div class="ktabs">${[['live','Live'+(liveList.length?' ('+liveList.length+')':'')],['comp','Competitie'],['top','Checkout-top']].filter(([k])=>(k!=='comp'||(mainS&&mainS.kind==='comp'&&mainS.comp&&mainS.comp.started))&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>${kijkTab==='live'&&watch!==null?`<button class="kback" data-watch="none">← Alle live wedstrijden</button>`:''}`:''}${KIJK&&!KMAIN()&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['top','Checkout-top']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}${lswOpen?`<div class="lswp" data-a="lswclose"><div class="lswin"><h2>Welke wedstrijd?</h2>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}<button class="btn" data-a="lswclose">Sluiten</button></div></div>`:''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
   chatPanel();
