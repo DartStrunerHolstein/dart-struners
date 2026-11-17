@@ -78,6 +78,9 @@ Op het inlogscherm staat **Nieuwe sessie starten**. Vrienden krijgen dan een eig
 ### Checkout-spel
 Voor 1 of 2 spelers. Je krijgt een getal tussen 41 en 60 en hebt 2 pijlen om uit te gooien. De app toont de mogelijke routes. Gelukt? Dan volgt een nieuw getal. Mis je, dan blijft het getal staan (bij 2 spelers is de ander aan de beurt). Met **Stoppen** zie je de uitslag.
 
+### Solo en korte spellen
+Onder **1 tegen 1** kies je ook **Solo**: alleen oefenen met een aantal legs (1, 3, 5 of 10). Je ziet je gemiddelde en het aantal pijlen. Bij elk spel kun je nu ook **101** en **201** kiezen.
+
 ### Bullen
 Bij elke wedstrijd vraagt de app eerst wie het dichtst bij de bull gooide. Die speler begint de eerste leg; daarna wisselt het per leg.
 
