@@ -164,6 +164,19 @@ nav:empty{display:none}
 .lk .btn{min-height:40px;padding:0 14px;font-size:14px}
 .login{max-width:440px;display:grid;gap:12px}
 .hgrid{display:grid;gap:12px;max-width:760px}
+.lsw{display:flex;gap:8px;overflow-x:auto;align-items:stretch;flex:none;padding-bottom:2px}
+.lsw small{flex:none;align-self:center;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.lsw button,.lswin button[data-live]{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:8px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;font:600 14px Inter,sans-serif;cursor:pointer;max-width:280px}
+.lsw button b,.lswin button b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#ffb3d4}
+.lsw button span,.lswin button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px}
+.lsw button.on,.lswin button.on{border-color:var(--pink);background:rgba(255,45,138,.22)}
+.lsws{justify-content:center;flex-wrap:wrap;max-width:min(900px,92vw)}
+.lswb{margin-left:auto;flex:none;font:700 clamp(12px,1.1vw,22px) Inter,sans-serif;padding:.6vh 1vw;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
+.lswb+i{margin-left:1vw}
+.lswp{position:fixed;inset:0;z-index:70;background:rgba(10,2,7,.8);display:grid;place-items:center}
+.lswin{background:#230a18;border:1px solid rgba(255,45,138,.4);border-radius:20px;padding:24px;display:grid;gap:10px;width:min(560px,90vw);max-height:85vh;overflow:auto;zoom:var(--z)}
+.lswin h2{margin:0 0 6px;color:#fff}
+.lswin button[data-live]{max-width:none;width:100%;font-size:17px}.lswin button span{max-width:none}
 /* grote schermen (tv, 4K): alles naar verhouding groter */
 :root{--z:1}
 @media (min-width:2000px) and (min-height:1100px){:root{--z:1.5}.hero h1{white-space:nowrap}}
@@ -436,7 +449,8 @@ body.started nav{padding-top:12px;padding-bottom:14px}
 <div id="net" class="net" hidden>Geen verbinding met de server</div>
 <script>
 {
-const SM=/^\/s\/([a-z0-9]{6})(?=\/|$)/i.exec(location.pathname),SID=SM?SM[1].toLowerCase():'',BP=SID?'/s/'+SID:'',API=SID?'/api/s/'+SID:'/api';
+const SM=/^\/s\/([a-z0-9]{6})(?=\/|$)/i.exec(location.pathname),SID=SM?SM[1].toLowerCase():'',BP=SID?'/s/'+SID:'';
+let API=SID?'/api/s/'+SID:'/api',TSID=SID; // TSID/API kunnen op monitor en kijkpagina wisselen naar een andere live wedstrijd
 const KEY='dartstruners-v1'+(SID?'-'+SID:''),PINKEY='dartstruners-pin'+(SID?'-'+SID:'');
 const DEF=()=>({players:[],started:false,seeds:[],bo:3,boF:5,results:{},name:'',turns:{},game:501,dout:1,inmode:'pijl',kind:SID?'single':'toernooi',single:{names:['',''],bo:3,solo:0},spel:{n:1,names:['',''],on:false,done:false,target:0,cur:0,darts:[],hits:[0,0],tries:[0,0],hist:[],order:[],idx:0},sound:1,voice:'nl',lot:1,comp:{players:[],started:false}});
 let S=DEF();
@@ -469,7 +483,7 @@ function chatForm(){let f=document.getElementById('chatf');
         if(r.ok){t.value='';t.focus()}else{const d=await r.json().catch(()=>({}));er.textContent=d.error||'Versturen lukte niet'}}
       catch(_){er.textContent='Geen verbinding, probeer het opnieuw'}})}
   return f}
-function chatPanel(scroll){if(!KIJK||SID)return;const f=chatForm(),show=tvGot&&chat.on;f.hidden=!show;document.body.classList.toggle('chaton',show);
+function chatPanel(scroll){if(!KIJK||SID)return;const f=chatForm(),show=tvGot&&chat.on&&!TSID;f.hidden=!show;document.body.classList.toggle('chaton',show);
   const b=document.getElementById('cmin');b.textContent=f.classList.contains('min')?'Tonen':'Verbergen';b.setAttribute('aria-expanded',f.classList.contains('min')?'false':'true');
   const k=document.getElementById('kchat'),atB=scroll||k.scrollHeight-k.scrollTop-k.clientHeight<60,h=chatList();
   if(k.dataset.h!==h){k.innerHTML=h;k.dataset.h=h}if(atB)k.scrollTop=k.scrollHeight;
@@ -939,9 +953,11 @@ function spTopHtml(dark,max){const L=spTop().slice(0,max||50);
 const pct=(h,t)=>t?Math.round(h/t*100)+'%':'–';
 function spTable(dark){const p=SP(),ix=p.n===2?[0,1]:[0];
   return`<table class="tbl sptbl${dark?' dk':''}"><thead><tr><th class="tn">Speler</th><th>Punten</th><th>Gespeeld</th><th>%</th></tr></thead><tbody>${ix.map(i=>`<tr><td class="tn">${esc(spN(i))}</td><td class="pt">${p.hits[i]}</td><td>${p.tries[i]} / 20</td><td>${pct(p.hits[i],p.tries[i])}</td></tr>`).join('')}</tbody></table>`}
+function spTopBlok(){
+  return`<h2 style="margin-top:28px">${SPELP||SID?'Leaderboard':'Checkout-leaderboard'}</h2><p class="stat">Voor iedereen samen: per speler de hoogste score (max. 20 punten).${SPELP?'':` Iedereen kan meespelen via <a href="/spel">${esc(location.origin)}/spel</a>.`}</p><div id="sptop">${spTopHtml()}</div>${spTop().length&&admin&&ADM()&&!SID&&!SPELP?(spConf?`<div class="conf"><p style="margin:0 0 10px">Het hele leaderboard wordt gewist.</p><div class="row"><button class="btn pri" data-a="sptopclear">Ja, wissen</button><button class="btn" data-a="sptopno">Annuleren</button></div></div>`:`<div class="row" style="margin-top:10px"><button class="btn" data-a="sptopask">Leaderboard wissen</button></div>`):''}`}
 function vSpel(){const p=SP();
   if(p.on)return`<h2>Checkout-spel</h2><p class="stat">Bezig: ${esc(spN(0))}${p.n===2?' tegen '+esc(spN(1)):''}</p><div class="row"><button class="btn pri" data-a="spopen">Verder spelen</button></div>`;
-  const top=`<h2 style="margin-top:28px">Leaderboard</h2><p class="stat">Voor iedereen samen: per speler de hoogste score (max. 20 punten).${SPELP?'':` Iedereen kan meespelen via <a href="/spel">${esc(location.origin)}/spel</a>.`}</p><div id="sptop">${spTopHtml()}</div>${spTop().length&&admin&&ADM()&&!SID&&!SPELP?(spConf?`<div class="conf"><p style="margin:0 0 10px">Het hele leaderboard wordt gewist.</p><div class="row"><button class="btn pri" data-a="sptopclear">Ja, wissen</button><button class="btn" data-a="sptopno">Annuleren</button></div></div>`:`<div class="row" style="margin-top:10px"><button class="btn" data-a="sptopask">Leaderboard wissen</button></div>`):''}`;
+  const top=spTopBlok();
   if(p.done)return`<h2>Uitslag</h2>${msg?`<p class="stat" style="color:var(--pinkt)">${esc(msg)}</p>`:''}${p.n===2?`<p class="stat">${p.hits[0]===p.hits[1]?'Gelijkspel!':esc(spN(p.hits[0]>p.hits[1]?0:1))+' wint met '+Math.max(...p.hits)+' – '+Math.min(...p.hits)+' punten'}</p>`:`<p class="stat">${p.hits[0]} van de 20 punten</p>`}${spTable()}
    <div class="row" style="margin:12px 0 0"><button class="btn pri" data-a="spstart">Opnieuw met dezelfde spelers</button><button class="btn" data-a="spnew">Nieuw spel</button></div>${top}`;
   return`<h2>Checkout-spel</h2><p class="stat">Alle 20 getallen van 41 tot en met 60 komen één keer langs, in willekeurige volgorde. Je hebt 3 pijlen per getal. Uitgegooid = 1 punt, dus maximaal 20 punten.</p>
@@ -1026,7 +1042,8 @@ function linksHtml(){
   return`<div class="monb">${SID?`<h3>Jullie sessie</h3>
    <div>Bewaar deze gegevens. Met de link en de code kan iemand anders deze sessie ook beheren. Een sessie die 30 dagen niet gebruikt wordt, verdwijnt.</div>
    <div class="lk"><code>${esc(o)}</code><button class="btn" data-copy="${esc(o)}">Kopieer</button></div>
-   <div class="lk"><code>Sessiecode: ${esc(pin)}</code><button class="btn" data-copy="${esc(pin)}">Kopieer</button></div>`:''}<h3${SID?' style="margin-top:12px"':''}>Delen en monitor</h3>
+   <div class="lk"><code>Sessiecode: ${esc(pin)}</code><button class="btn" data-copy="${esc(pin)}">Kopieer</button></div>
+   <div class="row" style="align-items:center"><button class="btn${S.zichtbaar===false?'':' pri'}" data-a="zicht">${S.zichtbaar===false?'Niet zichtbaar in Live kijken':'Zichtbaar in Live kijken'}</button><span class="stat" style="margin:0">${S.zichtbaar===false?'Alleen wie jullie kijklink heeft, kan meekijken.':'Iedereen ziet jullie wedstrijd bij Live kijken. Tik om te verbergen.'}</span></div>`:''}<h3${SID?' style="margin-top:12px"':''}>Delen en monitor</h3>
    ${SID?'':`<div>Startpagina voor iedereen, met Live kijken, Spelen en Monitor:</div>
    <div class="lk"><code>${esc(o)}/</code><button class="btn" data-copy="${esc(o)}/">Kopieer</button></div>`}
    <div>Monitor in de dartruimte: open deze link op de computer aan de monitor.</div>
@@ -1048,6 +1065,9 @@ function linksHtml(){
   </div>`;
 }
 function vSpelers(){
+  // Beheer van de hoofdsite = alleen de competitie (+ checkout-leaderboard); al het andere via Spelen
+  if(!SID){if(S.kind!=='comp'){S.kind='comp';save()}
+    return vComp()+`<div style="margin-top:8px">${spTopBlok()}</div>`+`<p class="stat" style="margin-top:20px">Zelf een potje 1 tegen 1, solo, toernooi of het checkout-spel? Dat gaat via <a href="/spelen">Spelen</a>.</p>`+linksHtml()}
   if(SID&&S.kind==='comp')S.kind='single';
   const kt=`<div class="mode kind">${[['toernooi','Toernooi'],...(SID?[]:[['comp','Competitie']]),['single','1 tegen 1'],['spel','Checkout-spel']].map(([k,l])=>`<button data-kind="${k}" class="${S.kind===k?'on':''}">${l}</button>`).join('')}</div>`;
   if(S.kind==='spel')return kt+vSpel()+linksHtml();
@@ -1114,6 +1134,7 @@ function render(){
     const fl=document.getElementById("flogin");if(fl)fl.addEventListener('submit',e=>{e.preventDefault();login(document.getElementById('pin').value)});
     renderOv();return}
   refresh();
+  if(!SID&&S.kind!=='comp'){S.kind='comp';save()}
   const tStarted=S.started&&S.kind==='toernooi';document.body.classList.toggle('started',!!(tStarted||(S.kind==='comp'&&S.comp.started)));if(S.kind!=='toernooi')tab='spelers';
   if(!S.started&&tab!=='spelers')tab='spelers';
   const tabs=[['spelers',S.started?'Overzicht':'Spelers'],['winnaars','Winnaars'],['verliezers','Verliezers'],['finale','Finale']];
@@ -1146,6 +1167,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.solo!==undefined){const v=+t.dataset.solo;if(!!S.single.solo!==!!v){S.single.solo=v;delete S.results.X;delete S.turns.X;if(v&&![1,3,5,10].includes(+S.single.bo))S.single.bo=3;if(!v&&![1,3,5,7].includes(+S.single.bo))S.single.bo=3}save();render();return}
   if(t.dataset.spn){const p=SP();p.n=+t.dataset.spn;save();render();return}
   if(t.dataset.chdel){chatAdmin({del:+t.dataset.chdel});return}
+  if(t.dataset.live!==undefined&&tv){tvSwitch(t.dataset.live);return}
   if(t.dataset.ktab){kijkTab=t.dataset.ktab;renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
   if(t.dataset.copy){const v=t.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>{t.textContent='Gekopieerd';setTimeout(()=>t.textContent='Kopieer',1500)})}catch(_){}return}
   if(t.dataset.tab){tab=t.dataset.tab;try{history.replaceState(null,'','#'+tab)}catch(_){}render();window.scrollTo(0,0);return}
@@ -1201,6 +1223,9 @@ document.addEventListener('click',e=>{
   if(a==='kopno'){kopAsk=false;kopErr='';renderOv();return}
   if(a==='kopnew'){camOn=false;kopAsk=true;kopErr='';try{localStorage.setItem(CAMK,'0')}catch(_){}renderOv();setTimeout(()=>{const i=document.getElementById('kopin');if(i){i.value='';i.focus()}},50);return}
   if(a==='bijwerken'){if(!updBusy)bijwerken();return}
+  if(a==='lswopen'){lswOpen=true;renderTV();return}
+  if(a==='lswclose'){if(e.target===t||t.tagName==='BUTTON'){lswOpen=false;renderTV()}return}
+  if(a==='zicht'){S.zichtbaar=S.zichtbaar===false;save();render();return}
   if(a==='chaton'){chatAdmin({on:!chat.on});return}
   if(a==='chatclear'){chatAdmin({clear:true});return}
   if(a==='export'){exportFile();return}
@@ -1249,7 +1274,8 @@ function push(){if(tv||!admin||!sender)return;clearTimeout(pushT);pushT=setTimeo
 async function flush(){
   if(tv||!admin)return;
   if(wBusy){wNext=true;return}
-  const j=JSON.stringify({S,live:{openId:openId||null,darts,msg,evs},by:myId});
+  let sum=null;try{sum=liveSum()}catch(e){}
+  const j=JSON.stringify({S,live:{openId:openId||null,darts,msg,evs,sum},by:myId});
   if(j===wLast)return;
   wBusy=true;let ok=false;
   try{const r=await fetch(API+'/state',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:j});
@@ -1293,11 +1319,15 @@ function applyRemote(c){
   try{refresh()}catch(e){}
 }
 // Live bijwerken met 'long polling': de server antwoordt zodra er iets verandert
+let streamGen=0,streamCtl=null;
 async function stream(){
-  let v=-1;
+  let v=-1;const gen=++streamGen;
   for(;;){
+    if(gen!==streamGen)return;
     try{
-      const r=await fetch(API+'/wait?v='+v+'&cv='+chat.v+'&tv='+top.v+'&c='+myId,{cache:'no-store'});
+      streamCtl=new AbortController();
+      const r=await fetch(API+'/wait?v='+v+'&cv='+chat.v+'&tv='+top.v+'&c='+myId,{cache:'no-store',signal:streamCtl.signal});
+      if(gen!==streamGen)return;
       if(!r.ok)throw new Error(r.status);
       const d=await r.json();
       clearTimeout(tvTO);tvSlow=false;setNet(true);
@@ -1307,9 +1337,32 @@ async function stream(){
       if(SPELP)continue;
       // Beheerder op een ander apparaat heeft iets veranderd: haal de volledige stand op
       if(changed&&admin&&d.by&&d.by!==myId&&d.v>ver&&!openId&&!wBusy){await loadState();render()}
-    }catch(e){setNet(false);await new Promise(r=>setTimeout(r,2000))}
+    }catch(e){if(gen!==streamGen)return;setNet(false);await new Promise(r=>setTimeout(r,2000))}
   }
 }
+
+/* ---------- live wedstrijden: kiezen en wisselen (monitor en meekijken) ---------- */
+let liveList=[],lswOpen=false;
+function liveSum(){
+  if(openId){const L=live(openId),o=L.o;if(!o)return null;
+    const t=SOLO(openId)?'Solo':openId==='X'?'1 tegen 1':isC(openId)?'Competitie':'Toernooi';
+    return{t,a:String(sideName(L,0)||''),b:SOLO(openId)?'':String(sideName(L,1)||''),sc:SOLO(openId)?String(L.rem[0])+' over':L.r.sa+'–'+L.r.sb}}
+  if(S.kind==='spel'&&S.spel&&S.spel.on){const p=SP();return{t:'Checkout-spel',a:spN(0),b:p.n===2?spN(1):'',sc:p.hits[0]+(p.n===2?'–'+p.hits[1]:'')+' pnt'}}
+  return null}
+async function liveFetch(){try{const r=await fetch('/api/live',{cache:'no-store'});const d=await r.json();
+  const L=Array.isArray(d.list)?d.list.filter(x=>x&&typeof x.sid==='string'&&/^([a-z0-9]{6})?$/.test(x.sid)):[];
+  const ch=JSON.stringify(L)!==JSON.stringify(liveList);liveList=L;if(ch)renderTV()}catch(e){}}
+const liveLbl=x=>`<b>${esc(x.t||'Wedstrijd')}</b><span>${esc(x.a)}${x.b?' – '+esc(x.b):''}${x.sc?' · '+esc(x.sc):''}</span>`;
+function lswHtml(){
+  const cur=liveList.some(x=>x.sid===TSID);
+  if(liveList.length<2&&(cur||!liveList.length))return'';
+  return`<div class="lsw"><small>Nu live</small>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}${!cur&&TSID?'':''}</div>`}
+function tvSwitch(sid){if(sid===TSID){lswOpen=false;renderTV();return}
+  TSID=sid;API=sid?'/api/s/'+sid:'/api';
+  try{history.replaceState(null,'',(sid?'/s/'+sid:'')+(KIJK?'/kijk':'/monitor'))}catch(e){}
+  streamGen++;try{streamCtl&&streamCtl.abort()}catch(e){}
+  tvGot=false;tvEv=0;S=DEF();openId=null;darts=[];msg='';kijkTab='live';lswOpen=false;tvFx=null;
+  renderTV();stream()}
 
 /* ---------- monitor- en meekijkweergave ---------- */
 const TVLOGO='<use href="#ball" transform="translate(300 180) scale(1.12)"/><use href="#dart" transform="translate(246 156) rotate(25) scale(1.3)"/>';
@@ -1384,7 +1437,7 @@ function renderTV(){
   const el=document.getElementById('tv');if(!el)return;
   document.body.classList.add('tvm');el.hidden=false;document.getElementById('ov').hidden=true;
   const con=netOk===false||tvSlow?'<span class="dot bad"></span>Geen verbinding':tvGot?'<span class="dot ok"></span>Live':'<span class="dot"></span>Verbinden…';
-  if(!tvOn){el.innerHTML=`<div class="tvs"><svg class="tvlogo" viewBox="0 0 460 320" aria-hidden="true">${TVLOGO}</svg><h1>De Dart <span>Struners</span></h1><p>Monitor-weergave. Wat op de telefoon wordt ingevuld, verschijnt hier live.</p><div class="row" style="justify-content:center"><button class="btn pri" data-a="tvgo">Start met geluid</button><button class="btn" data-a="tvgo0">Start zonder geluid</button></div><p class="tvc">${con}</p><button class="done" data-a="tvstop">Naar de app</button></div>`;return}
+  if(!tvOn){el.innerHTML=`<div class="tvs"><svg class="tvlogo" viewBox="0 0 460 320" aria-hidden="true">${TVLOGO}</svg><h1>De Dart <span>Struners</span></h1><p>Monitor-weergave. Wat op de telefoon wordt ingevuld, verschijnt hier live.</p><div class="row" style="justify-content:center"><button class="btn pri" data-a="tvgo">Start met geluid</button><button class="btn" data-a="tvgo0">Start zonder geluid</button></div>${liveList.length>1?`<div class="lsw lsws"><small>Kies de wedstrijd</small>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}</div>`:''}<p class="tvc">${con}</p><button class="done" data-a="tvstop">Naar de app</button></div>`;return}
   let c;
   try{
     if(!tvGot)c={ctx:'',html:`<div class="tvch"><small>Verbinden</small><div class="tvwait">Even geduld, de stand wordt opgehaald</div></div>`};
@@ -1394,13 +1447,13 @@ function renderTV(){
     else if(S.kind==='spel'&&(SP().on||SP().done))c=tvSpel();
     else{const go=openId&&getO(openId);c=go&&typeof go.a==='number'&&typeof go.b==='number'?tvMatch():tvOverview()}
   }catch(e){c={ctx:'',html:'<div class="tvch"><small>Even geduld</small></div>'}}
-  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['top','Checkout-top']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
+  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em>${!KIJK&&liveList.length>1?`<button class="lswb" data-a="lswopen">Wissel wedstrijd (${liveList.length})</button>`:''}<i>${con}</i></div>${KIJK?lswHtml():''}${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['top','Checkout-top']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}${lswOpen?`<div class="lswp" data-a="lswclose"><div class="lswin"><h2>Welke wedstrijd?</h2>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}<button class="btn" data-a="lswclose">Sluiten</button></div></div>`:''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
   chatPanel();
 }
 
 /* ---------- opstarten ---------- */
 (async()=>{
-  if(tv){tvTO=setTimeout(()=>{tvSlow=true;renderTV()},10000);renderTV();stream();return}
+  if(tv){tvTO=setTimeout(()=>{tvSlow=true;renderTV()},10000);renderTV();stream();liveFetch();setInterval(liveFetch,15000);return}
   if(HOME||SPELEN){ready=true;render();return}
   if(camOn&&kopCode)camStream();
   if(SPELP){S=DEF();S.kind='spel';try{const o=JSON.parse(localStorage.getItem('dartstruners-spel'));if(o&&o.spel){S.spel=o.spel;if(o.dout!==undefined)S.dout=o.dout;if(o.sound!==undefined)S.sound=o.sound;if(o.voice)S.voice=o.voice}}catch(e){}

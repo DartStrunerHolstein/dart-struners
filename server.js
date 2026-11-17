@@ -365,7 +365,7 @@ const server = http.createServer(async (req, res) => {
         if (what === 'login') { fails.delete(ip); x.u = Date.now(); persistSess(); return send(res, 200, { ok: true, role: 'admin' }); }
         if (!b || typeof b.S !== 'object' || !b.S || !Array.isArray(b.S.players)) return send(res, 400, { error: 'Ongeldige stand' });
         if (JSON.stringify(b).length > 1024 * 1024) return send(res, 413, { error: 'Te groot' });
-        Object.assign(x, { v: x.v + 1, S: b.S, live: b.live && typeof b.live === 'object' ? b.live : null, by: typeof b.by === 'string' ? b.by.slice(0, 40) : null, u: Date.now() });
+        Object.assign(x, { v: x.v + 1, S: b.S, live: b.live && typeof b.live === 'object' ? b.live : null, by: typeof b.by === 'string' ? b.by.slice(0, 40) : null, u: Date.now(), lt: Date.now() });
         persistSess();
         sessBroadcast(id);
         return send(res, 200, { ok: true, v: x.v });
@@ -485,6 +485,21 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
 
+    // Alle wedstrijden die nu bezig zijn: de hoofdstand + zichtbare sessies (laatste 20 minuten actief)
+    if (req.method === 'GET' && p === '/api/live') {
+      const now = Date.now(), out = [];
+      const sumOf = (st, sid) => {
+        const sm = st.live && st.live.sum;
+        if (!sm || typeof sm !== 'object' || !(now - (st.lt || 0) < 20 * 60e3)) return null;
+        const t = v => String(v == null ? '' : v).slice(0, 40);
+        return { sid, t: t(sm.t), a: t(sm.a), b: t(sm.b), sc: t(sm.sc), lt: st.lt || 0 };
+      };
+      const m = sumOf(state, ''); if (m) out.push(m);
+      for (const [id, x] of Object.entries(sess)) { if (x.S && x.S.zichtbaar === false) continue; const e = sumOf(x, id); if (e) out.push(e); }
+      out.sort((a, b) => (a.sid === '' ? -1 : b.sid === '' ? 1 : b.lt - a.lt));
+      return send(res, 200, { now, list: out.slice(0, 30) });
+    }
+
     if (req.method === 'GET' && p === '/api/spel/top') return send(res, 200, topView());
     if (req.method === 'POST' && p === '/api/spel/score') {
       const b = await readBody(req);
@@ -544,6 +559,7 @@ const server = http.createServer(async (req, res) => {
         live: b.live && typeof b.live === 'object' ? b.live : null,
         by: typeof b.by === 'string' ? b.by.slice(0, 40) : null,
         at: new Date().toISOString(),
+        lt: Date.now(),
         cam: state.cam
       };
       persist();
