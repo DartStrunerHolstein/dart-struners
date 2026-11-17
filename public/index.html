@@ -620,7 +620,6 @@ function sheetHtml(){
   return`<div class="sheet"><h3>Stem</h3>
   <div class="mode"><button data-voice="nl" class="${caller()?'':'on'}">Nederlands</button><button data-voice="caller" class="${caller()?'on':''}">Caller (Engels)</button></div>
   <p class="hint">${caller()?'Engelse omroeper-stijl: "One hundred and eighty!", "Game shot, and the leg!", "Patrick, you require 40".':'Nederlandse stem: noemt elke pijl, het totaal en wat de volgende speler nog moet.'}</p>
-  <h3>Stemmenpakket</h3>${packHtml()}
   <h3>Eigen geluiden</h3>
   <p class="hint">Kies voor een moment een geluidsbestand van je telefoon, bijvoorbeeld je eigen opname. Dat speelt dan af in plaats van de stem. Geluiden blijven bewaard in deze browser.</p>
   <ul class="clips">${EVENTS.map(([k,l])=>`<li><div><b>${l}</b><small>${clipUrl[k]?'Eigen geluid':'Stem'}</small></div>
@@ -1207,7 +1206,7 @@ function renderTV(){
   const el=document.getElementById('tv');if(!el)return;
   document.body.classList.add('tvm');el.hidden=false;document.getElementById('ov').hidden=true;
   const con=netOk===false||tvSlow?'<span class="dot bad"></span>Geen verbinding':tvGot?'<span class="dot ok"></span>Live':'<span class="dot"></span>Verbinden…';
-  if(!tvOn){el.innerHTML=`<div class="tvs"><svg class="tvlogo" viewBox="0 0 460 320" aria-hidden="true">${TVLOGO}</svg><h1>De Dart <span>Struners</span></h1><p>Monitor-weergave. Wat op de telefoon wordt ingevuld, verschijnt hier live.</p><div class="row" style="justify-content:center"><button class="btn pri" data-a="tvgo">Start met geluid</button><button class="btn" data-a="tvgo0">Start zonder geluid</button></div><details class="tvpk"${packMsg?' open':''}><summary>Stem: ${packN()?esc(packName)+' ('+packN()+' geluiden)':'gewone computerstem'}</summary>${packHtml()}</details><p class="tvc">${con}</p><button class="done" data-a="tvstop">Naar de app</button></div>`;return}
+  if(!tvOn){el.innerHTML=`<div class="tvs"><svg class="tvlogo" viewBox="0 0 460 320" aria-hidden="true">${TVLOGO}</svg><h1>De Dart <span>Struners</span></h1><p>Monitor-weergave. Wat op de telefoon wordt ingevuld, verschijnt hier live.</p><div class="row" style="justify-content:center"><button class="btn pri" data-a="tvgo">Start met geluid</button><button class="btn" data-a="tvgo0">Start zonder geluid</button></div><p class="tvc">${con}</p><button class="done" data-a="tvstop">Naar de app</button></div>`;return}
   let c;
   try{
     if(!tvGot)c={ctx:'',html:`<div class="tvch"><small>Verbinden</small><div class="tvwait">Even geduld, de stand wordt opgehaald</div></div>`};

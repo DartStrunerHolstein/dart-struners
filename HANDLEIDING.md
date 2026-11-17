@@ -87,9 +87,6 @@ Bij elke wedstrijd vraagt de app eerst wie het dichtst bij de bull gooide. Die s
 ### Chat voor kijkers
 Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten verschijnen ook even op de monitor. Je kunt als beheerder berichten verwijderen of de chat uitzetten. Elke ochtend om 6 uur begint de chat leeg.
 
-### Stemmenpakket
-Op het startscherm van de monitor kun je onder **Stem** een map met caller-geluiden laden (bijvoorbeeld van *darts-caller*). De geluiden blijven alleen op die computer staan.
-
 **Tip:** zet de app op het beginscherm van je telefoon. Open de link, kies in het menu van je browser **Toevoegen aan beginscherm**, en hij opent voortaan als een gewone app.
 
 ---
