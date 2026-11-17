@@ -164,6 +164,12 @@ nav:empty{display:none}
 .lk .btn{min-height:40px;padding:0 14px;font-size:14px}
 .login{max-width:440px;display:grid;gap:12px}
 .hgrid{display:grid;gap:12px;max-width:760px}
+.klive{display:grid;gap:10px;max-width:760px}
+.klive button{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;text-align:left;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;font:600 17px Inter,sans-serif;cursor:pointer}
+.klive button b{grid-column:1;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#ffb3d4}
+.klive button span{grid-column:1;overflow-wrap:anywhere}
+.klive button em{grid-row:1/3;grid-column:2;font-style:normal;font-weight:800;color:var(--pink)}
+.kback{align-self:flex-start;flex:none;border:0;background:none;color:#ffd6e8;font:700 15px Inter,sans-serif;cursor:pointer;padding:4px 0}
 .lsw{display:flex;gap:8px;overflow-x:auto;align-items:stretch;flex:none;padding-bottom:2px}
 .lsw small{flex:none;align-self:center;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55)}
 .lsw button,.lswin button[data-live]{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:8px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;font:600 14px Inter,sans-serif;cursor:pointer;max-width:280px}
@@ -483,7 +489,7 @@ function chatForm(){let f=document.getElementById('chatf');
         if(r.ok){t.value='';t.focus()}else{const d=await r.json().catch(()=>({}));er.textContent=d.error||'Versturen lukte niet'}}
       catch(_){er.textContent='Geen verbinding, probeer het opnieuw'}})}
   return f}
-function chatPanel(scroll){if(!KIJK||SID)return;const f=chatForm(),show=tvGot&&chat.on&&!TSID;f.hidden=!show;document.body.classList.toggle('chaton',show);
+function chatPanel(scroll){if(!KIJK||SID)return;const f=chatForm(),show=(tvGot||!!mainD)&&chat.on&&!TSID;f.hidden=!show;document.body.classList.toggle('chaton',show);
   const b=document.getElementById('cmin');b.textContent=f.classList.contains('min')?'Tonen':'Verbergen';b.setAttribute('aria-expanded',f.classList.contains('min')?'false':'true');
   const k=document.getElementById('kchat'),atB=scroll||k.scrollHeight-k.scrollTop-k.clientHeight<60,h=chatList();
   if(k.dataset.h!==h){k.innerHTML=h;k.dataset.h=h}if(atB)k.scrollTop=k.scrollHeight;
@@ -1167,8 +1173,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.solo!==undefined){const v=+t.dataset.solo;if(!!S.single.solo!==!!v){S.single.solo=v;delete S.results.X;delete S.turns.X;if(v&&![1,3,5,10].includes(+S.single.bo))S.single.bo=3;if(!v&&![1,3,5,7].includes(+S.single.bo))S.single.bo=3}save();render();return}
   if(t.dataset.spn){const p=SP();p.n=+t.dataset.spn;save();render();return}
   if(t.dataset.chdel){chatAdmin({del:+t.dataset.chdel});return}
+  if(t.dataset.watch!==undefined&&KMAIN()){const w=t.dataset.watch;setWatch(w==='none'?null:w==='main'?'':w);return}
   if(t.dataset.live!==undefined&&tv){tvSwitch(t.dataset.live);return}
-  if(t.dataset.ktab){kijkTab=t.dataset.ktab;renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
+  if(t.dataset.ktab){kijkTab=t.dataset.ktab;if(kijkTab==='live'&&KMAIN())liveFetch();renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
   if(t.dataset.copy){const v=t.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>{t.textContent='Gekopieerd';setTimeout(()=>t.textContent='Kopieer',1500)})}catch(_){}return}
   if(t.dataset.tab){tab=t.dataset.tab;try{history.replaceState(null,'','#'+tab)}catch(_){}render();window.scrollTo(0,0);return}
   if(t.dataset.score){sender=true;openId=t.dataset.score;buf='';msg='';darts=[];mod=1;renderOv();return}
@@ -1332,6 +1339,8 @@ async function stream(){
       const d=await r.json();
       clearTimeout(tvTO);tvSlow=false;setNet(true);
       const changed=d.v!==v;v=d.v;const cch=chatTake(d.chat),tch=topTake(d.top);
+      if(KMAIN()){mainD=d;if(d&&d.S&&Array.isArray(d.S.players))mainS=Object.assign(DEF(),d.S);
+        if(!watch){if(changed||!tvGot){applyRemote(d)}}renderTV();if(changed)liveFetch();continue}
       if(tv){if(changed||!tvGot){applyRemote(d);renderTV()}else if(cch||tch)renderTV();continue}
       if(cch)chatAdm();if(tch)topRefresh();
       if(SPELP)continue;
@@ -1343,6 +1352,31 @@ async function stream(){
 
 /* ---------- live wedstrijden: kiezen en wisselen (monitor en meekijken) ---------- */
 let liveList=[],lswOpen=false;
+// Meekijkpagina van de hoofdsite: de hoofdstand (competitie, chat) blijft altijd binnenkomen;
+// kijk je een sessie-wedstrijd, dan loopt daarnaast een tweede verbinding voor die wedstrijd.
+let watch=null,mainD=null,mainS=null,watchGen=0,watchCtl=null;
+const KMAIN=()=>KIJK&&!SID;
+function withMain(fn){
+  if(!(KMAIN()&&watch&&mainS))return fn();
+  const kS=S,kO=openId;S=mainS;openId=mainD&&mainD.live&&typeof mainD.live.openId==='string'?mainD.live.openId:null;try{refresh()}catch(e){}
+  try{return fn()}finally{S=kS;openId=kO;try{refresh()}catch(e){}}}
+async function watchStream(sid){
+  const gen=++watchGen;let v=-1;
+  for(;;){if(gen!==watchGen)return;
+    try{watchCtl=new AbortController();
+      const r=await fetch('/api/s/'+sid+'/wait?v='+v,{cache:'no-store',signal:watchCtl.signal});
+      if(gen!==watchGen)return;
+      if(r.status===404){watch=null;renderTV();return}
+      if(!r.ok)throw new Error(r.status);
+      const d=await r.json();if(gen!==watchGen)return;
+      const ch=d.v!==v;v=d.v;if(ch||!tvGot){applyRemote(d);renderTV()}
+    }catch(e){if(gen!==watchGen)return;await new Promise(r=>setTimeout(r,2000))}}}
+function setWatch(x){
+  watchGen++;try{watchCtl&&watchCtl.abort()}catch(e){}
+  watch=x;tvGot=false;tvEv=0;tvFx=null;S=DEF();openId=null;darts=[];msg='';
+  if(x)watchStream(x);
+  else if(mainD){applyRemote(mainD)}
+  kijkTab='live';renderTV();try{document.getElementById('tv').scrollTop=0}catch(e){}}
 function liveSum(){
   if(openId){const L=live(openId),o=L.o;if(!o)return null;
     const t=SOLO(openId)?'Solo':openId==='X'?'1 tegen 1':isC(openId)?'Competitie':'Toernooi';
@@ -1440,14 +1474,20 @@ function renderTV(){
   if(!tvOn){el.innerHTML=`<div class="tvs"><svg class="tvlogo" viewBox="0 0 460 320" aria-hidden="true">${TVLOGO}</svg><h1>De Dart <span>Struners</span></h1><p>Monitor-weergave. Wat op de telefoon wordt ingevuld, verschijnt hier live.</p><div class="row" style="justify-content:center"><button class="btn pri" data-a="tvgo">Start met geluid</button><button class="btn" data-a="tvgo0">Start zonder geluid</button></div>${liveList.length>1?`<div class="lsw lsws"><small>Kies de wedstrijd</small>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}</div>`:''}<p class="tvc">${con}</p><button class="done" data-a="tvstop">Naar de app</button></div>`;return}
   let c;
   try{
-    if(!tvGot)c={ctx:'',html:`<div class="tvch"><small>Verbinden</small><div class="tvwait">Even geduld, de stand wordt opgehaald</div></div>`};
+    if(KMAIN()&&mainD&&kijkTab!=='live'){
+      if(kijkTab==='top')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Checkout-top</h2><p class="kempty" style="margin:0 0 12px">Hoogste score per speler, max. 20 punten. Zelf spelen? Ga naar ${esc(location.origin)}/spel</p>${spTopHtml(true)}</div>`};
+      else c={ctx:'',html:withMain(()=>`<div class="kscroll">${kStand()}<h2 class="tvh2" style="margin-top:22px">Wedstrijden</h2>${kMatches()}</div>`)};
+    }
+    else if(KMAIN()&&watch===null)c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Nu live</h2>${liveList.length?`<div class="klive">${liveList.map(x=>`<button data-watch="${x.sid||'main'}">${liveLbl(x)}<em>Kijken ›</em></button>`).join('')}</div>`:`<p class="kempty">Er is nu geen wedstrijd bezig. Zodra er gegooid wordt, verschijnt hij hier vanzelf.</p>`}</div>`};
+    else if(KMAIN()&&tvGot&&!((openId&&getO(openId))||(S.kind==='spel'&&S.spel&&(S.spel.on||S.spel.done))))c={ctx:'',html:`<div class="tvch"><small>Afgelopen</small><div class="tvwait">Deze wedstrijd is niet meer bezig.</div></div>`};
+    else if(!tvGot)c={ctx:'',html:`<div class="tvch"><small>Verbinden</small><div class="tvwait">Even geduld, de stand wordt opgehaald</div></div>`};
     else if(KIJK&&kijkTab==='stand')c={ctx:'',html:`<div class="kscroll">${kStand()}</div>`};
     else if(KIJK&&kijkTab==='top')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Checkout-top</h2><p class="kempty" style="margin:0 0 12px">Hoogste score per speler, max. 20 punten. Zelf spelen? Ga naar ${esc(location.origin)}/spel</p>${spTopHtml(true)}</div>`};
     else if(KIJK&&kijkTab==='wedstrijden')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Wedstrijden</h2>${kMatches()}</div>`};
     else if(S.kind==='spel'&&(SP().on||SP().done))c=tvSpel();
     else{const go=openId&&getO(openId);c=go&&typeof go.a==='number'&&typeof go.b==='number'?tvMatch():tvOverview()}
   }catch(e){c={ctx:'',html:'<div class="tvch"><small>Even geduld</small></div>'}}
-  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em>${!KIJK&&liveList.length>1?`<button class="lswb" data-a="lswopen">Wissel wedstrijd (${liveList.length})</button>`:''}<i>${con}</i></div>${KIJK?lswHtml():''}${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['top','Checkout-top']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}${lswOpen?`<div class="lswp" data-a="lswclose"><div class="lswin"><h2>Welke wedstrijd?</h2>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}<button class="btn" data-a="lswclose">Sluiten</button></div></div>`:''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
+  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em>${!KIJK&&liveList.length>1?`<button class="lswb" data-a="lswopen">Wissel wedstrijd (${liveList.length})</button>`:''}<i>${con}</i></div>${KIJK&&!KMAIN()?lswHtml():''}${KMAIN()&&mainD?`<div class="ktabs">${[['live','Live'+(liveList.length?' ('+liveList.length+')':'')],['comp','Competitie'],['top','Checkout-top']].filter(([k])=>(k!=='comp'||(mainS&&mainS.kind==='comp'&&mainS.comp&&mainS.comp.started))&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>${kijkTab==='live'&&watch!==null?`<button class="kback" data-watch="none">← Alle live wedstrijden</button>`:''}`:''}${KIJK&&!KMAIN()&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['top','Checkout-top']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}${lswOpen?`<div class="lswp" data-a="lswclose"><div class="lswin"><h2>Welke wedstrijd?</h2>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}<button class="btn" data-a="lswclose">Sluiten</button></div></div>`:''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
   chatPanel();
 }
 
