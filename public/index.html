@@ -273,7 +273,7 @@ body.kijk .tvr{font-size:min(15vw,19vh)}
 .spt{text-align:center;background:rgba(255,255,255,.05);border-radius:12px;padding:10px}
 .spt small{display:block;font-size:13px;color:#f5bfd8;font-weight:600}
 .spn{font:clamp(64px,22vw,110px)/1 Anton,Impact,sans-serif;color:#fff}
-.slots.sp2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.slots.sp2{grid-template-columns:repeat(3,minmax(0,1fr))}
 .slots.sp2 button{cursor:default}
 .sprt small{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55)}
 .sprt div{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
@@ -761,7 +761,7 @@ function vSingle(){
 }
 const gameSel=()=>`<label>Spel<select id="game">${[101,201,301,501,701].map(v=>`<option value="${v}"${v==S.game?' selected':''}>${v}</option>`).join('')}</select></label>
   <label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label>`;
-/* ---------- checkout-spel: getal 41-60, 2 pijlen, uitgooien ---------- */
+/* ---------- checkout-spel: getal 41-60, 3 pijlen, uitgooien ---------- */
 const SEGS=(()=>{const a=[];for(let i=1;i<=20;i++){a.push({l:String(i),v:i,d:0,t:0},{l:'D'+i,v:2*i,d:1,t:2},{l:'T'+i,v:3*i,d:0,t:1})}a.push({l:'25',v:25,d:0,t:1.5},{l:'Bull',v:50,d:1,t:3});return a})();
 const FPREF=['D20','D16','D10','D8','D18','D12','D4','D14','D6','D2','D19','D17','D15','D13','D11','D9','D7','D5','D3','D1','Bull'];
 function routes(t,left){
@@ -780,7 +780,7 @@ function spDart(n){const p=SP();if(!p.on)return;
   const lab=n===0?'Mis':n===25?(spMod===2?'Bull':'25'):(spMod===3?'T':spMod===2?'D':'')+n,d={lab,v:n*spMod,dbl:spMod===2&&n>0};spMod=1;
   p.darts.push(d);say(T.dart(lab),true,DK(lab));
   const sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,who=spN(p.cur);
-  const ok=rem===0&&(!S.dout||d.dbl),fail=!ok&&(rem<0||rem===0||(S.dout&&rem===1)||p.darts.length>=2);
+  const ok=rem===0&&(!S.dout||d.dbl),fail=!ok&&(rem<0||rem===0||(S.dout&&rem===1)||p.darts.length>=3);
   if(ok){p.hits[p.cur]++;p.tries[p.cur]++;p.hist.unshift({w:p.cur,t:p.target,r:p.darts.map(x=>x.lab),ok:1});p.hist=p.hist.slice(0,30);
     msg=`Uitgegooid! ${p.n===2?who+': ':''}${p.target} via ${p.darts.map(x=>x.lab).join(' · ')}`;ev({k:'co',who:(p.n===2?who+' gooit ':'')+p.target+' uit'});
     say('Game shot!',false,[['gameshot']]);
@@ -796,30 +796,30 @@ function vSpel(){const p=SP();
   if(p.on)return`<h2>Checkout-spel</h2><p class="stat">Bezig: ${esc(spN(0))}${p.n===2?' tegen '+esc(spN(1)):''}</p><div class="row"><button class="btn pri" data-a="spopen">Verder spelen</button></div>`;
   if(p.done)return`<h2>Uitslag</h2>${p.n===2?`<p class="stat">${p.hits[0]===p.hits[1]?'Gelijkspel!':esc(spN(p.hits[0]>p.hits[1]?0:1))+' wint met '+Math.max(...p.hits)+' – '+Math.min(...p.hits)}</p>`:`<p class="stat">${p.hits[0]} keer uitgegooid in ${p.tries[0]} pogingen</p>`}${spTable()}
    <div class="row" style="margin:12px 0 24px"><button class="btn pri" data-a="spstart">Opnieuw met dezelfde spelers</button><button class="btn" data-a="spnew">Nieuw spel</button></div>`;
-  return`<h2>Checkout-spel</h2><p class="stat">Je krijgt een getal tussen 41 en 60 en hebt 2 pijlen om uit te gooien. Gelukt? Dan komt er een nieuw getal. Stoppen kan wanneer je wilt.</p>
+  return`<h2>Checkout-spel</h2><p class="stat">Je krijgt een getal tussen 41 en 60 en hebt 3 pijlen om uit te gooien. Gelukt? Dan komt er een nieuw getal. Stoppen kan wanneer je wilt.</p>
   <div class="mode"><button data-spn="1" class="${p.n===1?'on':''}">1 speler</button><button data-spn="2" class="${p.n===2?'on':''}">2 spelers</button></div>
   <div style="max-width:560px;display:grid;gap:8px;margin:12px 0"><input type="text" id="sp1" maxlength="24" placeholder="${p.n===2?'Speler 1':'Je naam (mag leeg)'}" value="${esc(p.names[0])}" aria-label="Speler 1">${p.n===2?`<input type="text" id="sp2" maxlength="24" placeholder="Speler 2" value="${esc(p.names[1])}" aria-label="Speler 2">`:''}</div>
   <div class="set"><label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label></div>
   <div class="row"><button class="btn pri" data-a="spstart">Start spel</button></div>`}
-function spOv(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,left=2-p.darts.length,rs=routes(rem,left);
+function spOv(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,left=3-p.darts.length,rs=routes(rem,left);
   return`<div class="ovb">
-   <div class="ovh"><span>Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 2 pijlen</span><span class="ovr"><button class="btn" data-a="sound">${S.sound?'Geluid aan':'Geluid uit'}</button><button class="btn" data-a="spclose">Menu</button></span></div>
-   <div class="spt"><small>${p.n===2?esc(spN(p.cur))+' gooit uit':'Gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog 1 pijl':'2 pijlen'}</small></div>
-   <div class="slots sp2">${[0,1].map(i=>p.darts[i]?`<button disabled>${esc(p.darts[i].lab)}</button>`:`<span>Pijl ${i+1}</span>`).join('')}</div>
+   <div class="ovh"><span>Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen</span><span class="ovr"><button class="btn" data-a="sound">${S.sound?'Geluid aan':'Geluid uit'}</button><button class="btn" data-a="spclose">Menu</button></span></div>
+   <div class="spt"><small>${p.n===2?esc(spN(p.cur))+' gooit uit':'Gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog '+left+(left>1?' pijlen':' pijl'):'3 pijlen'}</small></div>
+   <div class="slots sp2">${[0,1,2].map(i=>p.darts[i]?`<button disabled>${esc(p.darts[i].lab)}</button>`:`<span>Pijl ${i+1}</span>`).join('')}</div>
    <div class="msg">${esc(msg)}</div>
-   <div class="sprt"><small>${rs.length?'Mogelijke routes':'Met 1 pijl niet uit te gooien'}</small><div>${rs.slice(0,8).map(r=>`<span>${r.map(esc).join(' · ')}</span>`).join('')}${rs.length>8?`<span class="more">+${rs.length-8} meer</span>`:''}</div></div>
+   <div class="sprt"><small>${rs.length?'Mogelijke routes':left===1?'Met 1 pijl niet uit te gooien':'Niet meer uit te gooien'}</small><div>${rs.slice(0,8).map(r=>`<span>${r.map(esc).join(' · ')}</span>`).join('')}${rs.length>8?`<span class="more">+${rs.length-8} meer</span>`:''}</div></div>
    <div class="mods">${[[1,'Single'],[2,'Dubbel'],[3,'Triple']].map(([m,l])=>`<button data-smod="${m}" class="${spMod===m&&m>1?'on':''}">${l}</button>`).join('')}</div>
    <div class="nums">${Array.from({length:20},(_,i)=>`<button data-sn="${i+1}">${spMod===3?'T':spMod===2?'D':''}${i+1}</button>`).join('')}<button data-sn="25" class="w2">${spMod===2?'Bull 50':'25'}</button><button data-sn="0" class="w2">Mis</button><button data-a="spundo" class="w1" aria-label="Pijl terug">⌫</button></div>
    ${spTable(true)}
    <div class="row"><button class="btn" data-a="spskip">Ander getal</button><button class="btn" data-a="spstop">Stoppen</button></div></div>`}
-function tvSpel(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,rs=p.on?routes(rem,2-p.darts.length):[],ix=p.n===2?[0,1]:[0];
-  const ctx=`Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 2 pijlen`;
+function tvSpel(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,rs=p.on?routes(rem,3-p.darts.length):[],ix=p.n===2?[0,1]:[0];
+  const ctx=`Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen`;
   const board=`<div class="tvspb">${ix.map(i=>`<div class="tvspp${p.on&&p.cur===i&&p.n===2?' on':''}"><b>${esc(spN(i))}</b><span>${p.hits[i]}</span><small>uitgegooid · ${p.tries[i]} pogingen · ${pct(p.hits[i],p.tries[i])}</small></div>`).join('')}</div>`;
   if(!p.on){const w=p.n===2&&p.hits[0]!==p.hits[1]?spN(p.hits[0]>p.hits[1]?0:1)+' wint!':p.n===2?'Gelijkspel!':'Klaar!';
     return{ctx,html:`<div class="tvgm"><div class="tvspm"><small>Uitslag</small><div class="tvspw">${esc(w)}</div></div><div class="tvspr">${board}</div></div>`}}
   const hist=p.hist.slice(0,6).map(h=>`<li class="${h.ok?'ok':''}"><span>${p.n===2?esc(spN(h.w))+' · ':''}${h.t}</span><b>${h.ok?'✓ ':''}${h.r.map(esc).join(' · ')}</b></li>`).join('');
   return{ctx,html:`<div class="tvgm"><div class="tvspm"><small>${p.n===2?esc(spN(p.cur))+' gooit uit':'Gooi uit'}</small><div class="tvspn">${rem}</div>
-    <div class="tvsl">${[0,1].map(i=>`<span class="${p.darts[i]?'f':''}">${p.darts[i]?esc(p.darts[i].lab):''}</span>`).join('')}</div>
+    <div class="tvsl">${[0,1,2].map(i=>`<span class="${p.darts[i]?'f':''}">${p.darts[i]?esc(p.darts[i].lab):''}</span>`).join('')}</div>
     <div class="tvsprt">${rs.slice(0,6).map(r=>`<span>${r.map(esc).join(' · ')}</span>`).join('')||'<span>Niet meer uit te gooien</span>'}</div></div>
     <div class="tvspr">${board}${hist?`<ul class="tvh">${hist}</ul>`:''}</div></div>`}}
 /* ---------- competitie ---------- */
@@ -934,7 +934,7 @@ function vLogin(){
    <p>Alleen kijken? Dat kan zonder code.</p>
    <div class="row"><a class="btn" href="/kijk">Meekijken</a><a class="btn" href="/monitor">Monitor-weergave</a></div>
    <h2 style="margin-top:28px">Zelf spelen met vrienden</h2>
-   <p>Start een eigen sessie voor een toernooi, 1 tegen 1 of het checkout-spel. Je krijgt een eigen link en code, los van de competitie.</p>
+   <p>Start een eigen sessie voor een toernooi, 1 tegen 1, solo of het checkout-spel. Je krijgt een eigen link en code, los van de competitie.</p>
    <div class="row"><button class="btn pri" data-a="newsess">Nieuwe sessie starten</button></div>
    <div class="err">${esc(newErr)}</div></div>`;
 }
