@@ -271,7 +271,7 @@ const server = http.createServer(async (req, res) => {
   const ip = ipOf(req);
 
   try {
-    if (req.method === 'GET' && (p === '/' || p === '/monitor' || p === '/kijk' || p === '/spel' || /^\/s\/[a-z0-9]{6}(\/monitor|\/kijk)?$/.test(p))) {
+    if (req.method === 'GET' && (p === '/' || p === '/beheer' || p === '/spelen' || p === '/monitor' || p === '/kijk' || p === '/spel' || /^\/s\/[a-z0-9]{6}(\/monitor|\/kijk)?$/.test(p))) {
       return send(res, 200, page(), 'text/html; charset=utf-8');
     }
 
