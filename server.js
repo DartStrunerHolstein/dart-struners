@@ -14,7 +14,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { spawn } = require('child_process');
+const { spawn, execFile } = require('child_process');
 
 const PORT = +process.env.PORT || 3000;
 const PIN = String(process.env.ADMIN_PIN || '').trim();
@@ -304,6 +304,11 @@ function page() {
   return pageCache;
 }
 
+// ---------- versie ----------
+let VERSIE = '';
+let bijwerkenBezig = false;
+execFile('git', ['log', '-1', '--format=%h %cd', '--date=format:%d-%m-%Y %H:%M'], { cwd: __dirname, timeout: 5000 }, (e, out) => { if (!e) VERSIE = String(out).trim(); });
+
 // ---------- routes ----------
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -369,7 +374,33 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/healthz') return send(res, 200, { ok: true });
 
     if (req.method === 'GET' && p === '/api/state') return send(res, 200, state);
-    if (req.method === 'GET' && p === '/api/info') return send(res, 200, { publicUrl });
+    if (req.method === 'GET' && p === '/api/info') return send(res, 200, { publicUrl, versie: VERSIE });
+
+    // Website bijwerken vanaf GitHub (alleen beheerder): git pull, daarna herstart de server zichzelf
+    if (req.method === 'POST' && p === '/api/bijwerken') {
+      if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+      if (roleOf(req.headers['x-pin']) !== 'admin') { failed(ip); return send(res, 401, { error: 'Onjuiste code' }); }
+      if (bijwerkenBezig) return send(res, 409, { error: 'Er wordt al bijgewerkt' });
+      bijwerkenBezig = true;
+      execFile('git', ['pull', '--ff-only'], { cwd: __dirname, timeout: 60000 }, (err, stdout, stderr) => {
+        bijwerkenBezig = false;
+        const uit = (String(stdout || '') + String(stderr || '')).trim().slice(-1500);
+        if (err) return send(res, 500, { error: 'Bijwerken mislukt', uit });
+        const nieuw = !/Already up.to.date|Al bijgewerkt/i.test(uit);
+        send(res, 200, { ok: true, nieuw, uit });
+        if (nieuw) {
+          console.log('Bijgewerkt vanaf GitHub, de server herstart…');
+          setTimeout(() => {
+            persist(); // laatste stand wegschrijven
+            setTimeout(() => {
+              // Stoppen: alwaysdata start de site bij het volgende bezoek vanzelf opnieuw, nu met de nieuwe versie
+              process.exit(0);
+            }, 800);
+          }, 300);
+        }
+      });
+      return;
+    }
 
     // Live bijwerken via 'long polling': werkt ook via de gratis Cloudflare-tunnel
     if (req.method === 'GET' && p === '/api/wait') {

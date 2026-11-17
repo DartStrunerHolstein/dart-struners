@@ -1037,6 +1037,10 @@ function linksHtml(){
    ${ADM()&&!SID?`<h3 style="margin-top:12px">Chat voor kijkers</h3>
    <div>Kijkers kunnen op de meekijkpagina met elkaar chatten. Berichten zie je ook op de monitor. Elke ochtend om 6 uur begint de chat weer leeg.</div>
    <div id="chatadm">${chatAdmHtml()}</div>`:''}
+   ${ADM()&&!SID?`<h3 style="margin-top:12px">Website bijwerken</h3>
+   <div>Haalt de nieuwste versie van GitHub op en herstart de website. Duurt ongeveer 10 seconden.${versie?` Nu: versie ${esc(versie)}.`:''}</div>
+   <div class="row"><button class="btn pri" data-a="bijwerken"${updBusy?' disabled':''}>${updBusy?'Bezig…':'Website bijwerken'}</button></div>
+   ${updMsg?`<div class="${updErr?'err':'stat'}" style="margin:0">${esc(updMsg)}</div>`:''}`:''}
    <h3 style="margin-top:12px">Gegevens</h3>
    <div>Maak af en toe een reservekopie.${SID?'':' Met importeren zet je ook de gegevens over vanuit de claude.ai-versie.'}</div>
    <div class="row"><button class="btn" data-a="export">Exporteren</button>${ADM()?`<label class="btn" style="cursor:pointer">Importeren uit bestand<input type="file" accept="application/json,.json,.txt" data-import hidden></label><button class="btn" data-a="pasteopen">Importeren door plakken</button>`:''}<button class="btn" data-a="logout">Uitloggen</button></div>
@@ -1069,7 +1073,16 @@ function vToernooi(){
   ${gameSel()}</div>
   <div class="set" style="margin-top:-8px"><label>Loting<select id="lot"><option value="1"${S.lot?' selected':''}>Willekeurig bij start</option><option value="0"${S.lot?'':' selected'}>Volgorde van de lijst</option></select></label></div><div class="row"><button class="btn pri" data-a="start"${S.players.length<3?' disabled':''}>Start toernooi</button></div>`;
 }
-let newErr='';
+let newErr='',versie='',updBusy=false,updMsg='',updErr=false;
+async function bijwerken(){updBusy=true;updMsg='Nieuwste versie ophalen…';updErr=false;render();
+  try{const r=await fetch('/api/bijwerken',{method:'POST',headers:{'X-Pin':pin}});const d=await r.json().catch(()=>({}));
+    if(!r.ok){updBusy=false;updErr=true;updMsg=(d.error||'Bijwerken mislukt')+(d.uit?': '+d.uit.slice(-200):'');render();return}
+    if(!d.nieuw){updBusy=false;updMsg='Je website is al helemaal bijgewerkt.';render();return}
+    updMsg='Nieuwe versie geladen. De website herstart…';render();
+    await new Promise(r=>setTimeout(r,2500));
+    for(let i=0;i<40;i++){try{const h=await fetch('/healthz',{cache:'no-store'});if(h.ok){location.reload();return}}catch(_){}await new Promise(r=>setTimeout(r,1500))}
+    updBusy=false;updErr=true;updMsg='De website komt niet vanzelf terug. Herstart hem in alwaysdata bij Web → Sites.';render()}
+  catch(e){updBusy=false;updErr=true;updMsg='Geen verbinding met de website';render()}}
 function vLogin(){
   if(SID)return`<div class="login"><h2>Sessie ${esc(SID)}</h2>
    <p>Vul de sessiecode in om deze sessie te beheren en scores in te voeren.</p>
@@ -1187,6 +1200,7 @@ document.addEventListener('click',e=>{
     camOn=!camOn;kopAsk=false;try{localStorage.setItem(CAMK,camOn?'1':'0')}catch(_){}msg=camOn?'Camera telt mee op dit apparaat':'Camera uit, je vult zelf in';if(camOn){camLast=null;camStream()}renderOv();return}
   if(a==='kopno'){kopAsk=false;kopErr='';renderOv();return}
   if(a==='kopnew'){camOn=false;kopAsk=true;kopErr='';try{localStorage.setItem(CAMK,'0')}catch(_){}renderOv();setTimeout(()=>{const i=document.getElementById('kopin');if(i){i.value='';i.focus()}},50);return}
+  if(a==='bijwerken'){if(!updBusy)bijwerken();return}
   if(a==='chaton'){chatAdmin({on:!chat.on});return}
   if(a==='chatclear'){chatAdmin({clear:true});return}
   if(a==='export'){exportFile();return}
@@ -1392,7 +1406,7 @@ function renderTV(){
   if(SPELP){S=DEF();S.kind='spel';try{const o=JSON.parse(localStorage.getItem('dartstruners-spel'));if(o&&o.spel){S.spel=o.spel;if(o.dout!==undefined)S.dout=o.dout;if(o.sound!==undefined)S.sound=o.sound;if(o.voice)S.voice=o.voice}}catch(e){}
     try{const r=await fetch('/api/spel/top',{cache:'no-store'});topTake(await r.json());setNet(true)}catch(e){}
     ready=true;render();stream();return}
-  try{const r=await fetch('/api/info',{cache:'no-store'});const d=await r.json();if(d&&typeof d.publicUrl==='string'&&/^https:\/\//.test(d.publicUrl))publicUrl=d.publicUrl}catch(e){}
+  try{const r=await fetch('/api/info',{cache:'no-store'});const d=await r.json();if(d&&typeof d.versie==='string')versie=d.versie;if(d&&typeof d.publicUrl==='string'&&/^https:\/\//.test(d.publicUrl))publicUrl=d.publicUrl}catch(e){}
   if(pin){await login(pin)}else{await loadState();ready=true;render()}
   stream();
 })();
