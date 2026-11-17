@@ -351,6 +351,19 @@ body.kijk .tvr{font-size:min(15vw,19vh)}
 @media(max-width:760px){.tvgm{grid-template-columns:1fr}.tvspn{font-size:30vw}}
 .pl.solo{grid-template-columns:minmax(0,1fr)}
 .tvm2.solo{grid-template-columns:minmax(0,1fr)}
+.tvm2.wb{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.tvm2.wb.solo{grid-template-columns:minmax(0,1fr) auto}
+.tvbw{display:flex;align-items:center;justify-content:center;min-height:0}
+.tvboard{width:min(26vw,50vh);height:auto;max-height:100%;filter:drop-shadow(0 1.5vh 3vh rgba(0,0,0,.5))}
+.tvsp .tvboard{width:min(19vw,44vh)}
+.tvm2.wb .tvr{font-size:min(10vw,21vh)}.tvsp .tvm2.wb .tvr{font-size:min(7.2vw,19vh)}
+.tvm2.wb .tvck{font-size:clamp(11px,min(1.6vw,3vh),32px)}.tvsp .tvm2.wb .tvn{font-size:clamp(14px,min(2.4vw,4.4vh),56px)}
+.tvboard .bnum text{fill:#f3e9f0;font:700 13px Inter,sans-serif;text-anchor:middle}
+.dpin.old{opacity:.35}
+.dpin.new .dfly{animation:dthrow .45s cubic-bezier(.2,.8,.3,1) both}
+.dpin.new circle{animation:dhit .5s ease-out .35s both}
+@keyframes dthrow{0%{transform:translate(70px,-90px) scale(2.2);opacity:0}70%{opacity:1}100%{transform:none;opacity:1}}
+@keyframes dhit{0%{r:3.4}40%{r:9;opacity:.6}100%{r:3.4;opacity:1}}
+@media (max-width:760px),(max-aspect-ratio:1/1){.tvm2.wb .tvr,.tvsp .tvm2.wb .tvr{font-size:min(21vw,30vh)}.tvsp .tvboard{width:min(78vw,46vh)}.tvm2.wb,.tvm2.wb.solo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tvbw{grid-column:1/-1;order:3}.tvboard{width:min(78vw,46vh)}.tvm2.wb .tvd{order:4}}
 .bullb{display:flex;flex-direction:column;gap:12px;text-align:center;padding:8px 0}
 .bullb h3{font:28px Anton,Impact,sans-serif;text-transform:uppercase;color:var(--pink);margin:0}
 .bullb p{margin:0;color:#f5bfd8;font-size:15px}
@@ -721,7 +734,7 @@ function submit(v,ds){
   const L=live(openId);if(L.o.win!==null)return;
   if(!(v>=0&&v<=180)){msg='Maximaal 180 per beurt';buf='';renderOv();return}
   const rem=L.rem[L.cur],bust=v>rem||(S.dout&&rem-v===1)||(ds&&v===rem&&S.dout&&!ds[ds.length-1].dbl),out=!bust&&v===rem;
-  L.t.list.push({leg:L.leg,side:L.cur,score:v,bust,out,d:ds?ds.map(x=>({lab:x.lab,v:x.v,dbl:x.dbl})):null});darts=[];mod=1;edit=null;
+  L.t.list.push({leg:L.leg,side:L.cur,score:v,bust,out,d:ds?ds.map(dClean):null});darts=[];mod=1;edit=null;
   const who=sideName(L,L.cur);
   if(out){L.r[L.cur?'sb':'sa']++;S.results[openId]=L.r;msg=`Leg voor ${who}!`}
   else msg=bust?(ds&&v===rem?`Bust! Uitgooien moet op een dubbel. ${who} blijft op ${rem}`:`Bust! ${who} blijft op ${rem}`):'';
@@ -737,7 +750,7 @@ function dart(n){
   const L=live(openId);if(L.o.win!==null)return;
   if(n===25&&mod===3){msg='Triple bull bestaat niet';renderOv();return}
   const v=n*mod,lab=n===0?'Mis':n===25?(mod===2?'Bull':'25'):(mod===3?'T':mod===2?'D':'')+n;
-  const d={lab,v,dbl:mod===2};mod=1;msg='';
+  const d={lab,v,dbl:mod===2};if(camXY){d.x=camXY.x;d.y=camXY.y}camXY=null;mod=1;msg='';
   if(edit!==null&&darts[edit]){msg=`Pijl ${edit+1} aangepast: ${darts[edit].lab} → ${lab}`;darts[edit]=d;edit=null}else darts.push(d);
   say(T.dart(lab),true,DK(lab));
   evalTurn(L);
@@ -875,9 +888,11 @@ function camApply(e){
     return}
   if(!openId)return;const L=live(openId);if(L.o.win!==null||L.bull)return;
   const ik=ikSide();if(ik!==null&&L.cur!==ik)return; // niet mijn beurt: dit bord telt nu niet mee
+  camXY=typeof e.x==='number'&&typeof e.y==='number'?{x:e.x,y:e.y}:null;
   if(e.k==='dart'){if(S.inmode!=='pijl'){S.inmode='pijl';buf=''}sender=true;edit=null;mod=n===0?1:m;dart(n)}
   else if(e.k==='fix'){if(darts[e.i]){edit=e.i;mod=n===0?1:m;dart(n)}}
   else if(e.k==='takeout'){if(darts.length){edit=null;evalTurn(live(openId),true)}}
+  camXY=null;
 }
 // Samen op afstand: elk apparaat telt met zijn eigen bord alleen in de beurt van 'zijn' speler
 const IKK=()=>'dartstruners-ik-'+(SID||'main')+'-'+openId;
@@ -902,6 +917,37 @@ async function kopTry(code){code=String(code||'').toUpperCase().replace(/[^A-Z0-
     camTake(await r.json());msg='Camera gekoppeld';renderOv();camStream()}
   catch(e){kopErr='Geen verbinding. Probeer het opnieuw.';renderOv()}}
 document.addEventListener('submit',e=>{if(e.target&&e.target.id==='kopf'){e.preventDefault();kopTry((document.getElementById('kopin')||{}).value)}});
+/* ---------- dartbord op de monitor: pijlen verschijnen waar ze zitten ---------- */
+let camXY=null;
+const dClean=x=>{const o={lab:String(x.lab),v:+x.v||0,dbl:!!x.dbl};if(typeof x.x==='number'&&isFinite(x.x)&&Math.abs(x.x)<3)o.x=Math.round(x.x*1e4)/1e4;if(typeof x.y==='number'&&isFinite(x.y)&&Math.abs(x.y)<3)o.y=Math.round(x.y*1e4)/1e4;return o};
+const BORD=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+const RB={bull:.0374,obull:.0935,tin:.582,tout:.629,din:.953,dout:1};
+function hsh(str){let h=2166136261;for(const c of str){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return((h>>>0)%10000)/10000}
+// Plek op het bord (eenheden: buitenrand dubbel = 1, y omhoog = richting 20)
+function dartPos(d,key){
+  if(typeof d.x==='number'&&typeof d.y==='number')return{x:d.x/0.975,y:d.y/0.975};
+  const r1=hsh(key+'a'),r2=hsh(key+'b'),l=d.lab;
+  if(l==='Bull')return{x:(r1-.5)*.04,y:(r2-.5)*.04};
+  if(l==='25'){const a=r1*2*Math.PI,r=.055+r2*.03;return{x:Math.sin(a)*r,y:Math.cos(a)*r}}
+  if(l==='Mis'){const a=r1*2*Math.PI,r=1.06+r2*.07;return{x:Math.sin(a)*r,y:Math.cos(a)*r}}
+  const m=/^([TD]?)(\d+)$/.exec(l);if(!m)return{x:0,y:0};
+  const i=BORD.indexOf(+m[2]),a=(i+(r1-.5)*.6)*Math.PI/10;
+  const r=m[1]==='T'?.594+r2*.024:m[1]==='D'?.962+r2*.03:(r2<.6?.16+r2*.62:.66+(r2-.6)*.6);
+  return{x:Math.sin(a)*r,y:Math.cos(a)*r}}
+let boardSeen=new Set();
+function boardSvg(cur,prev,keyBase){
+  const seg=(r0,r1,i,fill)=>{const a0=(i-.5)*Math.PI/10,a1=(i+.5)*Math.PI/10,p=(r,a)=>`${(Math.sin(a)*r*100).toFixed(2)} ${(-Math.cos(a)*r*100).toFixed(2)}`;
+    return`<path d="M${p(r0,a0)} L${p(r1,a0)} A${r1*100} ${r1*100} 0 0 1 ${p(r1,a1)} L${p(r0,a1)} A${r0*100} ${r0*100} 0 0 0 ${p(r0,a0)}Z" fill="${fill}"/>`};
+  let g='';
+  BORD.forEach((n,i)=>{const ev=i%2===0;
+    g+=seg(RB.obull,RB.tin,i,ev?'#1c1416':'#efe3cf')+seg(RB.tin,RB.tout,i,ev?'#d8263f':'#1f8a4c')+seg(RB.tout,RB.din,i,ev?'#1c1416':'#efe3cf')+seg(RB.din,RB.dout,i,ev?'#d8263f':'#1f8a4c')});
+  const nums=BORD.map((n,i)=>{const a=i*Math.PI/10;return`<text x="${(Math.sin(a)*112).toFixed(1)}" y="${(-Math.cos(a)*112+6).toFixed(1)}">${n}</text>`}).join('');
+  const now=new Set();
+  const pin=(d,k,old)=>{const p=dartPos(d,k),x=p.x*100,y=-p.y*100,isNew=!old&&!boardSeen.has(k);now.add(k);
+    return`<g class="dpin${old?' old':''}${isNew?' new':''}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><g class="dfly"><line x1="0" y1="0" x2="16" y2="-22" stroke="#d9d9de" stroke-width="2.4" stroke-linecap="round"/><line x1="16" y1="-22" x2="26" y2="-36" stroke="#ff2d8a" stroke-width="5" stroke-linecap="round"/><path d="M26 -36 l10 -4 l-3 10 z M26 -36 l-4 -10 l10 3 z" fill="#ff8cc3"/></g><circle r="3.4" fill="#fff" stroke="#ff2d8a" stroke-width="1.6"/></g>`};
+  const pins=(prev||[]).map((d,i)=>pin(d,keyBase+'p'+i,true)).join('')+(cur||[]).map((d,i)=>pin(d,keyBase+'c'+i,false)).join('');
+  boardSeen=now;
+  return`<svg class="tvboard" viewBox="-128 -128 256 256" role="img" aria-label="Dartbord met de laatst gegooide pijlen"><circle r="126" fill="#121014"/><circle r="101" fill="#0c0a0c"/>${g}<circle r="${RB.obull*100}" fill="#1f8a4c"/><circle r="${RB.bull*100}" fill="#d8263f"/><g class="bnum">${nums}</g>${pins}</svg>`}
 /* ---------- startpagina en spelen ---------- */
 const SESSK='dartstruners-sessies';
 function mySess(){try{const l=JSON.parse(localStorage.getItem(SESSK));return Array.isArray(l)?l.filter(x=>x&&/^[a-z0-9]{6}$/.test(x.id)).slice(0,10):[]}catch(e){return[]}}
@@ -1360,7 +1406,7 @@ function applyRemote(c){
   if(!S.turns||typeof S.turns!=='object')S.turns={};
   const L=c.live||{};
   openId=typeof L.openId==='string'?L.openId:null;
-  darts=Array.isArray(L.darts)?L.darts.filter(x=>x&&typeof x.lab==='string').map(x=>({lab:x.lab,v:+x.v||0,dbl:!!x.dbl})):[];
+  darts=Array.isArray(L.darts)?L.darts.filter(x=>x&&typeof x.lab==='string').map(dClean):[];
   msg=typeof L.msg==='string'?L.msg:'';
   const E=Array.isArray(L.evs)?L.evs.filter(x=>x&&typeof x.id==='number'):[];
   if(!tvGot){tvGot=true;tvEv=E.reduce((m,x)=>Math.max(m,x.id),tvEv)}
@@ -1393,7 +1439,7 @@ async function stream(){
       if(changed&&admin&&d.by&&d.by!==myId&&d.v>ver&&!wBusy&&!pushPending){
         const L=d.live||{};await loadState();
         remOpen=typeof L.openId==='string'&&L.openId?L.openId:null;remDarts=Array.isArray(L.darts)?L.darts:[];
-        if(openId&&L.openId===openId){darts=Array.isArray(L.darts)?L.darts.filter(x=>x&&typeof x.lab==='string').map(x=>({lab:x.lab,v:+x.v||0,dbl:!!x.dbl})):[];msg=typeof L.msg==='string'?L.msg:'';edit=null;mod=1}
+        if(openId&&L.openId===openId){darts=Array.isArray(L.darts)?L.darts.filter(x=>x&&typeof x.lab==='string').map(dClean):[];msg=typeof L.msg==='string'?L.msg:'';edit=null;mod=1}
         else if(!openId&&L.openId&&S.kind==='single'&&L.openId==='X'&&SID){/* wedstrijd op het andere apparaat gestart: hier niet automatisch openen */}
         const E=Array.isArray(L.evs)?L.evs.filter(x=>x&&typeof x.id==='number'&&!myEvs.has(x.id)).sort((a,b)=>a.id-b.id):[];
         if(remSeen===null)remSeen=E.reduce((m,x)=>Math.max(m,x.id),0);
@@ -1478,7 +1524,11 @@ function tvMatch(){
     :L.bull?`<div class="tvd tvbull"><small>Eerst bullen</small><b>Wie gooit het dichtst bij de bull?</b></div>`
     :`<div class="tvd"><small>${pn(ps[L.cur])} gooit · leg ${L.leg+1}</small>${S.inmode==='pijl'?`<div class="tvsl">${[0,1,2].map(i=>`<span class="${darts[i]?'f':''}">${darts[i]?esc(darts[i].lab):''}</span>`).join('')}</div><b>${dsum?'Deze beurt '+dsum:''}</b>`:''}</div>`;
   const hist=L.lt.slice(-8).reverse().map(x=>`<li><span>${pn(ps[x.side])}</span><b>${x.bust?'BUST':x.score}</b></li>`).join('');
-  const main=`<div class="tvm2${SOLO(openId)?' solo':''}">${side(0)}${SOLO(openId)?'':side(1)}${turn}</div>${hist?`<ul class="tvh">${hist}</ul>`:''}`;
+  // dartbord: de pijlen van deze beurt; nog geen pijl gegooid? dan vaag de vorige beurt
+  const lastT=L.t.list.length?L.t.list[L.t.list.length-1]:null,prevD=!darts.length&&lastT&&Array.isArray(lastT.d)?lastT.d:[];
+  const bkey=openId+':'+L.leg+':'+L.lt.length+':';
+  const board=done?'':`<div class="tvbw">${boardSvg(darts,prevD,darts.length?bkey:(openId+':'+(lastT?lastT.leg:0)+':'+(L.t.list.length-1)+':'))}</div>`;
+  const main=`<div class="tvm2${SOLO(openId)?' solo':''}${board?' wb':''}">${side(0)}${board}${SOLO(openId)?'':side(1)}${turn}</div>${hist?`<ul class="tvh">${hist}</ul>`:''}`;
   if(!isC(openId)||!S.comp.started)return{ctx,html:main};
   const T=cStand();
   return{ctx,html:`<div class="tvsp"><div class="tvmn">${main}</div><aside class="tvsd"><h3>Live stand</h3><table class="tvmini"><thead><tr><th>#</th><th class="tn">SPELER</th><th>W</th><th>+/−</th><th>PNT</th></tr></thead><tbody>${T.map((r,i)=>{const d=r.lf-r.la;return`<tr class="${ps.includes(r.i)?'me':''}"><td>${i+1}</td><td class="tn">${esc(r.n)}</td><td>${r.w}</td><td>${d>0?'+'+d:d}</td><td class="pt">${r.pt}</td></tr>`}).join('')}</tbody></table><p class="tvsdn"><i></i>speelt nu</p></aside></div>`};

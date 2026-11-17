@@ -136,7 +136,10 @@ function camPush(room, events, st) {
     const k = String(e.k || '');
     if (!['dart', 'takeout', 'fix'].includes(k)) continue;
     const n = Math.max(0, Math.min(25, Math.floor(Number(e.n) || 0))), m = Math.max(0, Math.min(3, Math.floor(Number(e.m) || 0)));
-    c.ev.push({ id: ++c.seq, k, n, m, i: Math.max(0, Math.min(2, Math.floor(Number(e.i) || 0))), name: String(e.name || '').slice(0, 12), at: now });
+    const ev = { id: ++c.seq, k, n, m, i: Math.max(0, Math.min(2, Math.floor(Number(e.i) || 0))), name: String(e.name || '').slice(0, 12), at: now };
+    const x = Number(e.x), y = Number(e.y);
+    if (Number.isFinite(x) && Number.isFinite(y) && Math.abs(x) < 3 && Math.abs(y) < 3) { ev.x = Math.round(x * 1e4) / 1e4; ev.y = Math.round(y * 1e4) / 1e4; }
+    c.ev.push(ev);
   }
   if (c.ev.length > 40) c.ev = c.ev.slice(-40);
   c.seq++; // ook een 'ping' telt als verandering, zodat de status live bijwerkt

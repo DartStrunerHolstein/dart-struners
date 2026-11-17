@@ -139,7 +139,11 @@ function omzet(t) {
   if (n === 25 && m >= 2) m = 2;
   if (t.bouncer === true || t.bounceOut === true) { n = 0; m = 0; }
   if (m === 0 || !(n === 25 || (n >= 1 && n <= 20))) { n = 0; m = 0; }
-  return { n, m, name: n === 0 ? 'Mis' : n === 25 ? (m === 2 ? 'Bull' : '25') : (m === 3 ? 'T' : m === 2 ? 'D' : '') + n };
+  const out = { n, m, name: n === 0 ? 'Mis' : n === 25 ? (m === 2 ? 'Bull' : '25') : (m === 3 ? 'T' : m === 2 ? 'D' : '') + n };
+  // plek op het bord (voor het dartbord op de monitor): bull = (0,0), y omhoog = richting de 20
+  const c = t.coords && typeof t.coords === 'object' ? t.coords : null, cx = c ? getal(c.x) : null, cy = c ? getal(c.y) : null;
+  if (cx !== null && cy !== null && !(t.bouncer === true)) { out.x = cx; out.y = cy; }
+  return out;
 }
 // Ruwe gegevens van de eerste pijlen bewaren, zodat we kunnen zien wat Autodarts precies stuurt
 const LOGF = path.join(__dirname, 'bord-log.txt');
