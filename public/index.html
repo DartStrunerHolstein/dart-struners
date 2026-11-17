@@ -935,7 +935,7 @@ function dartPos(d,key){
   const i=BORD.indexOf(+m[2]),a=(i+(r1-.5)*.6)*Math.PI/10;
   const r=m[1]==='T'?.594+r2*.024:m[1]==='D'?.962+r2*.03:(r2<.6?.16+r2*.62:.66+(r2-.6)*.6);
   return{x:Math.sin(a)*r,y:Math.cos(a)*r}}
-let boardSeen=new Set();
+let boardSeen=new Set(),boardDone={},boardT=0;
 function boardSvg(cur,prev,keyBase){
   const seg=(r0,r1,i,fill)=>{const a0=(i-.5)*Math.PI/10,a1=(i+.5)*Math.PI/10,p=(r,a)=>`${(Math.sin(a)*r*100).toFixed(2)} ${(-Math.cos(a)*r*100).toFixed(2)}`;
     return`<path d="M${p(r0,a0)} L${p(r1,a0)} A${r1*100} ${r1*100} 0 0 1 ${p(r1,a1)} L${p(r0,a1)} A${r0*100} ${r0*100} 0 0 0 ${p(r0,a0)}Z" fill="${fill}"/>`};
@@ -953,9 +953,10 @@ function boardSvg(cur,prev,keyBase){
     <path d="M33 0 L40.5 -9.5 L48.5 -8.6 L44.5 0 L48.5 8.6 L40.5 9.5 Z" fill="url(#dflight)" stroke="#a3084f" stroke-width=".5"/>
     <path d="M34 0 L48 0" stroke="rgba(255,255,255,.7)" stroke-width=".6"/>
     <path d="M36 -3 L41.5 -8.4" stroke="rgba(255,255,255,.45)" stroke-width=".7"/>`;
-  const pin=(d,k,old)=>{const p=dartPos(d,k),x=p.x*100,y=-p.y*100,isNew=!old&&!boardSeen.has(k),rot=-38-hsh(k+'r')*24;now.add(k);
+  const pin=(d,k,old)=>{const p=dartPos(d,k),x=p.x*100,y=-p.y*100,isNew=!boardSeen.has(k),rot=-38-hsh(k+'r')*24;now.add(k);
     return`<g class="dpin${old?' old':''}${isNew?' new':''}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><circle class="dhole" r="1.6" fill="#1a0610"/><g class="dfly"><g transform="rotate(${rot.toFixed(1)}) scale(.92)">${DART}</g></g><circle class="dring" r="3" fill="none" stroke="#ff2d8a" stroke-width="1.4" opacity="0"/></g>`};
-  const pins=(prev||[]).map((d,i)=>pin(d,keyBase+'p'+i,true)).join('')+(cur||[]).map((d,i)=>pin(d,keyBase+'c'+i,false)).join('');
+  // cur = pijlen van de beurt (sleutel per beurt, zodat de laatste pijl ook nog invliegt); prev = vervaagd
+  const pins=(cur||[]).map((d,i)=>pin(d,keyBase+i,!!prev)).join('');
   boardSeen=now;
   const defs=`<defs><linearGradient id="dbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd1e6"/><stop offset=".35" stop-color="#ff5ca8"/><stop offset=".7" stop-color="#d4146f"/><stop offset="1" stop-color="#7d0a40"/></linearGradient>
     <linearGradient id="dtip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#8d8790"/></linearGradient>
@@ -1427,7 +1428,9 @@ function applyRemote(c){
   if(!tvGot){tvGot=true;tvEv=E.reduce((m,x)=>Math.max(m,x.id),tvEv)}
   else E.filter(x=>x.id>tvEv).sort((a,b)=>a.id-b.id).forEach(x=>{tvEv=Math.max(tvEv,x.id);
     if(x.k==='say'&&typeof x.t==='string')say(x.t.slice(0,200),x.cut,Array.isArray(x.s)?x.s.slice(0,4).filter(q=>Array.isArray(q)).map(q=>q.slice(0,4).map(k=>String(k).slice(0,20))):null);
-    else if(FXK.includes(x.k)){tvFx={k:x.k,who:String(x.who||'').slice(0,40),v:+x.v||0};clearTimeout(tvFxT);tvFxT=setTimeout(()=>{tvFx=null;renderTV()},2600)}});
+    else if(FXK.includes(x.k)){const fx={k:x.k,who:String(x.who||'').slice(0,40),v:+x.v||0};clearTimeout(tvFxT);
+      // even wachten, zodat de laatste pijl eerst in het bord landt
+      tvFxT=setTimeout(()=>{tvFx=fx;renderTV();tvFxT=setTimeout(()=>{tvFx=null;renderTV()},2600)},700)}});
   try{refresh()}catch(e){}
 }
 // Live bijwerken met 'long polling': de server antwoordt zodra er iets verandert
@@ -1539,10 +1542,14 @@ function tvMatch(){
     :L.bull?`<div class="tvd tvbull"><small>Eerst bullen</small><b>Wie gooit het dichtst bij de bull?</b></div>`
     :`<div class="tvd"><small>${pn(ps[L.cur])} gooit · leg ${L.leg+1}</small>${S.inmode==='pijl'?`<div class="tvsl">${[0,1,2].map(i=>`<span class="${darts[i]?'f':''}">${darts[i]?esc(darts[i].lab):''}</span>`).join('')}</div><b>${dsum?'Deze beurt '+dsum:''}</b>`:''}</div>`;
   const hist=L.lt.slice(-8).reverse().map(x=>`<li><span>${pn(ps[x.side])}</span><b>${x.bust?'BUST':x.score}</b></li>`).join('');
-  // dartbord: de pijlen van deze beurt; nog geen pijl gegooid? dan vaag de vorige beurt
-  const lastT=L.t.list.length?L.t.list[L.t.list.length-1]:null,prevD=!darts.length&&lastT&&Array.isArray(lastT.d)?lastT.d:[];
-  const bkey=openId+':'+L.leg+':'+L.lt.length+':';
-  const board=done?'':`<div class="tvbw">${boardSvg(darts,prevD,darts.length?bkey:(openId+':'+(lastT?lastT.leg:0)+':'+(L.t.list.length-1)+':'))}</div>`;
+  // dartbord: de pijlen van deze beurt. Is de beurt net klaar, dan blijft hij nog even helder staan
+  // (zodat de laatste pijl netjes invliegt) en vervaagt daarna tot de volgende speler gooit.
+  const nT=L.t.list.length,lastT=nT?L.t.list[nT-1]:null;
+  let bd=darts,bk=openId+':T'+nT+':',fade=false;
+  if(!darts.length&&lastT&&Array.isArray(lastT.d)){bd=lastT.d;bk=openId+':T'+(nT-1)+':';
+    if(!boardDone[bk])boardDone[bk]=Date.now();const age=Date.now()-boardDone[bk];
+    if(age<2600){clearTimeout(boardT);boardT=setTimeout(renderTV,2650-age)}else fade=true}
+  const board=`<div class="tvbw">${boardSvg(bd,fade,bk)}</div>`;
   const main=`<div class="tvm2${SOLO(openId)?' solo':''}${board?' wb':''}">${side(0)}${board}${SOLO(openId)?'':side(1)}${turn}</div>${hist?`<ul class="tvh">${hist}</ul>`:''}`;
   if(!isC(openId)||!S.comp.started)return{ctx,html:main};
   const T=cStand();
