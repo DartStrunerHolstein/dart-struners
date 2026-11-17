@@ -2,9 +2,10 @@
 // Leest de pijlen die Autodarts op deze computer (of in het netwerk) herkent
 // en stuurt ze door naar de website. Geen extra pakketten nodig (Node.js 18+).
 //
-// Starten:   node bord.js           (eerste keer stelt hij een paar vragen)
-//            node bord.js --opnieuw (vragen opnieuw beantwoorden)
-//            node bord.js --test    (zonder camera's: typ zelf pijlen, bijv. T20)
+// Starten:   node bord.js            (zoekt Autodarts en toont een koppelcode)
+//            node bord.js --opnieuw  (nieuwe koppelcode en Autodarts opnieuw zoeken)
+//            node bord.js --test     (zonder camera's: typ zelf pijlen, bijv. T20)
+//            node bord.js --site=https://…  (andere website, standaard dartstruners.alwaysdata.net)
 
 'use strict';
 const fs = require('fs');
@@ -15,6 +16,7 @@ const readline = require('readline');
 const CONFIG = path.join(__dirname, 'bord-instellingen.json');
 const args = process.argv.slice(2);
 const TEST = args.includes('--test');
+const SITE = ((args.find(a => a.startsWith('--site=')) || '').slice(7) || 'https://dartstruners.alwaysdata.net').replace(/\/+$/, '');
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const lijnen = [], wachters = [];
@@ -31,22 +33,30 @@ async function get(url, ms = 1500) {
 }
 
 // ---------- website ----------
-function siteInfo(link) {
-  let u;
-  try { u = new URL(/^https?:\/\//i.test(link) ? link : 'https://' + link); } catch (e) { return null; }
-  const m = /^\/s\/([a-z0-9]{6})/i.exec(u.pathname);
-  return { base: u.origin, sid: m ? m[1].toLowerCase() : '', api: u.origin + (m ? '/api/s/' + m[1].toLowerCase() + '/bord' : '/api/bord') };
+async function nieuweCode() {
+  const r = await fetch(SITE + '/api/koppel/nieuw', { method: 'POST', signal: AbortSignal.timeout(10000) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || !d.id) throw new Error(d.error || 'website antwoordt ' + r.status);
+  return d;
 }
 async function stuur(cfg, events, status) {
-  const r = await fetch(cfg.api, {
+  const r = await fetch(SITE + '/api/koppel/' + cfg.id, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Pin': cfg.code },
+    headers: { 'Content-Type': 'application/json', 'X-Secret': cfg.secret },
     body: JSON.stringify({ events, status }),
     signal: AbortSignal.timeout(8000)
   });
-  if (r.status === 401) { const e = new Error('code'); e.code = 401; throw e; }
-  if (r.status === 429) { const e = new Error('Te vaak een verkeerde code. Wacht 5 minuten.'); e.code = 429; throw e; }
+  if (r.status === 401 || r.status === 404) { const e = new Error('koppeling'); e.code = 404; throw e; }
   if (!r.ok) throw new Error('website antwoordt ' + r.status);
+  return r.json().catch(() => ({}));
+}
+function toonCode(code) {
+  console.log('');
+  console.log('  ╔══════════════════════════════════════╗');
+  console.log('  ║        KOPPELCODE:   ' + code.split('').join(' ') + '         ║');
+  console.log('  ╚══════════════════════════════════════╝');
+  console.log('  Tik op je telefoon (of tablet/computer) in de wedstrijd op "Camera"');
+  console.log('  en typ deze code. Dat hoeft maar één keer: hij wordt onthouden.\n');
 }
 
 // ---------- Autodarts zoeken ----------
@@ -71,50 +81,19 @@ async function zoekInNetwerk() {
   return gevonden;
 }
 
-// ---------- instellingen ----------
-async function instellen(oud) {
-  console.log('\n=== Instellen ===\n');
-  let cfg = {};
-  for (;;) {
-    const link = await ask(`Link van de website${oud && oud.site ? ' [' + oud.site + ']' : ''}:\n  (bijv. dartstruners.alwaysdata.net, of een sessielink zoals …/s/abc123)\n> `) || (oud && oud.site) || '';
-    const s = siteInfo(link);
-    if (!s) { console.log('Dat is geen geldige link.\n'); continue; }
-    cfg = { site: link, ...s };
-    break;
+// ---------- Autodarts automatisch vinden ----------
+async function vindBord(oud) {
+  if (oud && await isAutodarts(oud)) return oud;
+  for (const b of ['http://127.0.0.1:3180', 'http://localhost:3180']) if (await isAutodarts(b)) return b;
+  const g = await zoekInNetwerk();
+  if (g.length === 1) return g[0];
+  if (g.length > 1) {
+    console.log('Meerdere borden gevonden:');
+    g.forEach((b, i) => console.log(`  ${i + 1}) ${b}`));
+    const c = await ask('Welk bord? Typ het nummer: ');
+    return g[Number(c) - 1] || g[0];
   }
-  for (;;) {
-    cfg.code = await ask(`\nCode ${cfg.sid ? '(de sessiecode)' : '(je beheerderscode, of de bordcode als je die hebt)'}:\n> `);
-    if (!cfg.code) continue;
-    try { await stuur(cfg, [], { connected: false, running: false, status: 'Instellen' }); console.log('Code klopt ✓'); break; }
-    catch (e) {
-      if (e.code === 401) console.log('Deze code klopt niet. Probeer het opnieuw.');
-      else if (e.code === 429) { console.log(e.message); await sleep(5000); }
-      else { console.log('Kan de website niet bereiken (' + e.message + '). Controleer de link en je internet.'); return instellen(cfg); }
-    }
-  }
-  if (TEST) { cfg.board = 'test'; return cfg; }
-  for (;;) {
-    console.log('\nWaar draait Autodarts?\n  1) Op deze computer\n  2) Zoeken in het netwerk\n  3) Zelf een adres invullen');
-    const k = await ask('> ');
-    if (k === '1') {
-      if (await isAutodarts('http://127.0.0.1:3180')) { cfg.board = 'http://127.0.0.1:3180'; console.log('Autodarts gevonden op deze computer ✓'); break; }
-      console.log('Autodarts antwoordt niet op deze computer. Staat het Autodarts-programma aan?');
-    } else if (k === '2') {
-      const g = await zoekInNetwerk();
-      if (!g.length) { console.log('Geen Autodarts gevonden in het netwerk.'); continue; }
-      g.forEach((b, i) => console.log(`  ${i + 1}) ${b}`));
-      const c = g.length === 1 ? '1' : await ask('Welk bord? > ');
-      const b = g[Number(c) - 1];
-      if (b) { cfg.board = b; console.log('Gekozen: ' + b + ' ✓'); break; }
-    } else if (k === '3') {
-      let a = await ask('Adres (bijv. 192.168.1.50): > ');
-      if (!/^https?:\/\//.test(a)) a = 'http://' + a;
-      if (!/:\d+$/.test(a)) a += ':3180';
-      if (await isAutodarts(a)) { cfg.board = a; console.log('Autodarts gevonden ✓'); break; }
-      console.log('Op dat adres antwoordt Autodarts niet.');
-    }
-  }
-  return cfg;
+  return null;
 }
 
 // ---------- pijlen omzetten ----------
@@ -173,18 +152,19 @@ function bewaarRuw(t, p) {
 }
 
 // ---------- hoofdlus ----------
-let queue = [], bezig = false, laatsteStatus = null, fouten = 0;
+let queue = [], bezig = false, laatsteStatus = null, fouten = 0, telefoon = null;
 async function verstuur(cfg, force) {
   if (bezig || (!queue.length && !force)) return;
   bezig = true;
   const batch = queue.slice(0, 20);
   try {
-    await stuur(cfg, batch, laatsteStatus);
+    const d = await stuur(cfg, batch, laatsteStatus);
     queue = queue.slice(batch.length);
+    if (d && typeof d.telefoon === 'boolean' && d.telefoon !== telefoon) { const was = telefoon; telefoon = d.telefoon; if (telefoon) log('Telefoon gekoppeld ✓ De pijlen tellen mee.'); else if (was) log('Geen telefoon meer gekoppeld. Koppelcode: ' + cfg.code); }
     if (fouten) log('Weer verbonden met de website ✓');
     fouten = 0;
   } catch (e) {
-    if (e.code === 401) { log('De code klopt niet meer. Start opnieuw met: node bord.js --opnieuw'); process.exit(1); }
+    if (e.code === 404) { log('De koppeling is verlopen. Start opnieuw met: START-BORD.bat --opnieuw'); process.exit(1); }
     if (fouten++ % 10 === 0) log('Website niet bereikbaar (' + e.message + '). Ik probeer het steeds opnieuw…');
   }
   bezig = false;
@@ -257,16 +237,27 @@ async function testModus(cfg) {
   console.log('    DE DART STRUNERS – BORD');
   console.log('  ===============================\n');
   if (typeof fetch !== 'function') { console.log('Deze Node.js is te oud. Gebruik START-BORD.bat, die regelt de juiste versie.'); process.exit(1); }
-  let cfg = null;
-  try { if (!args.includes('--opnieuw')) cfg = JSON.parse(fs.readFileSync(CONFIG, 'utf8')); } catch (e) {}
-  if (cfg && cfg.site) { Object.assign(cfg, siteInfo(cfg.site)); }
-  if (!cfg || !cfg.code || (!cfg.board && !TEST)) {
-    cfg = await instellen(cfg);
-    if (!TEST) { fs.writeFileSync(CONFIG, JSON.stringify({ site: cfg.site, code: cfg.code, board: cfg.board }, null, 2)); console.log('\nInstellingen bewaard. Volgende keer start hij meteen.'); }
+  let cfg = {};
+  try { if (!args.includes('--opnieuw')) cfg = JSON.parse(fs.readFileSync(CONFIG, 'utf8')) || {}; } catch (e) {}
+  if (cfg.site && cfg.site !== SITE) cfg = { board: cfg.board };
+  // koppelcode
+  while (!cfg.id) {
+    try { const d = await nieuweCode(); cfg = { ...cfg, id: d.id, secret: d.secret, code: d.code, site: SITE }; }
+    catch (e) { console.log('Kan ' + SITE + ' niet bereiken (' + e.message + '). Heeft deze laptop internet? Ik probeer het over 5 seconden opnieuw…'); await sleep(5000); }
   }
-  console.log(`\nWebsite: ${cfg.base}${cfg.sid ? '  (sessie ' + cfg.sid + ')' : ''}`);
-  console.log('Zet op je telefoon in de wedstrijd de knop "Camera" aan. Laat dit venster open zolang je speelt.\n');
+  // Autodarts
+  if (!TEST) {
+    console.log('Autodarts zoeken…');
+    let b = await vindBord(cfg.board);
+    while (!b) { console.log('Autodarts niet gevonden. Start het Autodarts-programma; ik zoek over 10 seconden opnieuw…'); await sleep(10000); b = await vindBord(cfg.board); }
+    cfg.board = b;
+    console.log('Autodarts gevonden op ' + b + ' ✓');
+  }
+  try { fs.writeFileSync(CONFIG, JSON.stringify(cfg, null, 2)); } catch (e) {}
+  toonCode(cfg.code);
+  console.log('Laat dit venster open zolang je speelt.\n');
   setInterval(() => verstuur(cfg, true), 10000); // teken van leven voor de status op de telefoon
+  setInterval(() => { if (!telefoon) toonCode(cfg.code); }, 120000);
   verstuur(cfg, true);
   if (TEST) return testModus(cfg);
   rl.close();

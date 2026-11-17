@@ -142,6 +142,25 @@ function camPush(room, events, st) {
   c.seq++; // ook een 'ping' telt als verandering, zodat de status live bijwerkt
 }
 
+// ---------- koppelen: laptop met camera's <-> telefoon met een korte code ----------
+// Het doorgeefprogramma vraagt één keer een code (bijv. K7P2) en stuurt daarna zijn pijlen hierheen.
+// De telefoon die die code intypt, luistert mee en verwerkt de pijlen in de wedstrijd die daar open staat.
+const KOP_FILE = path.join(DATA_DIR, 'koppel.json');
+let kop = {}; // id -> { h (hash van het geheim), code, c, u }
+try { if (fs.existsSync(KOP_FILE)) { const d = JSON.parse(fs.readFileSync(KOP_FILE, 'utf8')); if (d && typeof d === 'object') kop = d; } } catch (e) {}
+const kopRoom = new Map(), kopWait = new Map(), kopSeen = new Map(), kopHits = new Map();
+let kopTimer = null;
+function persistKop() {
+  clearTimeout(kopTimer);
+  kopTimer = setTimeout(() => { const tmp = KOP_FILE + '.tmp'; fs.writeFile(tmp, JSON.stringify(kop), e => { if (!e) fs.rename(tmp, KOP_FILE, () => {}); }); }, 500);
+}
+function kopClean() { const old = Date.now() - 90 * 864e5; let n = 0; for (const [id, x] of Object.entries(kop)) if ((x.u || x.c || 0) < old) { delete kop[id]; n++; } if (n) persistKop(); }
+setInterval(kopClean, 6 * 3600e3); kopClean();
+const roomOfKop = id => { if (!kopRoom.has(id)) kopRoom.set(id, {}); return kopRoom.get(id); };
+const kopByCode = c => { c = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); for (const [id, x] of Object.entries(kop)) if (x.code === c) return id; return null; };
+function kopNotify(id) { const w = kopWait.get(id) || []; kopWait.set(id, []); const v = camView(roomOfKop(id)); for (const y of w) { clearTimeout(y.t); try { send(y.res, 200, v); } catch (e) {} } }
+function newKopCode() { const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; for (;;) { let c = ''; for (let i = 0; i < 4; i++) c += ch[crypto.randomInt(ch.length)]; if (!kopByCode(c)) return c; } }
+
 // Voor meekijkers alleen de beurten van de wedstrijd die nu bezig is
 function viewOf(st) {
   const S = st.S ? Object.assign({}, st.S) : null;
@@ -387,6 +406,42 @@ const server = http.createServer(async (req, res) => {
       if (role) { fails.delete(ip); return send(res, 200, { ok: true, role }); }
       failed(ip);
       return send(res, 401, { error: 'Onjuiste code' });
+    }
+
+    if (req.method === 'POST' && p === '/api/koppel/nieuw') {
+      const now = Date.now(), l = (kopHits.get(ip) || []).filter(t => now - t < 3600e3);
+      if (l.length >= 10) return send(res, 429, { error: 'Te vaak een nieuwe code gevraagd. Probeer het later opnieuw.' });
+      l.push(now); kopHits.set(ip, l);
+      if (Object.keys(kop).length > 2000) kopClean();
+      const id = crypto.randomBytes(9).toString('hex'), secret = crypto.randomBytes(18).toString('hex'), code = newKopCode();
+      kop[id] = { h: hashCode(secret), code, c: now, u: now };
+      persistKop();
+      return send(res, 200, { id, secret, code });
+    }
+    const km = /^\/api\/koppel\/([a-f0-9]{18})$/.exec(p);
+    if (km && req.method === 'POST') {
+      const id = km[1], x = kop[id];
+      if (!x) return send(res, 404, { error: 'Onbekend bord' });
+      if (!sessOk(x, req.headers['x-secret'])) return send(res, 401, { error: 'Onjuist geheim' });
+      const b = await readBody(req);
+      camPush(roomOfKop(id), b.events, b.status);
+      if (Date.now() - (x.u || 0) > 3600e3) { x.u = Date.now(); persistKop(); }
+      kopNotify(id);
+      return send(res, 200, { ok: true, code: x.code, telefoon: Date.now() - (kopSeen.get(id) || 0) < 35000 });
+    }
+    const kw = /^\/api\/koppel\/code\/([A-Za-z0-9]{4})\/wait$/.exec(p);
+    if (kw && req.method === 'GET') {
+      const id = kopByCode(kw[1]);
+      if (!id) return send(res, 404, { error: 'Deze koppelcode bestaat niet' });
+      kopSeen.set(id, Date.now());
+      const room = roomOfKop(id), kb = url.searchParams.get('bv');
+      if (kb === null || Number(kb) !== camOf(room).seq) return send(res, 200, camView(room));
+      const w = kopWait.get(id) || []; kopWait.set(id, w);
+      if (w.length > 50) return send(res, 200, camView(room));
+      const y = { res, t: setTimeout(() => { kopWait.set(id, (kopWait.get(id) || []).filter(z => z !== y)); send(res, 200, camView(room)); }, 25000) };
+      w.push(y);
+      req.on('close', () => { clearTimeout(y.t); kopWait.set(id, (kopWait.get(id) || []).filter(z => z !== y)); });
+      return;
     }
 
     if (req.method === 'POST' && p === '/api/bord') {

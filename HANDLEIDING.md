@@ -107,4 +107,8 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 
 ## Automatisch tellen met de camera's (Autodarts)
 
-In de map **bord** staat het doorgeefprogramma. Het draait op de laptop bij het bord, naast Autodarts, en stuurt elke herkende pijl door naar de website. Zet op je telefoon in de wedstrijd de knop **Camera** aan; de telefoon telt dan vanzelf mee en je kunt een verkeerde pijl gewoon verbeteren. Alles staat uitgelegd in `bord/LEESMIJ.md`.
+In de map **bord** staat het doorgeefprogramma. Het draait op de laptop bij het bord, naast Autodarts, zoekt Autodarts zelf en toont een **koppelcode**. Tik op je telefoon (of tablet/computer) in de wedstrijd op **Camera** en typ die code één keer in; daarna tellen de pijlen vanzelf mee en kun je een verkeerde pijl gewoon verbeteren. Alles staat uitgelegd in `bord/LEESMIJ.md`.
+
+## Schermen
+
+De website past zich aan elk scherm aan: telefoon (staand en liggend), tablet, laptop, groot scherm en tv (ook 4K, dan wordt alles naar verhouding groter).

@@ -164,8 +164,20 @@ nav:empty{display:none}
 .lk .btn{min-height:40px;padding:0 14px;font-size:14px}
 .login{max-width:440px;display:grid;gap:12px}
 .hgrid{display:grid;gap:12px;max-width:760px}
+/* grote schermen (tv, 4K): alles naar verhouding groter */
+:root{--z:1}
+@media (min-width:2000px) and (min-height:1100px){:root{--z:1.5}.hero h1{white-space:nowrap}}
+@media (min-width:2800px) and (min-height:1500px){:root{--z:2}}
+body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
+.ktabs,.chatf{zoom:var(--z)}
+@media (min-width:761px) and (min-aspect-ratio:1/1){html body.kijk.chaton #tv{right:calc(340px * var(--z))}}
 .snd.cam{display:inline-flex;align-items:center;gap:6px}.snd.cam .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35)}.snd.cam .dot.ok{background:#5ee6a0}.snd.cam .dot.bad{background:#ff6b6b}
 .snd.cam.on{background:rgba(94,230,160,.15);border-color:rgba(94,230,160,.5)}
+.kopf{display:flex;flex-direction:column;gap:6px;border-radius:12px;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,45,138,.4)}
+.kopf b{font-size:15px}.kopf span{font-size:13px;color:#f5bfd8}.kopf em{font-style:normal;font-weight:700;color:#fff}
+.kopf input{flex:1;min-width:0;width:auto;text-transform:uppercase;letter-spacing:.2em;font-weight:800;background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2)}
+.kopf .row{display:flex;gap:6px;flex-wrap:nowrap}
+.lnk{background:none;border:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer;padding:0;margin-left:4px}
 .caminfo{font-size:13px;font-weight:600;border-radius:10px;padding:8px 10px;background:rgba(94,230,160,.1);color:#bff5d9}.caminfo.bad{background:rgba(255,107,107,.12);color:#ffc2c2}
 .hc{display:flex;align-items:center;gap:16px;padding:18px 18px;border-radius:20px;border:2px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none;text-align:left;font:inherit;cursor:pointer;width:100%;transition:border-color .15s,transform .15s}
 .hc:hover{border-color:var(--pink)}.hc:active{transform:scale(.99)}
@@ -200,7 +212,7 @@ body.tvm .hero,body.tvm main,body.tvm #ov{display:none!important}
 .tvp{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-top:.8vh solid transparent;border-radius:2vw;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2vh 2vw;min-height:0;min-width:0}
 .tvp.on{background:rgba(255,45,138,.14);border-color:rgba(255,45,138,.4);border-top-color:var(--pink)}
 .tvp.won{border-top-color:var(--hl)}
-.tvn{font:800 clamp(24px,3.6vw,72px)/1.1 Inter,system-ui,sans-serif;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvn{font:800 clamp(24px,3.6vw,72px)/1.08 Inter,system-ui,sans-serif;max-width:100%;overflow:hidden;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;text-align:center}
 .tvl{font-weight:700;font-size:clamp(14px,1.8vw,34px);color:rgba(255,255,255,.65);letter-spacing:.08em;margin-top:.6vh}.tvl b{color:#fff}
 .tvr{font:min(17vw,30vh)/1 Anton,Impact,sans-serif;margin:1vh 0}
 .tvck{font-weight:800;font-size:clamp(16px,2.2vw,40px);color:var(--hl);min-height:1.3em;letter-spacing:.04em}
@@ -362,7 +374,7 @@ body.kijk.chaton #tv{bottom:var(--chath,0px)}
  .tvt{flex-wrap:wrap;gap:8px;font-size:13px}.tvt svg{width:36px;height:36px;min-width:36px;min-height:36px}.tvt b{font-size:22px}.tvt i{margin-left:auto}.tvt em{flex-basis:100%;order:3}
  .tvm2{grid-template-rows:auto auto;gap:10px}
  .tvp{border-radius:14px;padding:12px 8px;border-top-width:4px}
- .tvn{font-size:17px}.tvl{font-size:12px}.tvr,body.kijk .tvr{font-size:21vw;margin:4px 0}.tvck{font-size:12px}
+ .tvn{font-size:17px}.tvl{font-size:12px}.tvr,body.kijk .tvr{font-size:min(21vw,30vh);margin:4px 0}.tvck{font-size:12px}
  .tvp{padding:12px 8px}.tvst span{font-size:15px}.tvst small{font-size:9px}.tvd{font-size:14px;padding:10px}.tvsl span{font-size:17px}.tvh{font-size:12px}.tvw{gap:12px;padding:14px 12px 40px}
  .tvst{gap:14px;margin-top:6px;padding-top:6px}.tvst span{font-size:15px}.tvst small{font-size:9px}
  .tvd{border-radius:12px;font-size:14px;padding:10px;gap:8px}.tvsl{gap:6px}.tvsl span{min-width:52px;font-size:17px;border-radius:8px;padding:4px 6px}
@@ -799,20 +811,31 @@ function vSingle(){
 const gameSel=()=>`<label>Spel<select id="game">${[101,201,301,501,701].map(v=>`<option value="${v}"${v==S.game?' selected':''}>${v}</option>`).join('')}</select></label>
   <label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label>`;
 /* ---------- camera's: pijlen van Autodarts via het doorgeefprogramma ---------- */
-const CAMK='dartstruners-cam'+(SID?'-'+SID:'');
-let cam={seq:-1,at:0,st:null,ev:[]},camOn=false,camLast=null,camSkew=0;
-try{camOn=localStorage.getItem(CAMK)==='1'}catch(e){}
+// De laptop toont een koppelcode (bijv. K7P2); de telefoon luistert met die code mee.
+const CAMK='dartstruners-cam'+(SID?'-'+SID:''),KOPK='dartstruners-koppel';
+let cam={seq:-1,at:0,st:null,ev:[]},camOn=false,camLast=null,camSkew=0,kopCode='',kopAsk=false,kopErr='',camLoop=false;
+try{camOn=localStorage.getItem(CAMK)==='1';kopCode=localStorage.getItem(KOPK)||''}catch(e){}
+if(!kopCode)camOn=false;
 const camLive=()=>cam.at&&Date.now()-camSkew-cam.at<25000;
 function camTake(c){if(!c||typeof c!=='object'||c.seq===cam.seq)return false;cam={seq:+c.seq||0,at:+c.at||0,st:c.st&&typeof c.st==='object'?c.st:null,ev:Array.isArray(c.ev)?c.ev:[]};
   const evs=cam.ev.filter(e=>e&&typeof e.id==='number').sort((a,b)=>a.id-b.id);
   if(camLast===null){camLast=evs.reduce((m,e)=>Math.max(m,e.id),0);return true}
   const nw=evs.filter(e=>e.id>camLast);if(nw.length)camLast=Math.max(...nw.map(e=>e.id));
-  if(camOn&&admin&&!tv)nw.forEach(camApply);
+  if(camOn&&(admin||SPELP)&&!tv)nw.forEach(camApply);
   return true}
+async function camStream(){if(camLoop)return;camLoop=true;const code=kopCode;
+  while(camOn&&kopCode===code){
+    try{const r=await fetch('/api/koppel/code/'+encodeURIComponent(code)+'/wait?bv='+cam.seq,{cache:'no-store'});
+      if(r.status===404){kopErr='Deze koppelcode bestaat niet (meer). Kijk op de laptop welke code er staat.';camOn=false;kopAsk=true;try{localStorage.setItem(CAMK,'0')}catch(_){}renderOv();break}
+      if(!r.ok)throw new Error(r.status);
+      const sk=r.headers.get('date');if(sk){const t=Date.parse(sk);if(t)camSkew=Date.now()-t}
+      if(camTake(await r.json()))renderOv();
+    }catch(e){await new Promise(r=>setTimeout(r,2000))}}
+  camLoop=false}
 function camApply(e){
   const n=e.m===0?0:e.n,m=e.n===25?(e.m>=2?2:1):Math.max(1,e.m);
   // checkout-spel
-  if(!openId&&S.kind==='spel'&&SP().on){const p=SP();
+  if(!openId&&(S.kind==='spel'||SPELP)&&SP().on){const p=SP();
     if(e.k==='dart'){spMod=n===0?1:m;spDart(n)}
     else if(e.k==='fix'&&p.darts[e.i]){p.darts.splice(e.i);spMod=n===0?1:m;spDart(n)}
     else if(e.k==='takeout'){let g=0;while(SP().on&&SP().darts.length&&g++<3)spDart(0)}
@@ -822,10 +845,24 @@ function camApply(e){
   else if(e.k==='fix'){if(darts[e.i]){edit=e.i;mod=n===0?1:m;dart(n)}}
   else if(e.k==='takeout'){if(darts.length){edit=null;evalTurn(live(openId),true)}}
 }
-function camBtn(){if(!camOn&&!cam.at)return'';const ok=camLive();
+function camBtn(){const ok=camLive();
   return`<button class="snd cam${camOn?' on':''}" data-a="cam" aria-pressed="${camOn}" title="${camOn?'Camera telt mee op dit apparaat':'Camera tellen aanzetten'}"><i class="dot ${camOn?(ok?'ok':'bad'):''}"></i>Camera</button>`}
-function camInfo(){if(!camOn)return'';const ok=camLive(),st=cam.st;
-  return`<div class="caminfo ${ok?'ok':'bad'}">${ok?(st&&st.running===false?'Camera\'s verbonden, maar Autodarts telt niet (gestopt)':'Camera\'s tellen mee. Klopt een pijl niet? Tik op het vakje om hem te verbeteren.'):'Geen verbinding met het doorgeefprogramma op de laptop'}</div>`}
+function camInfo(){
+  if(kopAsk)return`<form class="kopf" id="kopf"><b>Camera koppelen</b><span>Start op de laptop bij het bord <em>START-BORD.bat</em> en typ de code die daar staat.</span>
+    <div class="row"><input id="kopin" maxlength="4" placeholder="bijv. K7P2" autocomplete="off" autocapitalize="characters" value="${esc(kopCode)}" aria-label="Koppelcode"><button class="btn pri" type="submit">Koppelen</button><button class="btn" type="button" data-a="kopno">Annuleren</button></div>
+    ${kopErr?`<span class="cerr">${esc(kopErr)}</span>`:''}</form>`;
+  if(!camOn)return'';const ok=camLive(),st=cam.st;
+  return`<div class="caminfo ${ok?'ok':'bad'}">${ok?(st&&st.running===false?'Laptop verbonden, maar Autodarts telt niet (gestopt)':'Camera\'s tellen mee. Klopt een pijl niet? Tik op het vakje om hem te verbeteren.'):'Wachten op de laptop met code '+esc(kopCode)+'. Staat START-BORD.bat aan?'} <button type="button" class="lnk" data-a="kopnew">Andere code</button></div>`}
+async function kopTry(code){code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(code.length!==4){kopErr='De code heeft 4 tekens.';renderOv();return}
+  try{const r=await fetch('/api/koppel/code/'+code+'/wait',{cache:'no-store'});
+    if(r.status===404){kopErr='Deze code bestaat niet. Kijk goed op de laptop.';renderOv();return}
+    if(!r.ok)throw new Error();
+    kopCode=code;kopAsk=false;kopErr='';camOn=true;camLast=null;cam={seq:-1,at:0,st:null,ev:[]};
+    try{localStorage.setItem(KOPK,code);localStorage.setItem(CAMK,'1')}catch(_){}
+    camTake(await r.json());msg='Camera gekoppeld';renderOv();camStream()}
+  catch(e){kopErr='Geen verbinding. Probeer het opnieuw.';renderOv()}}
+document.addEventListener('submit',e=>{if(e.target&&e.target.id==='kopf'){e.preventDefault();kopTry((document.getElementById('kopin')||{}).value)}});
 /* ---------- startpagina en spelen ---------- */
 const SESSK='dartstruners-sessies';
 function mySess(){try{const l=JSON.parse(localStorage.getItem(SESSK));return Array.isArray(l)?l.filter(x=>x&&/^[a-z0-9]{6}$/.test(x.id)).slice(0,10):[]}catch(e){return[]}}
@@ -915,8 +952,8 @@ function vSpel(){const p=SP();
   <div class="row"><button class="btn pri" data-a="spstart">Start spel</button></div>${top}`}
 function spOv(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,left=3-p.darts.length,rs=routes(rem,left);
   return`<div class="ovb">
-   <div class="ovh"><span>Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen</span><span class="ovr">${SPELP?'':camBtn()}<button class="btn" data-a="sound">${S.sound?'Geluid aan':'Geluid uit'}</button><button class="btn" data-a="spclose">Menu</button></span></div>
-   ${SPELP?'':camInfo()}<div class="spt"><small>Getal ${Math.min(p.idx+1,20)} van 20 · ${p.n===2?esc(spN(p.cur))+' gooit uit':'gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog '+left+(left>1?' pijlen':' pijl'):'3 pijlen'}</small></div>
+   <div class="ovh"><span>Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen</span><span class="ovr">${camBtn()}<button class="btn" data-a="sound">${S.sound?'Geluid aan':'Geluid uit'}</button><button class="btn" data-a="spclose">Menu</button></span></div>
+   ${camInfo()}<div class="spt"><small>Getal ${Math.min(p.idx+1,20)} van 20 · ${p.n===2?esc(spN(p.cur))+' gooit uit':'gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog '+left+(left>1?' pijlen':' pijl'):'3 pijlen'}</small></div>
    <div class="slots sp2">${[0,1,2].map(i=>p.darts[i]?`<button disabled>${esc(p.darts[i].lab)}</button>`:`<span>Pijl ${i+1}</span>`).join('')}</div>
    <div class="msg">${esc(msg)}</div>
    <div class="sprt"><small>${rs.length?'Mogelijke routes':left===1?'Met 1 pijl niet uit te gooien':'Niet meer uit te gooien'}</small><div>${rs.slice(0,8).map(r=>`<span>${r.map(esc).join(' · ')}</span>`).join('')}${rs.length>8?`<span class="more">+${rs.length-8} meer</span>`:''}</div></div>
@@ -1146,7 +1183,10 @@ document.addEventListener('click',e=>{
   if(a==='sptopask'){spConf=true;render();return}
   if(a==='sptopno'){spConf=false;render();return}
   if(a==='sptopclear'){spConf=false;topAdmin({clear:true});return}
-  if(a==='cam'){camOn=!camOn;try{localStorage.setItem(CAMK,camOn?'1':'0')}catch(_){}msg=camOn?'Camera telt mee op dit apparaat':'Camera uit, je vult zelf in';renderOv();return}
+  if(a==='cam'){if(!kopCode){kopAsk=!kopAsk;kopErr='';renderOv();if(kopAsk)setTimeout(()=>{const i=document.getElementById('kopin');if(i)i.focus()},50);return}
+    camOn=!camOn;kopAsk=false;try{localStorage.setItem(CAMK,camOn?'1':'0')}catch(_){}msg=camOn?'Camera telt mee op dit apparaat':'Camera uit, je vult zelf in';if(camOn){camLast=null;camStream()}renderOv();return}
+  if(a==='kopno'){kopAsk=false;kopErr='';renderOv();return}
+  if(a==='kopnew'){camOn=false;kopAsk=true;kopErr='';try{localStorage.setItem(CAMK,'0')}catch(_){}renderOv();setTimeout(()=>{const i=document.getElementById('kopin');if(i){i.value='';i.focus()}},50);return}
   if(a==='chaton'){chatAdmin({on:!chat.on});return}
   if(a==='chatclear'){chatAdmin({clear:true});return}
   if(a==='export'){exportFile();return}
@@ -1243,15 +1283,13 @@ async function stream(){
   let v=-1;
   for(;;){
     try{
-      const r=await fetch(API+'/wait?v='+v+'&cv='+chat.v+'&tv='+top.v+(admin&&!tv?'&bv='+cam.seq:'')+'&c='+myId,{cache:'no-store'});
+      const r=await fetch(API+'/wait?v='+v+'&cv='+chat.v+'&tv='+top.v+'&c='+myId,{cache:'no-store'});
       if(!r.ok)throw new Error(r.status);
       const d=await r.json();
       clearTimeout(tvTO);tvSlow=false;setNet(true);
       const changed=d.v!==v;v=d.v;const cch=chatTake(d.chat),tch=topTake(d.top);
       if(tv){if(changed||!tvGot){applyRemote(d);renderTV()}else if(cch||tch)renderTV();continue}
       if(cch)chatAdm();if(tch)topRefresh();
-      const sk=r.headers.get('date');if(sk){const t=Date.parse(sk);if(t)camSkew=Date.now()-t}
-      if(admin&&camTake(d.cam)&&(openId||S.kind==='spel'))renderOv();
       if(SPELP)continue;
       // Beheerder op een ander apparaat heeft iets veranderd: haal de volledige stand op
       if(changed&&admin&&d.by&&d.by!==myId&&d.v>ver&&!openId&&!wBusy){await loadState();render()}
@@ -1350,6 +1388,7 @@ function renderTV(){
 (async()=>{
   if(tv){tvTO=setTimeout(()=>{tvSlow=true;renderTV()},10000);renderTV();stream();return}
   if(HOME||SPELEN){ready=true;render();return}
+  if(camOn&&kopCode)camStream();
   if(SPELP){S=DEF();S.kind='spel';try{const o=JSON.parse(localStorage.getItem('dartstruners-spel'));if(o&&o.spel){S.spel=o.spel;if(o.dout!==undefined)S.dout=o.dout;if(o.sound!==undefined)S.sound=o.sound;if(o.voice)S.voice=o.voice}}catch(e){}
     try{const r=await fetch('/api/spel/top',{cache:'no-store'});topTake(await r.json());setNet(true)}catch(e){}
     ready=true;render();stream();return}

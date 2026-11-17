@@ -1,38 +1,36 @@
 # Doorgeefprogramma voor Autodarts
 
-Dit programma draait op de computer bij het dartbord, naast Autodarts. Elke pijl die de camera's herkennen, stuurt het door naar De Dart Struners. De telefoon telt dan automatisch mee.
+Dit programma draait op de computer bij het dartbord, naast Autodarts. Elke pijl die de camera's herkennen, stuurt het door naar De Dart Struners. Je telefoon, tablet of computer telt dan automatisch mee.
 
-## Eén keer klaarzetten
+## Starten
 
-1. Zet de camera's op het bord en installeer **Autodarts** op de laptop. Kalibreer en controleer in Autodarts dat de pijlen goed herkend worden.
-2. Zet deze map op de laptop (of op een USB-stick).
-3. Dubbelklik op **START-BORD.bat**. De eerste keer downloadt hij Node.js (eenmalig, ongeveer 30 MB).
-4. Beantwoord de vragen:
-   - **Link van de website**: `dartstruners.alwaysdata.net`, of de link van een vriendensessie (`…/s/abc123`).
-   - **Code**: je beheerderscode (of de sessiecode bij een vriendensessie).
-   - **Waar draait Autodarts?** Kies **1** als Autodarts op deze laptop draait, of **2** om het bord in het netwerk te zoeken.
+1. Start **Autodarts** en controleer dat de herkenning aan staat (*Started*).
+2. Dubbelklik op **START-BORD.bat**. De eerste keer downloadt hij Node.js (eenmalig, ongeveer 30 MB).
+   Zegt Windows *Windows heeft uw pc beschermd*? Klik op **Meer info** en dan **Toch uitvoeren**.
+3. Het programma zoekt Autodarts zelf en laat een **koppelcode** zien, bijvoorbeeld **K7P2**. Laat dit venster open.
 
-De antwoorden worden bewaard in `bord-instellingen.json`. Daarna start hij meteen.
+## Koppelen (één keer)
+
+Open op je telefoon (of tablet/computer) de wedstrijd of het checkout-spel en tik op **Camera**. Typ de koppelcode en tik op **Koppelen**. Het bolletje wordt groen. Je apparaat onthoudt de code, dus de volgende keer tik je alleen op **Camera**.
+
+Werkt overal: in de competitie, in een vriendensessie en bij het checkout-spel voor iedereen.
 
 ## Spelen
 
-1. Start Autodarts en daarna **START-BORD.bat**. Laat het venster open.
-2. Open op je telefoon de wedstrijd (of het checkout-spel) en zet de knop **Camera** aan. Het bolletje wordt groen.
-3. Gooien. Elke pijl verschijnt vanzelf op de telefoon en op de monitor.
-4. Pijlen eruit halen = volgende beurt.
+- Gooi: elke pijl verschijnt vanzelf.
+- Pijlen eruit halen = volgende beurt.
+- Klopt een pijl niet? Tik op het vakje en kies de goede.
+- **Bullen** tik je zelf aan.
+- Camera uit = gewoon zelf invullen.
 
-**Klopt een pijl niet?** Tik op de telefoon op het vakje van die pijl en kies de goede. Of verbeter hem in Autodarts zelf, dan komt de verbetering ook door.
+## Andere locatie of nieuwe code
 
-**Bullen** tik je zoals altijd zelf aan op de telefoon.
-
-## Bij een ander bord / andere locatie
-
-Neem deze map mee op een USB-stick. Start **START-BORD.bat --opnieuw** (of verwijder `bord-instellingen.json`) en kies **Zoeken in het netwerk**, of laat het programma op hun computer draaien met optie 1.
+Start `START-BORD.bat --opnieuw`. Dan zoekt hij Autodarts opnieuw (op deze computer of in het netwerk) en krijg je een nieuwe koppelcode.
 
 ## Testen zonder camera's
 
-Start in een opdrachtvenster: `START-BORD.bat --test`. Dan typ je zelf pijlen (bijv. `T20`, `D16`, `BULL`, `M` voor mis, `W` voor pijlen eruit) en zie je ze op de telefoon verschijnen.
+Start in een opdrachtvenster: `START-BORD.bat --test`. Dan typ je zelf pijlen (bijv. `T20`, `D16`, `BULL`, `M` voor mis, `W` voor pijlen eruit).
 
-## Bordcode (optioneel)
+## Gaat er iets mis?
 
-Wil je niet je beheerderscode op een andere computer achterlaten? Zet in alwaysdata bij Environment ook `BORD_PIN=<eigen code>` en herstart de site. Die code kan alleen pijlen doorgeven.
+In deze map komt het bestand **bord-log.txt** met wat Autodarts precies doorgaf. Stuur dat (of een foto van het venster) naar Patrick.
