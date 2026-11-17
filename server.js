@@ -42,6 +42,46 @@ try {
   console.error('Kon de opgeslagen stand niet lezen:', e.message);
 }
 
+// ---------- chat voor kijkers ----------
+const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
+let chat = { v: 0, on: true, seq: 0, msgs: [] };
+try {
+  if (fs.existsSync(CHAT_FILE)) {
+    const d = JSON.parse(fs.readFileSync(CHAT_FILE, 'utf8'));
+    if (d && Array.isArray(d.msgs)) chat = Object.assign(chat, d);
+  }
+} catch (e) { console.error('Kon de chat niet lezen:', e.message); }
+let chatTimer = null;
+function persistChat() {
+  clearTimeout(chatTimer);
+  chatTimer = setTimeout(() => {
+    const tmp = CHAT_FILE + '.tmp';
+    fs.writeFile(tmp, JSON.stringify(chat), err => {
+      if (err) return console.error('Chat opslaan mislukt:', err.message);
+      fs.rename(tmp, CHAT_FILE, e => e && console.error('Chat opslaan mislukt:', e.message));
+    });
+  }, 300);
+}
+const clean = (t, max) => String(t == null ? '' : t).replace(/[\u0000-\u001f\u007f\u200b-\u200f\u2028-\u202e]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+const chatHits = new Map(); // ip -> [tijden]
+function chatSpam(ip) {
+  const now = Date.now(), l = (chatHits.get(ip) || []).filter(t => now - t < 30000);
+  if (l.length >= 5) { chatHits.set(ip, l); return true; }
+  l.push(now); chatHits.set(ip, l);
+  if (chatHits.size > 2000) chatHits.clear();
+  return false;
+}
+function chatChanged() { chat.v++; persistChat(); broadcast(); }
+// Een speeldag loopt van 06:00 tot 06:00 (Nederlandse tijd); daarna begint de chat leeg
+const speeldag = t => new Intl.DateTimeFormat('nl-NL', { timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t - 6 * 3600 * 1000));
+function chatPrune() {
+  const nu = speeldag(Date.now()), n = chat.msgs.length;
+  chat.msgs = chat.msgs.filter(m => speeldag(m.at) === nu);
+  return chat.msgs.length !== n;
+}
+setInterval(() => { if (chatPrune()) chatChanged(); }, 60000);
+chatPrune();
+
 let writeTimer = null;
 function persist() {
   clearTimeout(writeTimer);
@@ -59,7 +99,7 @@ function publicView() {
   const S = state.S ? Object.assign({}, state.S) : null;
   const open = state.live && state.live.openId;
   if (S && S.turns) S.turns = open && S.turns[open] ? { [open]: S.turns[open] } : {};
-  return { v: state.v, by: state.by, S, live: state.live };
+  return { v: state.v, by: state.by, S, live: state.live, chat: { v: chat.v, on: chat.on, msgs: chat.msgs } };
 }
 
 // ---------- live verbindingen ----------
@@ -167,7 +207,8 @@ const server = http.createServer(async (req, res) => {
     // Live bijwerken via 'long polling': werkt ook via de gratis Cloudflare-tunnel
     if (req.method === 'GET' && p === '/api/wait') {
       const known = Number(url.searchParams.get('v'));
-      if (known !== state.v) return send(res, 200, publicView());
+      const kc = url.searchParams.get('cv');
+      if (known !== state.v || (kc !== null && Number(kc) !== chat.v)) return send(res, 200, publicView());
       if (waiters.length > 500) return send(res, 200, publicView());
       const x = { res, t: setTimeout(() => { waiters = waiters.filter(y => y !== x); send(res, 200, publicView()); }, 25000) };
       waiters.push(x);
@@ -196,6 +237,30 @@ const server = http.createServer(async (req, res) => {
       if (role) { fails.delete(ip); return send(res, 200, { ok: true, role }); }
       failed(ip);
       return send(res, 401, { error: 'Onjuiste code' });
+    }
+
+    if (req.method === 'POST' && p === '/api/chat') {
+      if (!chat.on) return send(res, 403, { error: 'De chat staat uit' });
+      if (chatPrune()) chat.v++;
+      const b = await readBody(req);
+      const n = clean(b.name, 20), t = clean(b.text, 200);
+      if (!n || !t) return send(res, 400, { error: 'Vul je naam en een bericht in' });
+      if (chatSpam(ip)) return send(res, 429, { error: 'Even rustig aan, probeer het zo opnieuw' });
+      chat.msgs.push({ id: ++chat.seq, n, t, at: Date.now() });
+      if (chat.msgs.length > 100) chat.msgs = chat.msgs.slice(-100);
+      chatChanged();
+      return send(res, 200, { ok: true });
+    }
+
+    if (req.method === 'POST' && p === '/api/chat/beheer') {
+      if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+      if (roleOf(req.headers['x-pin']) !== 'admin') { failed(ip); return send(res, 401, { error: 'Onjuiste code' }); }
+      const b = await readBody(req);
+      if (b.del != null) chat.msgs = chat.msgs.filter(m => m.id !== Number(b.del));
+      if (b.clear === true) chat.msgs = [];
+      if (typeof b.on === 'boolean') chat.on = b.on;
+      chatChanged();
+      return send(res, 200, { ok: true });
     }
 
     if (req.method === 'POST' && p === '/api/state') {

@@ -269,6 +269,26 @@ body.kijk .tvr{font-size:min(15vw,19vh)}
 .ktabs button{flex:none;font:800 15px Inter,sans-serif;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#ffd6e8;cursor:pointer}
 .ktabs button.on{background:var(--pink);border-color:var(--pink);color:#fff}
 .kscroll{flex:1;min-height:0;overflow-y:auto;padding-bottom:24px}
+.kchat{padding-bottom:110px}
+@media(max-width:420px){.ktabs button{padding:0 13px;font-size:14px}}
+.clist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.clist li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;background:rgba(255,255,255,.06);border-radius:14px;padding:10px 14px;max-width:680px}
+.clist b{color:var(--pink);font-size:14px}.clist span{grid-column:1/-1;font-size:16px;color:#fff;overflow-wrap:anywhere}
+.clist time{grid-row:1;grid-column:2;font-size:12px;color:rgba(255,255,255,.5)}
+.clist.cadm li{grid-template-columns:1fr auto auto;background:rgba(0,0,0,.04)}.clist.cadm span{color:inherit}.clist.cadm time{color:inherit;opacity:.6}
+.clist.cadm button{grid-row:1/3;grid-column:3;min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:none;color:inherit;font:800 18px Inter,sans-serif;cursor:pointer}
+.cempty{color:rgba(255,255,255,.6);margin:0}
+.cerr{color:#ff8fb8;font-size:13px;margin:0 0 6px;min-height:0}.cerr:empty{display:none}
+.chatf{position:fixed;left:0;right:0;bottom:0;z-index:1000;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(20,6,14,.96);border-top:1px solid rgba(255,255,255,.12)}
+.chatf[hidden]{display:none}
+.crow{display:flex;gap:8px;max-width:760px;margin:0 auto}
+.crow input{min-width:0;min-height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font:16px Inter,sans-serif;padding:0 12px}
+#cnaam{flex:0 0 28%}#ctekst{flex:1}
+.cbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:6px;border-radius:10px;background:#fff;color:var(--pink);font:800 12px Inter,sans-serif;font-style:normal;padding:0 5px}
+.tvchat{position:fixed;left:1.4vw;bottom:2vh;z-index:15;display:flex;flex-direction:column;gap:.8vh;max-width:min(34vw,520px);pointer-events:none}
+.tvchat div{background:rgba(20,6,14,.88);border:1px solid rgba(255,45,138,.5);border-radius:1vw;padding:.9vh 1vw;font-size:clamp(13px,min(1.4vw,2.4vh),26px);color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.4);animation:cin .35s ease-out}
+.tvchat b{color:var(--pink)}
+@keyframes cin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .kh{font:clamp(18px,1.8vw,30px) Anton,Impact,sans-serif;text-transform:uppercase;color:var(--pink);margin:18px 0 8px;letter-spacing:.02em;font-weight:400}
 .kh:first-child{margin-top:0}
 .tvnx li.done span.w{color:#fff}.tvnx li.done span.l{color:rgba(255,255,255,.45)}
@@ -350,6 +370,38 @@ let S=DEF();
 let tab='spelers',confirmReset=false;
 let tv=false,tvOn=false,tvSound=false,tvGot=false,tvSlow=false,tvEv=0,tvFx=null,tvFxT=0,tvTO=0,sender=false,pushT=0,wBusy=false,wNext=false,wLast='',evs=[],evN=0;
 let kijkTab='live';
+/* chat voor kijkers */
+let chat={v:-1,on:true,msgs:[]},chatSeen=0,chatErr='',chatTT=0;
+const CHATN='dartstruners-naam';
+const hhmm=t=>{try{return new Date(t).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}catch(e){return''}};
+function chatTake(c){if(!c||!Array.isArray(c.msgs))return false;if(c.v===chat.v)return false;
+  chat={v:+c.v||0,on:c.on!==false,msgs:c.msgs.filter(m=>m&&typeof m.t==='string').slice(-100).map(m=>({id:+m.id||0,n:String(m.n||'').slice(0,20),t:m.t.slice(0,200),at:+m.at||0}))};return true}
+const chatNew=()=>chat.msgs.filter(m=>m.id>chatSeen).length;
+function chatList(){
+  if(!chat.msgs.length)return`<p class="cempty">${chat.on?'Nog geen berichten. Zeg iets leuks!':'De chat staat uit.'}</p>`;
+  return`<ul class="clist">${chat.msgs.map(m=>`<li><b>${esc(m.n)}</b><span>${esc(m.t)}</span><time>${hhmm(m.at)}</time></li>`).join('')}</ul>`}
+function chatForm(){let f=document.getElementById('chatf');
+  if(!f){f=document.createElement('form');f.id='chatf';f.className='chatf';f.hidden=true;f.autocomplete='off';
+    f.innerHTML=`<p class="cerr" id="cerr"></p><div class="crow"><input id="cnaam" maxlength="20" placeholder="Je naam" aria-label="Je naam"><input id="ctekst" maxlength="200" placeholder="Typ een bericht" aria-label="Bericht" enterkeyhint="send"><button class="btn pri" type="submit">Stuur</button></div>`;
+    document.body.appendChild(f);
+    try{document.getElementById('cnaam').value=localStorage.getItem(CHATN)||''}catch(e){}
+    f.addEventListener('submit',async e=>{e.preventDefault();const n=document.getElementById('cnaam'),t=document.getElementById('ctekst'),er=document.getElementById('cerr');
+      const name=n.value.trim(),text=t.value.trim();er.textContent='';
+      if(!name){er.textContent='Vul eerst je naam in';n.focus();return}if(!text)return;
+      try{localStorage.setItem(CHATN,name)}catch(_){}
+      try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,text})});
+        if(r.ok){t.value='';t.focus()}else{const d=await r.json().catch(()=>({}));er.textContent=d.error||'Versturen lukte niet'}}
+      catch(_){er.textContent='Geen verbinding, probeer het opnieuw'}})}
+  return f}
+async function chatAdmin(body){try{const r=await fetch('/api/chat/beheer',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:JSON.stringify(body)});if(!r.ok)chatErr='Dat lukte niet';else chatErr=''}catch(e){chatErr='Geen verbinding'}chatAdm()}
+function chatAdmHtml(){
+  return`<div class="row"><button class="btn" data-a="chaton">${chat.on?'Chat uitzetten':'Chat aanzetten'}</button>${chat.msgs.length?'<button class="btn" data-a="chatclear">Chat leegmaken</button>':''}</div>
+   ${chatErr?`<div class="cerr">${esc(chatErr)}</div>`:''}
+   ${chat.msgs.length?`<ul class="clist cadm">${chat.msgs.slice(-30).map(m=>`<li><b>${esc(m.n)}</b><span>${esc(m.t)}</span><time>${hhmm(m.at)}</time><button data-cdel="${m.id}" aria-label="Verwijder bericht">×</button></li>`).join('')}</ul>`:`<div>${chat.on?'Nog geen berichten vandaag.':'De chat staat uit.'}</div>`}`}
+function chatAdm(){const el=document.getElementById('chatadm');if(el)el.innerHTML=chatAdmHtml()}
+function tvChatHtml(){clearTimeout(chatTT);if(!chat.on)return'';const now=Date.now(),L=chat.msgs.filter(m=>now-m.at<90000).slice(-3);
+  if(!L.length)return'';chatTT=setTimeout(renderTV,Math.max(1000,Math.min(...L.map(m=>m.at+90000-now))+50));
+  return`<div class="tvchat">${L.map(m=>`<div><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join('')}</div>`}
 let admin=false,ready=false,pin='',ver=0,netOk=null,loginErr='',role='admin';
 const ADM=()=>role==='admin';
 const myId=Math.random().toString(36).slice(2,10);
@@ -725,6 +777,9 @@ function linksHtml(){
    <div>Meekijken voor medespelers, zonder code of account. Ze kunnen niets veranderen.</div>
    <div class="lk"><code>${esc(o)}/kijk</code><button class="btn" data-copy="${esc(o)}/kijk">Kopieer</button></div>
    ${ADM()?'':'<div>Je bent ingelogd als <b>teller</b>: je kunt wedstrijden tellen, maar niets aan spelers, toernooien of competities veranderen.</div>'}
+   ${ADM()?`<h3 style="margin-top:12px">Chat voor kijkers</h3>
+   <div>Kijkers kunnen op de meekijkpagina met elkaar chatten. Berichten zie je ook op de monitor. Elke ochtend om 6 uur begint de chat weer leeg.</div>
+   <div id="chatadm">${chatAdmHtml()}</div>`:''}
    <h3 style="margin-top:12px">Gegevens</h3>
    <div>Maak af en toe een reservekopie. Met importeren zet je ook de gegevens over vanuit de claude.ai-versie.</div>
    <div class="row"><button class="btn" data-a="export">Exporteren</button>${ADM()?`<label class="btn" style="cursor:pointer">Importeren uit bestand<input type="file" accept="application/json,.json,.txt" data-import hidden></label><button class="btn" data-a="pasteopen">Importeren door plakken</button>`:''}<button class="btn" data-a="logout">Uitloggen</button></div>
@@ -795,6 +850,7 @@ function render(){
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.cdel){chatAdmin({del:+t.dataset.cdel});return}
   if(t.dataset.ktab){kijkTab=t.dataset.ktab;renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
   if(t.dataset.copy){const v=t.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>{t.textContent='Gekopieerd';setTimeout(()=>t.textContent='Kopieer',1500)})}catch(_){}return}
   if(t.dataset.tab){tab=t.dataset.tab;try{history.replaceState(null,'','#'+tab)}catch(_){}render();window.scrollTo(0,0);return}
@@ -830,6 +886,8 @@ document.addEventListener('click',e=>{
   if(a==='tvstop'){try{if(document.fullscreenElement)document.exitFullscreen()}catch(_){}location.href='/';return}
   if(a==='packtest'){const was=S.sound;S.sound=1;const pu=packUrls([['gameon'],['180'],['gameshot']]);S.sound=was;if(pu)playUrls(pu,true);else{packMsg='In dit pakket zit geen gameon, 180 of gameshot';(tv?renderTV:renderOv)()}return}
   if(a==='packdel'){packDel().then(()=>(tv?renderTV:renderOv)());return}
+  if(a==='chaton'){chatAdmin({on:!chat.on});return}
+  if(a==='chatclear'){chatAdmin({clear:true});return}
   if(a==='export'){exportFile();return}
   if(a==='pasteopen'){pasteOpen=!pasteOpen;render();return}
   if(a==='pastego'){const v=(document.getElementById('pastebox')||{}).value||'';importText(v);return}
@@ -924,12 +982,13 @@ async function stream(){
   let v=-1;
   for(;;){
     try{
-      const r=await fetch('/api/wait?v='+v+'&c='+myId,{cache:'no-store'});
+      const r=await fetch('/api/wait?v='+v+'&cv='+chat.v+'&c='+myId,{cache:'no-store'});
       if(!r.ok)throw new Error(r.status);
       const d=await r.json();
       clearTimeout(tvTO);tvSlow=false;setNet(true);
-      const changed=d.v!==v;v=d.v;
-      if(tv){if(changed||!tvGot){applyRemote(d);renderTV()}continue}
+      const changed=d.v!==v;v=d.v;const cch=chatTake(d.chat);
+      if(tv){if(changed||!tvGot){applyRemote(d);renderTV()}else if(cch)renderTV();continue}
+      if(cch)chatAdm();
       // Beheerder op een ander apparaat heeft iets veranderd: haal de volledige stand op
       if(changed&&admin&&d.by&&d.by!==myId&&d.v>ver&&!openId&&!wBusy){await loadState();render()}
     }catch(e){setNet(false);await new Promise(r=>setTimeout(r,2000))}
@@ -1013,10 +1072,14 @@ function renderTV(){
   try{
     if(!tvGot)c={ctx:'',html:`<div class="tvch"><small>Verbinden</small><div class="tvwait">Even geduld, de stand wordt opgehaald</div></div>`};
     else if(KIJK&&kijkTab==='stand')c={ctx:'',html:`<div class="kscroll">${kStand()}</div>`};
+    else if(KIJK&&kijkTab==='chat'){chatSeen=chat.msgs.reduce((m,x)=>Math.max(m,x.id),chatSeen);c={ctx:'',html:`<div class="kscroll kchat" id="kchat"><h2 class="tvh2">Chat</h2>${chatList()}</div>`}}
     else if(KIJK&&kijkTab==='wedstrijden')c={ctx:'',html:`<div class="kscroll"><h2 class="tvh2">Wedstrijden</h2>${kMatches()}</div>`};
     else{const go=openId&&getO(openId);c=go&&typeof go.a==='number'&&typeof go.b==='number'?tvMatch():tvOverview()}
   }catch(e){c={ctx:'',html:'<div class="tvch"><small>Even geduld</small></div>'}}
-  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden']].filter(([k])=>k!=='stand'||(S.kind==='comp'&&S.comp.started)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
+  const ko=document.getElementById('kchat'),kb=!ko||ko.scrollHeight-ko.scrollTop-ko.clientHeight<80;
+  el.innerHTML=`<div class="tvw"><div class="tvt"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em><i>${con}</i></div>${KIJK&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['chat','Chat']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='chat'||chat.on||chat.msgs.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}${k==='chat'&&kijkTab!=='chat'&&chatNew()?`<i class="cbadge">${Math.min(99,chatNew())}</i>`:''}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}<button class="tvx" data-a="tvstop" aria-label="Monitor-weergave sluiten">×</button>`;
+  const kn=document.getElementById('kchat');if(kn&&kb)kn.scrollTop=kn.scrollHeight;
+  if(KIJK){const f=chatForm(),show=tvGot&&kijkTab==='chat'&&chat.on;f.hidden=!show;document.body.classList.toggle('chatopen',show)}
 }
 
 /* ---------- opstarten ---------- */
