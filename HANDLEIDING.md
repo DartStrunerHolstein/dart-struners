@@ -80,7 +80,7 @@ In **Beheer** staat alleen nog de **competitie**, plus het checkout-leaderboard,
 **Live kijken** heeft drie tabbladen: **Live** (alle wedstrijden die nu bezig zijn, competitie en sessies van vrienden; tik op *Kijken*), **Competitie** (stand en alle wedstrijden) en **Checkout-top**. De chat staat er altijd bij. Op de **monitor** kies je de wedstrijd op het startscherm of met **Wissel wedstrijd**. Een sessie kan zich verbergen met de knop *Zichtbaar in Live kijken*.
 
 ### Vriendensessies
-Op het inlogscherm staat **Nieuwe sessie starten**. Vrienden krijgen dan een eigen link (`…/s/abc123`) met een eigen sessiecode, los van de competitie. In een sessie kies je **Toernooi**, **1 tegen 1** of het **Checkout-spel**. Elke sessie heeft ook een eigen monitor- en meekijklink. Een sessie die 30 dagen niet gebruikt wordt, verdwijnt vanzelf.
+Op het inlogscherm staat **Nieuwe sessie starten**. Vrienden krijgen dan een eigen link (`…/s/abc123`) met een eigen sessiecode, los van de competitie. In een sessie kies je **Toernooi**, **1 tegen 1** of het **Checkout-spel**. Elke sessie heeft ook een eigen monitor- en meekijklink. Een sessie die 3 dagen niet gebruikt wordt, verdwijnt vanzelf. Maak je op hetzelfde apparaat een nieuwe sessie, dan wordt je vorige verwijderd (je krijgt eerst een melding). Op Spelen staat **Verder met je sessie**.
 
 ### Checkout-spel
 Voor 1 of 2 spelers. Alle 20 getallen van 41 tot en met 60 komen één keer langs, in willekeurige volgorde. Je hebt 3 pijlen per getal en de app toont de mogelijke routes. Uitgegooid = 1 punt, dus maximaal 20 punten. Bij 2 spelers gooien ze om de beurt op hetzelfde getal.

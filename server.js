@@ -174,7 +174,7 @@ function publicView() {
 
 // ---------- sessies van vrienden (eigen link + code, los van de hoofdstand) ----------
 const SESS_FILE = path.join(DATA_DIR, 'sessies.json');
-const SESS_DAYS = 30, SESS_MAX = 300;
+const SESS_DAYS = 3, SESS_MAX = 300; // een sessie die 3 dagen niet gebruikt wordt, verdwijnt
 let sess = {}; // id -> { v, S, live, by, h, c, u }
 try {
   if (fs.existsSync(SESS_FILE)) {
@@ -327,6 +327,12 @@ const server = http.createServer(async (req, res) => {
       sessClean();
       if (Object.keys(sess).length >= SESS_MAX) return send(res, 503, { error: 'Er zijn nu te veel sessies. Probeer het later opnieuw.' });
       l.push(now); newHits.set(ip, l);
+      // De vorige sessie(s) van dit apparaat opruimen (alleen met de juiste code)
+      let b = {}; try { b = await readBody(req); } catch (e) {}
+      for (const o of Array.isArray(b.oud) ? b.oud.slice(0, 5) : []) {
+        const oid = String(o && o.id || '').toLowerCase();
+        if (/^[a-z0-9]{6}$/.test(oid) && sess[oid] && sessOk(sess[oid], o.code)) { delete sess[oid]; sessBroadcast(oid); }
+      }
       const id = newId(), code = String(crypto.randomInt(1000, 10000));
       sess[id] = { v: 1, S: null, live: null, by: null, h: hashCode(code), c: now, u: now };
       persistSess();

@@ -898,16 +898,21 @@ function vHome(){
   return`<div class="hgrid">${hcard('/kijk','kijk','Live kijken','Volg de wedstrijden, de stand en chat mee')}${hcard('/spelen','spel','Spelen','Checkout-spel of zelf een potje met vrienden')}${hcard('/monitor','mon','Monitor','Groot scorebord voor de tv in de dartruimte')}</div>
   <p class="hfoot"><a href="/beheer">${ico('sl')}<span>Beheer (met code)</span></a></p>`}
 let joinErr='';
-function vSpelenPage(){const L=mySess();
+const MIJNK='dartstruners-mijn';let newConf=false;
+const mijnSess=()=>{try{const x=localStorage.getItem(MIJNK)||'';return /^[a-z0-9]{6}$/.test(x)?x:''}catch(e){return''}};
+function dropSess(id){try{localStorage.setItem(SESSK,JSON.stringify(mySess().filter(x=>x.id!==id)));if(localStorage.getItem(MIJNK)===id)localStorage.removeItem(MIJNK)}catch(e){}}
+async function checkSessies(){let ch=false;for(const x of mySess()){try{const r=await fetch('/api/s/'+x.id+'/state',{cache:'no-store'});if(r.status===404){dropSess(x.id);ch=true}}catch(e){}}if(ch)render()}
+function vSpelenPage(){const mine=mijnSess(),L=mySess().filter(x=>x.id!==mine);
   return`<p class="stat" style="margin-top:8px"><a href="/">← Startpagina</a></p>
   <h2>Spelen</h2>
-  <div class="hgrid">${hcard('/spel','spel','Checkout-spel','Voor iedereen: naam invullen, 41 tot en met 60 uitgooien en op het leaderboard komen')}
+  <div class="hgrid">${mine?hcard('/s/'+mine,'vr','Verder met je sessie','Sessie '+mine+' · ga verder waar je gebleven was'):''}${hcard('/spel','spel','Checkout-spel','Voor iedereen: naam invullen, 41 tot en met 60 uitgooien en op het leaderboard komen')}
   <button class="hc" data-a="newsess"><span class="hi">${ico('vr')}</span><span class="ht"><b>Nieuwe sessie met vrienden</b><small>Toernooi, 1 tegen 1, solo of checkout-spel. Je krijgt een eigen link en code</small></span><span class="ha" aria-hidden="true">›</span></button></div>
+  ${newConf?`<div class="conf" style="max-width:760px;margin-top:10px"><p style="margin:0 0 10px">Je vorige sessie (${esc(mine)}) wordt dan verwijderd, met alles wat erin stond. Doorgaan?</p><div class="row"><button class="btn pri" data-a="newsess">Ja, nieuwe sessie</button><button class="btn" data-a="newno">Annuleren</button></div></div>`:''}
   <div class="err">${esc(newErr)}</div>
   <h2 style="margin-top:28px">Sessie van een vriend openen</h2>
   <form id="fjoin" class="row" style="max-width:560px"><input type="text" id="jid" placeholder="Link of sessienaam, bijv. f3gtvh" autocomplete="off" autocapitalize="none" aria-label="Link of sessienaam"><button class="btn pri">Openen</button></form>
   <div class="err">${esc(joinErr)}</div>
-  ${L.length?`<h2 style="margin-top:28px">Jouw sessies op dit apparaat</h2><ul class="list">${L.map(x=>`<li><span class="n"><a href="/s/${x.id}">Sessie ${x.id}</a></span><small style="color:var(--mut);padding-right:12px">${new Date(x.t).toLocaleDateString('nl-NL',{day:'numeric',month:'short'})}</small></li>`).join('')}</ul>`:''}`}
+  ${L.length?`<h2 style="margin-top:28px">Sessies die je hebt geopend</h2><ul class="list">${L.map(x=>`<li><span class="n"><a href="/s/${x.id}">Sessie ${x.id}</a></span><small style="color:var(--mut);padding-right:12px">${new Date(x.t).toLocaleDateString('nl-NL',{day:'numeric',month:'short'})}</small></li>`).join('')}</ul>`:''}`}
 /* ---------- checkout-spel: getal 41-60, 3 pijlen, uitgooien ---------- */
 const SEGS=(()=>{const a=[];for(let i=1;i<=20;i++){a.push({l:String(i),v:i,d:0,t:0},{l:'D'+i,v:2*i,d:1,t:2},{l:'T'+i,v:3*i,d:0,t:1})}a.push({l:'25',v:25,d:0,t:1.5},{l:'Bull',v:50,d:1,t:3});return a})();
 const FPREF=['D20','D16','D10','D8','D18','D12','D4','D14','D6','D2','D19','D17','D15','D13','D11','D9','D7','D5','D3','D1','Bull'];
@@ -1050,7 +1055,7 @@ let publicUrl=null;
 function linksHtml(){
   const o=(SID?location.origin:publicUrl||location.origin)+BP;
   return`<div class="monb">${SID?`<h3>Jullie sessie</h3>
-   <div>Bewaar deze gegevens. Met de link en de code kan iemand anders deze sessie ook beheren. Een sessie die 30 dagen niet gebruikt wordt, verdwijnt.</div>
+   <div>Bewaar deze gegevens. Met de link en de code kan iemand anders deze sessie ook beheren. Een sessie die 3 dagen niet gebruikt wordt, verdwijnt. Maak je op dit apparaat een nieuwe sessie, dan wordt deze verwijderd.</div>
    <div class="lk"><code>${esc(o)}</code><button class="btn" data-copy="${esc(o)}">Kopieer</button></div>
    <div class="lk"><code>Sessiecode: ${esc(pin)}</code><button class="btn" data-copy="${esc(pin)}">Kopieer</button></div>
    <div class="row" style="align-items:center"><button class="btn${S.zichtbaar===false?'':' pri'}" data-a="zicht">${S.zichtbaar===false?'Niet zichtbaar in Live kijken':'Zichtbaar in Live kijken'}</button><span class="stat" style="margin:0">${S.zichtbaar===false?'Alleen wie jullie kijklink heeft, kan meekijken.':'Iedereen ziet jullie wedstrijd bij Live kijken. Tik om te verbergen.'}</span></div>`:''}<h3${SID?' style="margin-top:12px"':''}>Delen en monitor</h3>
@@ -1217,9 +1222,12 @@ document.addEventListener('click',e=>{
   if(a==='tvstop'){try{if(document.fullscreenElement)document.exitFullscreen()}catch(_){}location.href=BP||'/';return}
   if(a==='packtest'){const was=S.sound;S.sound=1;const pu=packUrls([['gameon'],['180'],['gameshot']]);S.sound=was;if(pu)playUrls(pu,true);else{packMsg='In dit pakket zit geen gameon, 180 of gameshot';(tv?renderTV:renderOv)()}return}
   if(a==='packdel'){packDel().then(()=>(tv?renderTV:renderOv)());return}
-  if(a==='newsess'){newErr='';(async()=>{try{const r=await fetch('/api/sessie',{method:'POST'});const d=await r.json().catch(()=>({}));
+  if(a==='newsess'){newErr='';const old=mijnSess();if(old&&!newConf){newConf=true;render();return}newConf=false;
+    (async()=>{try{let code='';try{code=old?localStorage.getItem('dartstruners-pin-'+old)||'':''}catch(_){}
+      const r=await fetch('/api/sessie',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({oud:old?[{id:old,code}]:[]})});const d=await r.json().catch(()=>({}));
       if(!r.ok||!d.id){newErr=d.error||'Sessie maken lukte niet';render();return}
-      try{localStorage.setItem('dartstruners-pin-'+d.id,d.code)}catch(_){}addSess(d.id);location.href='/s/'+d.id}catch(_){newErr='Geen verbinding met de server';render()}})();return}
+      try{if(old){localStorage.removeItem('dartstruners-pin-'+old);localStorage.removeItem('dartstruners-v1-'+old);dropSess(old)}localStorage.setItem('dartstruners-pin-'+d.id,d.code);localStorage.setItem(MIJNK,d.id)}catch(_){}addSess(d.id);location.href='/s/'+d.id}catch(_){newErr='Geen verbinding met de server';render()}})();return}
+  if(a==='newno'){newConf=false;render();return}
   if(a==='spstart'){spConf=false;const p=SP();['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)p.names[i]=el.value.trim()});spHidden=false;spStart();return}
   if(a==='spnew'){const p=SP();p.on=false;p.done=false;save();render();return}
   if(a==='spopen'){spHidden=false;render();return}
@@ -1512,7 +1520,7 @@ function renderTV(){
 /* ---------- opstarten ---------- */
 (async()=>{
   if(tv){tvTO=setTimeout(()=>{tvSlow=true;renderTV()},10000);renderTV();stream();liveFetch();setInterval(()=>{if(KIJK||monLive()||Date.now()%15000<5000)liveFetch()},5000);return}
-  if(HOME||SPELEN){ready=true;render();return}
+  if(HOME||SPELEN){ready=true;render();if(SPELEN)checkSessies();return}
   if(camOn&&kopCode)camStream();
   if(SPELP){S=DEF();S.kind='spel';try{const o=JSON.parse(localStorage.getItem('dartstruners-spel'));if(o&&o.spel){S.spel=o.spel;if(o.dout!==undefined)S.dout=o.dout;if(o.sound!==undefined)S.sound=o.sound;if(o.voice)S.voice=o.voice}}catch(e){}
     try{const r=await fetch('/api/spel/top',{cache:'no-store'});topTake(await r.json());setNet(true)}catch(e){}
