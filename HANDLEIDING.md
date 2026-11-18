@@ -118,6 +118,7 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 
 - **Live kijken → Spelers**: ranglijstjes van de competitie (hoogste gemiddelde, meeste 180's, hoogste uitgooi, beste leg, uitgooi-%, meeste 100+) en per speler alle cijfers: gemiddelde, eerste 9, 180/140+/100+, hoogste beurt en uitgooi, uitgooi-% op dubbels, beste leg, pijlen per leg, wedstrijden en legs, favoriete dubbel, vorm (laatste 5) en onderling.
 - Alleen wedstrijden die met darts gescoord zijn tellen mee; een uitslag die alleen met − / + is ingevuld telt wel voor wedstrijden en legs.
+- **Checkout-spel** (alleen met een profiel): gespeeld, beste en gemiddelde score, uitgooi-%, pijlen per uitgooi, laatste pijl, een kleurentabel per getal (41–60) en de laatste spellen. Na een spel staat er een link naar je statistieken.
 - Na elke wedstrijd staat er onder de winnaar een korte vergelijking van beide spelers.
 
 ## Goed om te weten

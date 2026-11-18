@@ -110,6 +110,42 @@ function topChanged() {
   for (const id of Object.keys(sess)) if ((sessWait.get(id) || []).length) sessBroadcast(id);
 }
 
+// ---------- statistieken checkout-spel (alleen voor spelers met een profiel) ----------
+const SST_FILE = path.join(DATA_DIR, 'spelstats.json');
+let sst = { v: 0, list: {} };
+try {
+  if (fs.existsSync(SST_FILE)) {
+    const d = JSON.parse(fs.readFileSync(SST_FILE, 'utf8'));
+    if (d && d.list && typeof d.list === 'object') sst = Object.assign(sst, d);
+  }
+} catch (e) { console.error('Kon de spelstatistieken niet lezen:', e.message); }
+let sstTimer = null;
+function persistSst() {
+  clearTimeout(sstTimer);
+  sstTimer = setTimeout(() => {
+    const tmp = SST_FILE + '.tmp';
+    fs.writeFile(tmp, JSON.stringify(sst), err => {
+      if (err) return console.error('Spelstatistieken opslaan mislukt:', err.message);
+      fs.rename(tmp, SST_FILE, e => e && console.error('Spelstatistieken opslaan mislukt:', e.message));
+    });
+  }, 300);
+}
+// det = [{t: 41..60, ok: 0/1, d: pijlen, f: laatste pijl}]
+function sstAdd(pid, score, det) {
+  const x = sst.list[pid] = sst.list[pid] || { g: 0, full: 0, sumFull: 0, best: 0, nums: {}, fin: {}, last: [] };
+  const L = (Array.isArray(det) ? det : []).slice(0, 20).filter(a => a && Number.isInteger(a.t) && a.t >= 41 && a.t <= 60);
+  if (!L.length) return false;
+  x.g++; if (L.length >= 20) { x.full++; x.sumFull += score; }
+  if (score > x.best) x.best = score;
+  for (const a of L) {
+    const k = String(a.t), n = x.nums[k] = x.nums[k] || [0, 0, 0], d = Math.max(1, Math.min(3, +a.d || 3));
+    n[0]++; if (a.ok) { n[1]++; n[2] += d; const f = clean(a.f, 8); if (f) x.fin[f] = (x.fin[f] || 0) + 1; }
+  }
+  x.last = (x.last || []).concat([{ s: score, n: L.length, at: Date.now() }]).slice(-10);
+  sst.v++; persistSst(); return true;
+}
+const sstView = () => ({ v: sst.v, list: Object.fromEntries(Object.entries(sst.list).filter(([id]) => spl.list[id]).map(([id, x]) => [id, Object.assign({ n: spl.list[id].n }, x)])) });
+
 // ---------- spelersprofielen (naam + 4-cijferige pincode, geen e-mail) ----------
 const SPL_FILE = path.join(DATA_DIR, 'spelers.json');
 let spl = { v: 0, geheim: '', list: {} };
@@ -630,14 +666,22 @@ const server = http.createServer(async (req, res) => {
         const a = top.list['p:' + b.id], c = top.list['p:' + b.naar];
         if (a && (!c || a.s > c.s)) top.list['p:' + b.naar] = Object.assign({}, a, { n: y.n });
         delete top.list['p:' + b.id]; delete spl.list[b.id]; topChanged();
+        const sa = sst.list[b.id];
+        if (sa) { const sb = sst.list[b.naar] || { g: 0, full: 0, sumFull: 0, best: 0, nums: {}, fin: {}, last: [] };
+          sb.g += sa.g; sb.full += sa.full; sb.sumFull += sa.sumFull; sb.best = Math.max(sb.best, sa.best);
+          for (const [k, n] of Object.entries(sa.nums)) { const m = sb.nums[k] = sb.nums[k] || [0, 0, 0]; m[0] += n[0]; m[1] += n[1]; m[2] += n[2]; }
+          for (const [k, n] of Object.entries(sa.fin)) sb.fin[k] = (sb.fin[k] || 0) + n;
+          sb.last = sb.last.concat(sa.last).sort((a, c) => a.at - c.at).slice(-10);
+          sst.list[b.naar] = sb; delete sst.list[b.id]; sst.v++; persistSst(); }
       } else if (b.actie === 'weg') {
         const a = top.list['p:' + b.id];
         if (a) { top.list[splKey(x.n)] = { n: x.n, s: a.s, d: a.d }; delete top.list['p:' + b.id]; topChanged(); }
-        delete spl.list[b.id];
+        delete spl.list[b.id]; if (sst.list[b.id]) { delete sst.list[b.id]; sst.v++; persistSst(); }
       } else return send(res, 400, { error: 'Onbekende actie' });
       splChanged();
       return send(res, 200, { ok: true });
     }
+    if (req.method === 'GET' && p === '/api/spel/stats') return send(res, 200, sstView());
     if (req.method === 'GET' && p === '/api/spel/top') return send(res, 200, topView());
     if (req.method === 'POST' && p === '/api/spel/score') {
       const b = await readBody(req);
@@ -653,6 +697,7 @@ const server = http.createServer(async (req, res) => {
       } else if (splByName(n)) return send(res, 403, { error: 'Deze naam hoort bij een profiel. Log in met de pincode of kies een andere naam.', profiel: true });
       const o = top.list[k], rec = !o || sc > o.s;
       if (rec) { top.list[k] = { n: nn, s: sc, d: now }; topChanged(); }
+      if (b.pid) sstAdd(b.pid, sc, b.det);
       return send(res, 200, { ok: true, record: rec, best: rec ? sc : o.s });
     }
     if (req.method === 'POST' && p === '/api/spel/beheer') {
