@@ -122,6 +122,15 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 - **Toernooien**: in een vriendensessie heeft een toernooi een tab **Statistieken** (ranglijstjes en een tabel per speler). Als het toernooi klaar is, wordt het bewaard in het archief, ook als de sessie verloopt. Je vindt het bij Live kijken → Spelers (lijst met toernooien, en per speler de tab Toernooien). Verwijderen kan in /beheer onder Toernooi-archief.
 - Na elke wedstrijd staat er onder de winnaar een korte vergelijking van beide spelers.
 
+## Spelen op het monitorscherm (aanraakscherm of laptop met muis)
+
+- Start een wedstrijd of het checkout-spel en tik op **Monitor**. Het scherm gaat schermvullend.
+- Tik of klik op het dartbord waar je pijl zit (invoer **Per pijl**). Onder het bord staan **Mis** en **⌫ Pijl terug**.
+- Een pijl verbeteren: tik op het pijlvakje en daarna op het juiste vak.
+- Bullen, **Nog een wedstrijd**, **Volgende wedstrijd** (competitie/toernooi), **Laatste beurt terug** en **Klaar** staan als grote knoppen op het scherm.
+- **✎ Aanpassen** (rechtsboven) gaat terug naar het gewone scherm.
+- Handig: laptop met HDMI aan de tv in de dartruimte, scores met de muis invullen.
+
 ## Goed om te weten
 
 - **Reservekopie:** klik af en toe op **Exporteren** onderaan de app. Dan heb je een bestand met alle gegevens.
