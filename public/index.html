@@ -224,6 +224,17 @@ body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
 #app a:not(.btn):not(.hc){color:var(--pinkt);font-weight:700}
 .topnav{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0 14px}
 .inst{display:flex;align-items:center;gap:12px;margin:18px 0 0;max-width:760px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card)}.inst img{width:44px;height:44px;border-radius:11px;flex:none}.inst span{flex:1;display:flex;flex-direction:column;gap:2px}.inst small{color:var(--mut)}.inst .btn{flex:none}
+.prf{max-width:760px;margin:6px 0 18px;padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--card);display:grid;gap:10px}
+.prf-h{display:flex;gap:12px;align-items:flex-start}.prf-h .hi{flex:none}.prf-h div{display:flex;flex-direction:column;gap:2px}.prf-h small{color:var(--mut);line-height:1.4}
+.prf .row{margin:0}.prf .err:empty{display:none}.prf-f{display:grid;gap:8px;max-width:420px}
+.prl{display:flex;flex-wrap:wrap;gap:8px}.pch{display:inline-flex;align-items:center;gap:6px;padding:6px 6px 6px 12px;border-radius:999px;background:var(--pink);color:#fff}.pch button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.22);color:#fff;font-size:16px;line-height:1;cursor:pointer}
+.prq{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0}.prq small{color:var(--mut);font-weight:600;margin-right:2px}.prq button{font:600 14px Inter,sans-serif;padding:6px 12px;border-radius:999px;border:1px solid var(--pinkt);background:transparent;color:var(--pinkt);cursor:pointer;min-height:34px}
+#pdlg .pdw{position:fixed;inset:0;z-index:200;background:rgba(10,2,7,.72);display:grid;place-items:center;padding:16px}
+#pdlg .pdin{width:min(420px,100%);background:var(--card);color:var(--ink);border-radius:20px;padding:20px;display:grid;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#pdlg h2{margin:0}#pdlg p{margin:0;line-height:1.45}#pdlg input{font-size:28px;letter-spacing:.5em;text-align:center}#pdlg .row{margin:0}#pdlg .pdh{color:var(--mut);font-size:13px}
+.spl{max-width:760px}.spl li{display:block;padding:10px 12px}.spr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.spr .n{flex:1;display:flex;flex-direction:column}.spr .n small{color:var(--mut);font-weight:400}
+.spb{display:flex;gap:6px;flex-wrap:wrap}.spb button{font:600 13px Inter,sans-serif;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;min-height:34px}.spb button:last-child{color:var(--pinkt)}
+.spe{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 2px}.spe input,.spe select{flex:1;min-width:140px}.spe small{flex-basis:100%;color:var(--mut)}
 .hfoot{margin:24px 0 0}.hfoot a{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-weight:700;text-decoration:none}.hfoot svg{width:18px;height:18px}
 .login p{margin:0;color:var(--mut)}
 .err{color:#e0245e;font-weight:700;min-height:1.4em}
@@ -867,7 +878,7 @@ function vSingle(){
   const so=!!S.single.solo;
   return`<h2>${so?'Solo':'Losse wedstrijd'}</h2><p class="stat">${so?'Alleen oefenen: speel een aantal legs en zie je gemiddelde.':'Eén tegen één, zonder bracket.'}</p>
   <div class="mode" style="max-width:560px;margin-bottom:10px"><button data-solo="0" class="${so?'':'on'}">1 tegen 1</button><button data-solo="1" class="${so?'on':''}">Solo</button></div>
-  <form id="fs" style="max-width:560px;display:grid;gap:8px"><input type="text" id="p1" maxlength="24" placeholder="${so?'Je naam':'Speler 1'}" value="${esc(S.single.names[0])}" aria-label="Speler 1">${so?'':`<input type="text" id="p2" maxlength="24" placeholder="Speler 2" value="${esc(S.single.names[1])}" aria-label="Speler 2">`}
+  <form id="fs" style="max-width:560px;display:grid;gap:8px"><input type="text" id="p1" maxlength="24" list="spl-dl" autocomplete="off" placeholder="${so?'Je naam':'Speler 1'}" value="${esc(S.single.names[0])}" aria-label="Speler 1">${so?'':`<input type="text" id="p2" maxlength="24" list="spl-dl" autocomplete="off" placeholder="Speler 2" value="${esc(S.single.names[1])}" aria-label="Speler 2">`}${prChips(so?'p1':'p1,p2')}
   <div class="set"><label>${so?'Aantal legs':'Wedstrijd'}<select id="sbo">${(so?[1,3,5,10]:[1,3,5,7]).map(v=>`<option value="${v}"${v==S.single.bo?' selected':''}>${so?v+(v>1?' legs':' leg'):'Best of '+v}</option>`).join('')}</select></label>${gameSel()}</div>
   <div class="row"><button class="btn pri">${so?'Start solo':'Start wedstrijd'}</button>${busy?`<button type="button" class="btn" data-a="resume">${o.win!==null?'Uitslag bekijken':'Verder spelen'} · ${so?esc(S.single.names[0]||'Jij')+' '+o.sa+' van '+o.need+' legs':esc(S.single.names[0])+' '+o.sa+' – '+o.sb+' '+esc(S.single.names[1])}</button>`:''}</div></form>`;
 }
@@ -1000,6 +1011,77 @@ function vInstall(){if(isApp())return'';
   if(instEv)return`<div class="inst"><img src="/icons/icon-192.png" alt=""><span><b>Zet De Dart Struners als app op je scherm</b><small>Opent zonder adresbalk, met het roze icoon</small></span><button class="btn pri" data-a="install">Installeren</button></div>`;
   if(isIOS())return`<div class="inst"><img src="/icons/icon-192.png" alt=""><span><b>Als app op je beginscherm?</b><small>${iosTip?'Tik in Safari onderaan op <b>Deel</b> (vierkantje met pijl omhoog) en kies <b>Zet op beginscherm</b>.':'Opent zonder adresbalk, met het roze icoon'}</small></span>${iosTip?'':'<button class="btn" data-a="iostip">Hoe?</button>'}</div>`;
   return''}
+// ---------- spelersprofielen (naam + pincode, dit apparaat onthoudt je) ----------
+const PRK='dartstruners-profielen';
+let SPL={v:-1,list:[]},prf={mode:'',err:'',busy:false},pd=null,splEd=null,splErr='';
+const nk=n=>String(n||'').trim().toLowerCase();
+const prList=()=>{try{const a=JSON.parse(localStorage.getItem(PRK)||'[]');return Array.isArray(a)?a.filter(x=>x&&/^[0-9a-f]{10}$/.test(x.id)&&typeof x.t==='string'&&typeof x.n==='string'):[]}catch(e){return[]}};
+const prSet=a=>{try{localStorage.setItem(PRK,JSON.stringify(a.slice(0,20)))}catch(e){}};
+const prAdd=x=>{prSet([{id:x.id,n:x.n,t:x.t}].concat(prList().filter(y=>y.id!==x.id)))};
+const splFind=n=>{const k=nk(n);return k?SPL.list.find(x=>nk(x.n)===k||(x.a||[]).some(a=>nk(a)===k))||null:null};
+const prOf=n=>{const p=splFind(n),L=prList();return p?L.find(x=>x.id===p.id)||null:L.find(x=>nk(x.n)===nk(n))||null};
+const fixName=n=>{const p=splFind(n);return p?p.n:n};
+function splDl(){let d=document.getElementById('spl-dl');if(!d){d=document.createElement('datalist');d.id='spl-dl';document.body.appendChild(d)}
+  const L=prList(),seen=new Set(L.map(x=>x.id));d.innerHTML=L.map(x=>`<option value="${esc(x.n)}"></option>`).join('')+SPL.list.filter(x=>!seen.has(x.id)).map(x=>`<option value="${esc(x.n)}"></option>`).join('')}
+async function splLoad(){try{const r=await fetch('/api/spelers',{cache:'no-store'});const d=await r.json();if(d&&Array.isArray(d.list))SPL={v:+d.v||0,list:d.list.filter(x=>x&&typeof x.id==='string'&&typeof x.n==='string')}}catch(e){}splDl()}
+async function prCheck(){const L=prList();if(!L.length)return;try{const r=await fetch('/api/spelers/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({list:L})});if(!r.ok)return;const d=await r.json();if(d&&Array.isArray(d.list))prSet(d.list)}catch(e){}}
+async function splInit(){await Promise.all([splLoad(),prCheck()]);splDl();if(!tv&&!openId)render()}
+async function prPost(url,body){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Dat lukte niet');return d}
+// Snel invullen: profielen van dit apparaat als knopjes onder de naamvelden
+function prChips(ids){const L=prList();if(!L.length)return'';
+  return`<div class="prq"><small>Snel kiezen:</small>${L.map(x=>`<button type="button" data-prfill="${esc(x.n)}" data-prt="${ids}">${esc(x.n)}</button>`).join('')}</div>`}
+// Wie een profielnaam gebruikt, moet (één keer per apparaat) de pincode geven
+function gate(names,cont){const need=[];
+  for(const n of names){const p=splFind(n);if(p&&!prList().some(x=>x.id===p.id)&&!need.some(q=>q.id===p.id))need.push(p)}
+  const go=()=>cont(names.map(fixName));
+  if(!need.length){go();return}
+  pd={q:need,i:0,err:'',busy:false,go};pdRender()}
+function pdRender(){let el=document.getElementById('pdlg');
+  if(!pd){if(el)el.remove();return}
+  if(!el){el=document.createElement('div');el.id='pdlg';document.body.appendChild(el);
+    el.addEventListener('click',e=>{const b=e.target.closest('[data-pd]');if(!b)return;if(b.dataset.pd==='ok')pdOk();else{pd=null;pdRender()}});
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();pdOk()}else if(e.key==='Escape'){pd=null;pdRender()}})}
+  const p=pd.q[pd.i];
+  el.innerHTML=`<div class="pdw" role="dialog" aria-modal="true" aria-labelledby="pdh"><div class="pdin"><h2 id="pdh">Pincode van ${esc(p.n)}</h2><p>${esc(p.n)} heeft een profiel. Vul de pincode in. Dit apparaat onthoudt het daarna, dan hoeft het niet meer.</p>
+   <input id="pdpin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••" aria-label="Pincode van ${esc(p.n)}">
+   <div class="err">${esc(pd.err)}</div>
+   <div class="row"><button class="btn pri" data-pd="ok"${pd.busy?' disabled':''}>${pd.busy?'Even kijken…':'Inloggen'}</button><button class="btn" data-pd="no">Andere naam kiezen</button></div>
+   <p class="pdh">Niet ${esc(p.n)}? Kies "Andere naam kiezen" en speel met een andere naam als gast.</p></div></div>`;
+  setTimeout(()=>{const i=document.getElementById('pdpin');if(i)i.focus()},30)}
+async function pdOk(){if(!pd||pd.busy)return;const i=document.getElementById('pdpin'),pin=i?i.value.trim():'';
+  if(!/^\d{4}$/.test(pin)){pd.err='Vul 4 cijfers in';pdRender();return}
+  pd.busy=true;pd.err='';pdRender();
+  try{const d=await prPost('/api/spelers/login',{id:pd.q[pd.i].id,pin});prAdd(d);splDl();pd.busy=false;pd.i++;
+    if(pd.i>=pd.q.length){const go=pd.go;pd=null;pdRender();go();return}pdRender()}
+  catch(e){pd.busy=false;pd.err=e.message||'Geen verbinding';pdRender()}}
+function vProfiel(){const L=prList(),f=prf;
+  const form=f.mode==='nieuw'?`<form id="fprn" class="prf-f"><input type="text" id="prn" maxlength="20" placeholder="Je naam" autocomplete="nickname" aria-label="Je naam"><input type="password" id="prp" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Pincode (4 cijfers)" autocomplete="new-password" aria-label="Pincode"><input type="password" id="prp2" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Pincode nog een keer" autocomplete="new-password" aria-label="Pincode herhalen"><div class="row"><button class="btn pri"${f.busy?' disabled':''}>Profiel aanmaken</button><button type="button" class="btn" data-a="prno">Annuleren</button></div><small class="stat">Onthoud je pincode goed. Vergeten? Dan kan de beheerder hem resetten.</small></form>`
+   :f.mode==='login'?`<form id="fprl" class="prf-f"><input type="text" id="prln" maxlength="20" list="spl-dl" placeholder="Je naam" autocomplete="off" aria-label="Je naam"><input type="password" id="prlp" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Pincode" autocomplete="current-password" aria-label="Pincode"><div class="row"><button class="btn pri"${f.busy?' disabled':''}>Inloggen</button><button type="button" class="btn" data-a="prno">Annuleren</button></div></form>`:'';
+  return`<section class="prf"><div class="prf-h"><span class="hi">${ico('vr')}</span><div><b>${L.length?'Ingelogd op dit apparaat':'Je spelersprofiel'}</b><small>${L.length?'Scores en statistieken worden bewaard onder je profiel.':'Speel je vaker mee? Met een profiel (naam + pincode) worden je scores en statistieken bewaard en kan niemand onder jouw naam spelen. Zonder profiel speel je gewoon als gast.'}</small></div></div>
+   ${L.length?`<div class="prl">${L.map(x=>`<span class="pch"><b>${esc(x.n)}</b><button data-prout="${x.id}" aria-label="${esc(x.n)} afmelden op dit apparaat" title="Afmelden">×</button></span>`).join('')}</div>`:''}
+   ${form||`<div class="row">${L.length?`<button class="btn" data-a="prlogin">+ Nog iemand inloggen</button><button class="btn" data-a="prnew">+ Nieuw profiel</button>`:`<button class="btn pri" data-a="prnew">Profiel aanmaken</button><button class="btn" data-a="prlogin">Ik heb al een profiel</button>`}</div>`}
+   <div class="err">${esc(f.err)}</div></section>`}
+function prBind(){
+  const fn=document.getElementById('fprn');if(fn){fn.addEventListener('submit',async e=>{e.preventDefault();const n=document.getElementById('prn').value.trim(),a=document.getElementById('prp').value.trim(),b=document.getElementById('prp2').value.trim();
+    if(n.length<2){prf.err='Vul je naam in';render();return}if(!/^\d{4}$/.test(a)){prf.err='Kies een pincode van 4 cijfers';render();return}if(a!==b){prf.err='De twee pincodes zijn niet hetzelfde';render();return}
+    prf.busy=true;prf.err='';try{const d=await prPost('/api/spelers/nieuw',{naam:n,pin:a});prAdd(d);prf={mode:'',err:'',busy:false};await splLoad()}catch(x){prf.busy=false;prf.err=x.message}render()});
+    if(!prf.err)setTimeout(()=>{const i=document.getElementById('prn');if(i)i.focus()},30)}
+  const fl=document.getElementById('fprl');if(fl){fl.addEventListener('submit',async e=>{e.preventDefault();const n=document.getElementById('prln').value.trim(),a=document.getElementById('prlp').value.trim();
+    if(!n){prf.err='Vul je naam in';render();return}if(!/^\d{4}$/.test(a)){prf.err='Vul je pincode van 4 cijfers in';render();return}
+    const p=splFind(n);prf.busy=true;prf.err='';try{const d=await prPost('/api/spelers/login',p?{id:p.id,pin:a}:{naam:n,pin:a});prAdd(d);prf={mode:'',err:'',busy:false};splDl()}catch(x){prf.busy=false;prf.err=x.message}render()});
+    if(!prf.err)setTimeout(()=>{const i=document.getElementById('prln');if(i)i.focus()},30)}}
+// Beheer: profielen hernoemen, pincode resetten, samenvoegen, verwijderen
+async function splAdmin(body){splErr='';try{const r=await fetch('/api/spelers/beheer',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)splErr=d.error||'Dat lukte niet';else splEd=null}catch(e){splErr='Geen verbinding'}
+  await splLoad();try{const r=await fetch('/api/spel/top',{cache:'no-store'});topTake(await r.json())}catch(e){}render()}
+function vSplBeheer(){const L=SPL.list,e=splEd;
+  const row=x=>{const ed=e&&e.id===x.id?e.mode:'';
+    const extra=ed==='naam'?`<div class="spe"><input type="text" id="spe-n" maxlength="20" value="${esc(x.n)}" aria-label="Nieuwe naam"><button class="btn pri" data-spl="naam-ok">Opslaan</button><button class="btn" data-spl="dicht">Annuleren</button></div>`
+     :ed==='pin'?`<div class="spe"><input type="text" id="spe-p" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Nieuwe pincode" aria-label="Nieuwe pincode"><button class="btn pri" data-spl="pin-ok">Opslaan</button><button class="btn" data-spl="dicht">Annuleren</button><small>Daarna moet ${esc(x.n)} op elk apparaat opnieuw inloggen.</small></div>`
+     :ed==='samen'?`<div class="spe"><select id="spe-s" aria-label="Samenvoegen met">${L.filter(y=>y.id!==x.id).map(y=>`<option value="${y.id}">${esc(y.n)}</option>`).join('')}</select><button class="btn pri" data-spl="samen-ok">Samenvoegen</button><button class="btn" data-spl="dicht">Annuleren</button><small>${esc(x.n)} verdwijnt; de naam en scores gaan naar het gekozen profiel.</small></div>`
+     :ed==='weg'?`<div class="spe"><span>Profiel ${esc(x.n)} verwijderen? Een checkout-score blijft als gast staan.</span><button class="btn pri" data-spl="weg-ok">Ja, verwijderen</button><button class="btn" data-spl="dicht">Annuleren</button></div>`:'';
+    return`<li><div class="spr"><span class="n">${esc(x.n)}${x.a&&x.a.length?`<small>ook: ${x.a.map(esc).join(', ')}</small>`:''}</span><span class="spb"><button data-spl="naam" data-id="${x.id}">Naam</button><button data-spl="pin" data-id="${x.id}">Pincode</button>${L.length>1?`<button data-spl="samen" data-id="${x.id}">Samenvoegen</button>`:''}<button data-spl="weg" data-id="${x.id}" aria-label="Verwijder ${esc(x.n)}">×</button></span></div>${extra}</li>`};
+  return`<h2 style="margin-top:28px">Spelersprofielen</h2><p class="stat">Spelers maken zelf een profiel aan via Spelen (naam + pincode). Een competitiespeler met dezelfde naam hoort automatisch bij dat profiel.</p>
+   ${L.length?`<ul class="list spl">${L.map(row).join('')}</ul>`:'<p class="empty">Nog geen profielen.</p>'}<div class="err">${esc(splErr)}</div>`}
 let joinErr='';
 const MIJNK='dartstruners-mijn';let newConf=false;
 const mijnSess=()=>{try{const x=localStorage.getItem(MIJNK)||'';return /^[a-z0-9]{6}$/.test(x)?x:''}catch(e){return''}};
@@ -1008,6 +1090,7 @@ async function checkSessies(){let ch=false;for(const x of mySess()){try{const r=
 function vSpelenPage(){const mine=mijnSess(),L=mySess().filter(x=>x.id!==mine);
   return`<p class="stat" style="margin-top:8px"><a href="/">← Startpagina</a></p>
   <h2>Spelen</h2>
+  ${vProfiel()}
   <div class="hgrid">${mine?hcard('/s/'+mine,'vr','Verder met je sessie','Sessie '+mine+' · ga verder waar je gebleven was'):''}${hcard('/spel','spel','Checkout-spel','Voor iedereen: naam invullen, 41 tot en met 60 uitgooien en op het leaderboard komen')}
   <button class="hc" data-a="newsess"><span class="hi">${ico('vr')}</span><span class="ht"><b>Nieuwe sessie met vrienden</b><small>Toernooi, 1 tegen 1, solo of checkout-spel. Je krijgt een eigen link en code</small></span><span class="ha" aria-hidden="true">›</span></button></div>
   ${newConf?`<div class="conf" style="max-width:760px;margin-top:10px"><p style="margin:0 0 10px">Je vorige sessie (${esc(mine)}) wordt dan verwijderd, met alles wat erin stond. Doorgaan?</p><div class="row"><button class="btn pri" data-a="newsess">Ja, nieuwe sessie</button><button class="btn" data-a="newno">Annuleren</button></div></div>`:''}
@@ -1054,11 +1137,14 @@ let top={v:-1,list:[]};
 function topTake(t){if(!t||!Array.isArray(t.list)||t.v===top.v)return false;top={v:+t.v||0,list:t.list.filter(x=>x&&typeof x.n==='string').map(x=>({k:String(x.k||''),n:x.n.slice(0,24),s:+x.s||0,d:+x.d||0}))};return true}
 function topRefresh(){const el=document.getElementById('sptop');if(el)el.innerHTML=spTopHtml()}
 async function spFinish(){const p=SP();p.on=false;p.done=true;p.darts=[];spHidden=false;msg='Score opslaan…';spSave();render();window.scrollTo(0,0);
-  const rec=[],todo=(p.n===2?[0,1]:[0]).filter(i=>String(p.names[i]||'').trim());
+  const rec=[],noTop=[],todo=(p.n===2?[0,1]:[0]).filter(i=>String(p.names[i]||'').trim());
   for(const i of todo){const nm=String(p.names[i]).trim();
-    try{const r=await fetch('/api/spel/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nm,score:p.hits[i]})});const d=await r.json().catch(()=>({}));
-      if(r.ok&&d.record&&p.hits[i]>0)rec.push(nm)}catch(e){}}
+    const pr=prOf(nm),bad=[];
+    try{const r=await fetch('/api/spel/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pr?{name:nm,score:p.hits[i],pid:pr.id,t:pr.t}:{name:nm,score:p.hits[i]})});const d=await r.json().catch(()=>({}));
+      if(r.ok&&d.record&&p.hits[i]>0)rec.push(nm);
+      if(r.status===403){if(pr)prSet(prList().filter(x=>x.id!==pr.id));noTop.push(nm)}}catch(e){}}
   msg=rec.length?'Nieuw record voor '+rec.join(' en ')+'!':todo.length?'':'Zonder naam komt je score niet op het leaderboard.';
+  if(noTop.length)msg=(msg?msg+' ':'')+noTop.join(' en ')+(noTop.length>1?' hebben':' heeft')+' een profiel: log in met de pincode, dan telt de score mee.';
   if(rec.length)ev({k:'co',who:'Nieuw record: '+rec.join(' en ')});
   try{const r=await fetch('/api/spel/top',{cache:'no-store'});topTake(await r.json())}catch(e){}
   spSave();render()}
@@ -1080,7 +1166,7 @@ function vSpel(){const p=SP();
    <div class="row" style="margin:12px 0 0"><button class="btn pri" data-a="spstart">Opnieuw met dezelfde spelers</button><button class="btn" data-a="spnew">Nieuw spel</button></div>${top}`;
   return`<h2>Checkout-spel</h2><p class="stat">Alle 20 getallen van 41 tot en met 60 komen één keer langs, in willekeurige volgorde. Je hebt 3 pijlen per getal. Uitgegooid = 1 punt, dus maximaal 20 punten.</p>
   <div class="mode"><button data-spn="1" class="${p.n===1?'on':''}">1 speler</button><button data-spn="2" class="${p.n===2?'on':''}">2 spelers</button></div>
-  <div style="max-width:560px;display:grid;gap:8px;margin:12px 0"><input type="text" id="sp1" maxlength="24" placeholder="${p.n===2?'Speler 1':'Je naam'}" value="${esc(p.names[0])}" aria-label="Speler 1">${p.n===2?`<input type="text" id="sp2" maxlength="24" placeholder="Speler 2" value="${esc(p.names[1])}" aria-label="Speler 2">`:''}</div>
+  <div style="max-width:560px;display:grid;gap:8px;margin:12px 0"><input type="text" id="sp1" maxlength="24" list="spl-dl" autocomplete="off" placeholder="${p.n===2?'Speler 1':'Je naam'}" value="${esc(p.names[0])}" aria-label="Speler 1">${p.n===2?`<input type="text" id="sp2" maxlength="24" list="spl-dl" autocomplete="off" placeholder="Speler 2" value="${esc(p.names[1])}" aria-label="Speler 2">`:''}${prChips(p.n===2?'sp1,sp2':'sp1')}</div>
   <div class="set"><label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label></div>
   <p class="stat" style="margin:4px 0 12px">Vul een naam in om op het leaderboard te komen.</p>
   <div class="row"><button class="btn pri" data-a="spstart">Start spel</button></div>${top}`}
@@ -1132,7 +1218,7 @@ function vComp(){
   const C=S.comp,P=C.players;
   if(!C.started&&!ADM())return`<h2>Competitie</h2><p class="empty">Er is nog geen competitie gestart. Alleen de beheerder kan een competitie opzetten.</p>`;
   if(!C.started)return`<h2>Competitie</h2><p class="stat">Iedereen speelt twee keer tegen iedereen: één keer thuis, één keer uit. Elke wedstrijd is best of 5 legs. Winst levert 2 punten op.</p>
-  <form id="fc" class="row" style="max-width:560px"><input type="text" id="cnm" maxlength="24" placeholder="Naam speler" autocomplete="off" aria-label="Naam speler"><button class="btn pri">Toevoegen</button></form>
+  <form id="fc" class="row" style="max-width:560px"><input type="text" id="cnm" list="spl-dl" maxlength="24" placeholder="Naam speler" autocomplete="off" aria-label="Naam speler"><button class="btn pri">Toevoegen</button></form>
   ${P.length?`<ul class="list">${P.map((p,i)=>`<li><span class="sd">${i+1}</span><span class="n">${esc(p)}</span><button class="x" data-cdel="${i}" aria-label="Verwijder ${esc(p)}">×</button></li>`).join('')}</ul>`:'<p class="empty">Nog geen spelers. Voeg er minstens 3 toe.</p>'}
   ${P.length>=2?`<p class="stat">${P.length*(P.length-1)} wedstrijden in totaal</p>`:''}
   <div class="set">${gameSel()}<label>Speelschema<select id="lot"><option value="1"${S.lot?' selected':''}>Willekeurig loten</option><option value="0"${S.lot?'':' selected'}>Volgorde van de lijst</option></select></label></div>
@@ -1186,7 +1272,7 @@ function linksHtml(){
 function vSpelers(){
   // Beheer van de hoofdsite = alleen de competitie (+ checkout-leaderboard); al het andere via Spelen
   if(!SID){if(S.kind!=='comp'){S.kind='comp';save()}
-    return`<p class="stat topnav"><a href="/">← Startpagina</a><a href="/kijk">Live kijken</a></p>`+vComp()+`<div style="margin-top:8px">${spTopBlok()}</div>`+`<p class="stat" style="margin-top:20px">Zelf een potje 1 tegen 1, solo, toernooi of het checkout-spel? Dat gaat via <a href="/spelen">Spelen</a>.</p>`+linksHtml()}
+    return`<p class="stat topnav"><a href="/">← Startpagina</a><a href="/kijk">Live kijken</a></p>`+vComp()+`<div style="margin-top:8px">${spTopBlok()}</div>`+vSplBeheer()+`<p class="stat" style="margin-top:20px">Zelf een potje 1 tegen 1, solo, toernooi of het checkout-spel? Dat gaat via <a href="/spelen">Spelen</a>.</p>`+linksHtml()}
   if(SID&&S.kind==='comp')S.kind='single';
   const join=remOpen&&!openId&&getO(remOpen)?`<div class="conf" style="max-width:760px;margin:0 0 14px"><p style="margin:0 0 10px">Er loopt een wedstrijd op een ander apparaat: <b>${(()=>{try{const L=live(remOpen);return esc(String(sideName2(remOpen,L,0)))+' – '+esc(String(sideName2(remOpen,L,1)))}catch(e){return'wedstrijd'}})()}</b></p><div class="row"><button class="btn pri" data-a="join">Meedoen</button></div></div>`:'';
   const nav=`<p class="stat topnav"><a href="/">← Startpagina</a><a href="/spelen">Spelen</a><a href="/kijk">Live kijken</a></p>`;
@@ -1208,7 +1294,7 @@ function vToernooi(){
   }
   if(!ADM())return`<h2>Toernooi</h2><p class="empty">Er is nog geen toernooi gestart. Alleen de beheerder kan een toernooi opzetten.</p>`;
   return`<h2>Spelers toevoegen</h2>
-  <form id="f" class="row" style="max-width:560px"><input type="text" id="nm" maxlength="24" placeholder="Naam speler" autocomplete="off" aria-label="Naam speler"><button class="btn pri">Toevoegen</button></form>
+  <form id="f" class="row" style="max-width:560px"><input type="text" id="nm" maxlength="24" list="spl-dl" placeholder="Naam speler" autocomplete="off" aria-label="Naam speler"><button class="btn pri">Toevoegen</button></form>${prChips('nm')}
   ${S.players.length?`<ul class="list">${S.players.map((p,i)=>`<li><span class="sd">${i+1}</span><span class="n">${esc(p)}</span><button class="x" data-del="${i}" aria-label="Verwijder ${esc(p)}">×</button></li>`).join('')}</ul>`:'<p class="empty">Nog geen spelers. Voeg er minstens 3 toe.</p>'}
   <div class="set"><label>Wedstrijden<select id="bo">${[1,3,5,7].map(v=>`<option value="${v}"${v==S.bo?' selected':''}>Best of ${v}</option>`).join('')}</select></label>
   <label>Finale<select id="boF">${[1,3,5,7].map(v=>`<option value="${v}"${v==S.boF?' selected':''}>Best of ${v}</option>`).join('')}</select></label>
@@ -1248,12 +1334,12 @@ function render(){
   if(tv){refresh();renderTV();return}
   if(!ready){return}
   if(HOME||SPELEN){document.body.classList.remove('started');document.getElementById('nav').innerHTML='';
-    document.getElementById('app').innerHTML=HOME?vHome():vSpelenPage();
+    document.getElementById('app').innerHTML=HOME?vHome():vSpelenPage();if(SPELEN)prBind();
     const fj=document.getElementById('fjoin');if(fj)fj.addEventListener('submit',e=>{e.preventDefault();const v=document.getElementById('jid').value.trim().toLowerCase(),m=/(?:\/s\/)?([a-z0-9]{6})\/?(?:monitor|kijk)?\/?$/.exec(v);
       if(!m){joinErr='Dat is geen geldige sessielink. Vraag de link of de 6 tekens van de sessie aan je vriend.';render();return}location.href='/s/'+m[1]});
     return}
   if(SPELP){document.body.classList.remove('started');document.getElementById('nav').innerHTML='';
-    document.getElementById('app').innerHTML=`<p class="stat" style="margin-top:8px"><a href="/spelen">← Spelen</a></p>`+vSpel();
+    document.getElementById('app').innerHTML=`<p class="stat" style="margin-top:8px"><a href="/spelen">← Spelen</a></p>`+(SP().on?'':vProfiel())+vSpel();prBind();
     ['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)el.addEventListener('input',()=>{SP().names[i]=el.value;spSave()})});
     const dz=document.getElementById('dout');if(dz)dz.addEventListener('change',()=>{S.dout=+dz.value;spSave();render()});
     renderOv();return}
@@ -1273,14 +1359,15 @@ function render(){
   else h=champBox()+`<h2>Finale</h2><p class="stat">Winnaar van de winnaarsbracket tegen winnaar van de verliezersbracket.</p><div style="max-width:320px">${card('F')}</div>`;
   document.getElementById('app').innerHTML=h;
   const f=document.getElementById('f');
-  if(f)f.addEventListener('submit',e=>{e.preventDefault();const i=document.getElementById('nm'),v=i.value.trim();if(v){S.players.push(v);save();render();document.getElementById('nm').focus()}});
+  if(f)f.addEventListener('submit',e=>{e.preventDefault();const i=document.getElementById('nm'),v=i.value.trim();if(v)gate([v],([n])=>{if(S.players.some(x=>nk(x)===nk(n))){i.value='';return}S.players.push(n);save();render();document.getElementById('nm').focus()})});
   const fc=document.getElementById('fc');
   if(fc)fc.addEventListener('submit',e=>{e.preventDefault();const i=document.getElementById('cnm'),v=i.value.trim();if(v){S.comp.players.push(v);save();render();document.getElementById('cnm').focus()}});
   renderOv();
   const fs=document.getElementById('fs');
   if(fs)fs.addEventListener('submit',e=>{e.preventDefault();
-    const e2=document.getElementById('p2');S.single.names=[document.getElementById('p1').value.trim()||(S.single.solo?'Jij':'Thuis'),e2?e2.value.trim()||'Uit':S.single.names[1]||''];
-    delete S.results.X;delete S.turns.X;save();openId='X';darts=[];mod=1;buf='';msg='';render()});
+    const e2=document.getElementById('p2'),nn=[document.getElementById('p1').value.trim()||(S.single.solo?'Jij':'Thuis'),e2?e2.value.trim()||'Uit':S.single.names[1]||''];
+    gate(S.single.solo?[nn[0]]:nn,()=>{S.single.names=nn.map(x=>x?fixName(x):x);
+    delete S.results.X;delete S.turns.X;save();openId='X';darts=[];mod=1;buf='';msg='';render()})});
   ['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)el.addEventListener('input',()=>{SP().names[i]=el.value;save()})});
   ['p1','p2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)el.addEventListener('input',()=>{S.single.names[i]=el.value;save()})});
   const sb=document.getElementById('sbo');if(sb)sb.addEventListener('change',()=>{S.single.bo=+sb.value;save()});
@@ -1289,6 +1376,18 @@ function render(){
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.topdel!==undefined){topAdmin({del:t.dataset.topdel});return}
+  if(t.dataset.prfill!==undefined){const ids=(t.dataset.prt||'').split(',').map(k=>document.getElementById(k)).filter(Boolean),v=t.dataset.prfill;
+    if(ids.some(el=>nk(el.value)===nk(v)))return;const el=ids.find(x=>!x.value.trim())||ids[0];if(el){el.value=v;el.dispatchEvent(new Event('input'))}return}
+  if(t.dataset.prout!==undefined){prSet(prList().filter(x=>x.id!==t.dataset.prout));splDl();render();return}
+  if(t.dataset.spl){const m=t.dataset.spl;
+    if(t.dataset.id){splEd={id:t.dataset.id,mode:m};splErr='';render();setTimeout(()=>{const i=document.querySelector('.spe input,.spe select');if(i)i.focus()},30);return}
+    if(m==='dicht'){splEd=null;splErr='';render();return}
+    if(!splEd)return;const id=splEd.id;
+    if(m==='naam-ok')splAdmin({id,actie:'hernoem',naam:(document.getElementById('spe-n')||{}).value||''});
+    else if(m==='pin-ok')splAdmin({id,actie:'pin',pin:((document.getElementById('spe-p')||{}).value||'').trim()});
+    else if(m==='samen-ok')splAdmin({id,actie:'samen',naar:(document.getElementById('spe-s')||{}).value||''});
+    else if(m==='weg-ok')splAdmin({id,actie:'weg'});
+    return}
   if(t.dataset.ik!==undefined&&openId){try{if(t.dataset.ik==='')localStorage.removeItem(IKK());else localStorage.setItem(IKK(),t.dataset.ik)}catch(_){}renderOv();return}
   if(t.dataset.sn!==undefined){spDart(+t.dataset.sn);return}
   if(t.dataset.smod){const m=+t.dataset.smod;spMod=spMod===m?1:m;renderOv();return}
@@ -1340,6 +1439,8 @@ document.addEventListener('click',e=>{
   if(a==='packdel'){packDel().then(()=>(tv?renderTV:renderOv)());return}
   if(a==='install'){if(instEv){instEv.prompt();instEv.userChoice.finally(()=>{instEv=null;render()})}return}
   if(a==='iostip'){iosTip=true;render();return}
+  if(a==='prnew'||a==='prlogin'){prf={mode:a==='prnew'?'nieuw':'login',err:'',busy:false};if(a==='prlogin')splLoad();render();return}
+  if(a==='prno'){prf={mode:'',err:'',busy:false};render();return}
   if(a==='newsess'){newErr='';const old=mijnSess();if(old&&!newConf){newConf=true;render();return}newConf=false;
     (async()=>{try{let code='';try{code=old?localStorage.getItem('dartstruners-pin-'+old)||'':''}catch(_){}
       const r=await fetch('/api/sessie',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({oud:old?[{id:old,code}]:[]})});const d=await r.json().catch(()=>({}));
@@ -1348,7 +1449,8 @@ document.addEventListener('click',e=>{
   if(a==='invite'){invite();return}
   if(a==='join'&&remOpen){openId=remOpen;darts=remDarts.filter(x=>x&&typeof x.lab==='string').map(x=>({lab:x.lab,v:+x.v||0,dbl:!!x.dbl}));mod=1;buf='';msg='';edit=null;render();return}
   if(a==='newno'){newConf=false;render();return}
-  if(a==='spstart'){spConf=false;const p=SP();['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)p.names[i]=el.value.trim()});spHidden=false;spStart();return}
+  if(a==='spstart'){spConf=false;const p=SP();['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)p.names[i]=el.value.trim()});
+    const ix=p.n===2?[0,1]:[0];gate(ix.map(i=>p.names[i]).filter(Boolean),()=>{ix.forEach(i=>{if(p.names[i])p.names[i]=fixName(p.names[i])});spHidden=false;spStart()});return}
   if(a==='spnew'){const p=SP();p.on=false;p.done=false;save();render();return}
   if(a==='spopen'){spHidden=false;render();return}
   if(a==='spclose'){spHidden=true;render();return}
@@ -1663,14 +1765,14 @@ function renderTV(){
 /* ---------- opstarten ---------- */
 (async()=>{
   if(tv){tvTO=setTimeout(()=>{tvSlow=true;renderTV()},10000);renderTV();stream();liveFetch();setInterval(()=>{if(KIJK||monLive()||Date.now()%15000<5000)liveFetch()},5000);return}
-  if(HOME||SPELEN){ready=true;render();if(SPELEN)checkSessies();return}
+  if(HOME||SPELEN){ready=true;render();if(SPELEN){checkSessies();splInit()}return}
   if(camOn&&kopCode)camStream();
   if(SPELP){S=DEF();S.kind='spel';try{const o=JSON.parse(localStorage.getItem('dartstruners-spel'));if(o&&o.spel){S.spel=o.spel;if(o.dout!==undefined)S.dout=o.dout;if(o.sound!==undefined)S.sound=o.sound;if(o.voice)S.voice=o.voice}}catch(e){}
     try{const r=await fetch('/api/spel/top',{cache:'no-store'});topTake(await r.json());setNet(true)}catch(e){}
-    ready=true;render();stream();return}
+    ready=true;render();stream();splInit();return}
   try{const r=await fetch('/api/info',{cache:'no-store'});const d=await r.json();if(d&&typeof d.versie==='string')versie=d.versie;if(d&&typeof d.publicUrl==='string'&&/^https:\/\//.test(d.publicUrl))publicUrl=d.publicUrl}catch(e){}
   if(pin){await login(pin)}else{await loadState();ready=true;render()}
-  stream();
+  stream();if(!tv)splInit();
 })();
 }
 if('serviceWorker' in navigator&&location.protocol==='https:'||location.hostname==='localhost'){try{navigator.serviceWorker&&navigator.serviceWorker.register('/sw.js').catch(()=>{})}catch(e){}}

@@ -105,6 +105,15 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 
 ---
 
+## Spelersprofielen
+
+- Op **Spelen** (en bij het checkout-spel) kan iedereen een profiel maken: naam + pincode van 4 cijfers. Geen e-mail nodig.
+- Het apparaat onthoudt je daarna. Speel je op het apparaat van een ander, dan vraagt hij één keer je pincode.
+- Gebruikt iemand een naam die bij een profiel hoort, dan moet eerst de pincode worden ingevuld. Wie geen profiel heeft, speelt gewoon als gast.
+- Het checkout-leaderboard hangt aan het profiel: niemand kan een score onder jouw naam zetten.
+- In **/beheer** onder "Spelersprofielen": naam wijzigen, pincode resetten (vergeten), twee profielen samenvoegen of een profiel verwijderen.
+- Een competitiespeler met dezelfde naam als een profiel hoort automatisch bij dat profiel.
+
 ## Goed om te weten
 
 - **Reservekopie:** klik af en toe op **Exporteren** onderaan de app. Dan heb je een bestand met alle gegevens.

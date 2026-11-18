@@ -103,11 +103,55 @@ function persistTop() {
     });
   }, 300);
 }
-const topView = () => ({ v: top.v, list: Object.entries(top.list).map(([k, x]) => ({ k, n: x.n, s: x.s, d: x.d })).sort((a, b) => b.s - a.s || a.d - b.d).slice(0, 200) });
+const topView = () => ({ v: top.v, list: Object.entries(top.list).map(([k, x]) => ({ k, n: k.startsWith('p:') && spl.list[k.slice(2)] ? spl.list[k.slice(2)].n : x.n, s: x.s, d: x.d, p: k.startsWith('p:') ? 1 : 0 })).sort((a, b) => b.s - a.s || a.d - b.d).slice(0, 200) });
 const topHits = new Map();
 function topChanged() {
   top.v++; persistTop(); broadcast();
   for (const id of Object.keys(sess)) if ((sessWait.get(id) || []).length) sessBroadcast(id);
+}
+
+// ---------- spelersprofielen (naam + 4-cijferige pincode, geen e-mail) ----------
+const SPL_FILE = path.join(DATA_DIR, 'spelers.json');
+let spl = { v: 0, geheim: '', list: {} };
+try {
+  if (fs.existsSync(SPL_FILE)) {
+    const d = JSON.parse(fs.readFileSync(SPL_FILE, 'utf8'));
+    if (d && d.list && typeof d.list === 'object') spl = Object.assign(spl, d);
+  }
+} catch (e) { console.error('Kon de spelers niet lezen:', e.message); }
+if (!spl.geheim) spl.geheim = crypto.randomBytes(32).toString('hex');
+let splTimer = null;
+function persistSpl() {
+  clearTimeout(splTimer);
+  splTimer = setTimeout(() => {
+    const tmp = SPL_FILE + '.tmp';
+    fs.writeFile(tmp, JSON.stringify(spl), err => {
+      if (err) return console.error('Spelers opslaan mislukt:', err.message);
+      fs.rename(tmp, SPL_FILE, e => e && console.error('Spelers opslaan mislukt:', e.message));
+    });
+  }, 300);
+}
+if (!fs.existsSync(SPL_FILE)) persistSpl();
+const pinHash = (pin, salt) => crypto.scryptSync(String(pin), salt, 32).toString('hex');
+const splToken = id => { const x = spl.list[id]; return x ? crypto.createHmac('sha256', spl.geheim).update(id + ':' + (x.pv || 0)).digest('hex').slice(0, 32) : ''; };
+const splOk = (id, t) => typeof id === 'string' && typeof t === 'string' && !!spl.list[id] && t.length === 32 && same(t, splToken(id));
+const splKey = n => String(n || '').trim().toLowerCase();
+// Zoekt een profiel op naam (ook oude namen na hernoemen/samenvoegen)
+function splByName(n) {
+  const k = splKey(n); if (!k) return null;
+  for (const [id, x] of Object.entries(spl.list)) if (splKey(x.n) === k || (x.alias || []).some(a => splKey(a) === k)) return id;
+  return null;
+}
+const splView = () => ({ v: spl.v, list: Object.entries(spl.list).map(([id, x]) => ({ id, n: x.n, a: (x.alias || []).slice(0, 10) })).sort((a, b) => a.n.localeCompare(b.n, 'nl')) });
+function splChanged() { spl.v++; persistSpl(); }
+const splNew = new Map(), splFail = new Map(); // ip -> tijden ; profiel -> {n, until}
+// Een score van een gast mag niet onder de naam van een profiel komen
+function topMoveToProfile(id) {
+  const x = spl.list[id]; if (!x) return;
+  const names = [x.n].concat(x.alias || []).map(splKey); let best = top.list['p:' + id] || null, ch = false;
+  for (const k of names) { const o = top.list[k]; if (o) { if (!best || o.s > best.s) best = { n: x.n, s: o.s, d: o.d }; delete top.list[k]; ch = true; } }
+  if (best) { best.n = x.n; top.list['p:' + id] = best; }
+  if (ch || best) topChanged();
 }
 
 let writeTimer = null;
@@ -518,6 +562,75 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { now, list: out.slice(0, 30) });
     }
 
+    // ---------- spelersprofielen ----------
+    if (req.method === 'GET' && p === '/api/spelers') return send(res, 200, splView());
+    if (req.method === 'POST' && p === '/api/spelers/nieuw') {
+      const b = await readBody(req);
+      const n = clean(b.naam, 20), pin = String(b.pin || '');
+      if (n.length < 2) return send(res, 400, { error: 'Vul een naam in van minstens 2 tekens' });
+      if (!/^\d{4}$/.test(pin)) return send(res, 400, { error: 'Kies een pincode van 4 cijfers' });
+      if (splByName(n)) return send(res, 409, { error: 'Er is al een profiel met deze naam. Is het van jou? Kies dan "Ik heb al een profiel".' });
+      const now = Date.now(), l = (splNew.get(ip) || []).filter(t => now - t < 3600e3);
+      if (l.length >= 10) return send(res, 429, { error: 'Te veel profielen gemaakt. Probeer het later opnieuw.' });
+      l.push(now); splNew.set(ip, l); if (splNew.size > 2000) splNew.clear();
+      let id; do { id = crypto.randomBytes(5).toString('hex'); } while (spl.list[id]);
+      const salt = crypto.randomBytes(12).toString('hex');
+      spl.list[id] = { n, salt, h: pinHash(pin, salt), pv: 0, at: now, alias: [] };
+      topMoveToProfile(id);
+      splChanged();
+      return send(res, 200, { id, n, t: splToken(id) });
+    }
+    if (req.method === 'POST' && p === '/api/spelers/login') {
+      if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+      const b = await readBody(req);
+      const id = typeof b.id === 'string' && spl.list[b.id] ? b.id : splByName(b.naam);
+      const x = id && spl.list[id];
+      if (!x) return send(res, 404, { error: 'Dit profiel bestaat niet (meer)' });
+      const f = splFail.get(id) || { n: 0, until: 0 };
+      if (f.until > Date.now()) return send(res, 429, { error: 'Te vaak een verkeerde pincode. Probeer het over 15 minuten opnieuw.' });
+      if (!/^\d{4}$/.test(String(b.pin || '')) || !same(pinHash(b.pin, x.salt), x.h)) {
+        failed(ip); f.n++; if (f.n >= 5) { f.until = Date.now() + 15 * 60e3; f.n = 0; } splFail.set(id, f);
+        return send(res, 401, { error: 'Onjuiste pincode' });
+      }
+      splFail.delete(id);
+      return send(res, 200, { id, n: x.n, t: splToken(id) });
+    }
+    // Controleert de profielen die op een apparaat bewaard zijn (naam bijwerken, verwijderde eruit)
+    if (req.method === 'POST' && p === '/api/spelers/check') {
+      const b = await readBody(req);
+      const out = (Array.isArray(b.list) ? b.list.slice(0, 20) : []).filter(x => x && splOk(x.id, x.t)).map(x => ({ id: x.id, n: spl.list[x.id].n, t: x.t }));
+      return send(res, 200, { list: out });
+    }
+    if (req.method === 'POST' && p === '/api/spelers/beheer') {
+      if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+      if (roleOf(req.headers['x-pin']) !== 'admin') { failed(ip); return send(res, 401, { error: 'Onjuiste code' }); }
+      const b = await readBody(req);
+      const x = typeof b.id === 'string' && spl.list[b.id];
+      if (!x) return send(res, 404, { error: 'Profiel niet gevonden' });
+      if (b.actie === 'hernoem') {
+        const n = clean(b.naam, 20);
+        if (n.length < 2) return send(res, 400, { error: 'Naam te kort' });
+        const o = splByName(n); if (o && o !== b.id) return send(res, 409, { error: 'Die naam is al van een ander profiel' });
+        if (splKey(n) !== splKey(x.n)) { x.alias = (x.alias || []).filter(a => splKey(a) !== splKey(n)); x.alias.push(x.n); x.alias = x.alias.slice(-10); }
+        x.n = n; topChanged();
+      } else if (b.actie === 'pin') {
+        if (!/^\d{4}$/.test(String(b.pin || ''))) return send(res, 400, { error: 'Pincode moet 4 cijfers zijn' });
+        x.salt = crypto.randomBytes(12).toString('hex'); x.h = pinHash(b.pin, x.salt); x.pv = (x.pv || 0) + 1; splFail.delete(b.id);
+      } else if (b.actie === 'samen') {
+        const y = typeof b.naar === 'string' && b.naar !== b.id && spl.list[b.naar];
+        if (!y) return send(res, 400, { error: 'Kies het profiel om mee samen te voegen' });
+        y.alias = Array.from(new Set((y.alias || []).concat([x.n], x.alias || []))).slice(-10);
+        const a = top.list['p:' + b.id], c = top.list['p:' + b.naar];
+        if (a && (!c || a.s > c.s)) top.list['p:' + b.naar] = Object.assign({}, a, { n: y.n });
+        delete top.list['p:' + b.id]; delete spl.list[b.id]; topChanged();
+      } else if (b.actie === 'weg') {
+        const a = top.list['p:' + b.id];
+        if (a) { top.list[splKey(x.n)] = { n: x.n, s: a.s, d: a.d }; delete top.list['p:' + b.id]; topChanged(); }
+        delete spl.list[b.id];
+      } else return send(res, 400, { error: 'Onbekende actie' });
+      splChanged();
+      return send(res, 200, { ok: true });
+    }
     if (req.method === 'GET' && p === '/api/spel/top') return send(res, 200, topView());
     if (req.method === 'POST' && p === '/api/spel/score') {
       const b = await readBody(req);
@@ -526,8 +639,13 @@ const server = http.createServer(async (req, res) => {
       const now = Date.now(), l = (topHits.get(ip) || []).filter(t => now - t < 3600e3);
       if (l.length >= 60) return send(res, 429, { error: 'Te veel scores. Probeer het later opnieuw.' });
       l.push(now); topHits.set(ip, l); if (topHits.size > 2000) topHits.clear();
-      const k = n.toLowerCase(), o = top.list[k], rec = !o || sc > o.s;
-      if (rec) { top.list[k] = { n: o ? o.n : n, s: sc, d: now }; topChanged(); }
+      let k = n.toLowerCase(), nn = n;
+      if (b.pid) {
+        if (!splOk(b.pid, b.t)) return send(res, 403, { error: 'Log opnieuw in met je pincode' });
+        k = 'p:' + b.pid; nn = spl.list[b.pid].n;
+      } else if (splByName(n)) return send(res, 403, { error: 'Deze naam hoort bij een profiel. Log in met de pincode of kies een andere naam.', profiel: true });
+      const o = top.list[k], rec = !o || sc > o.s;
+      if (rec) { top.list[k] = { n: nn, s: sc, d: now }; topChanged(); }
       return send(res, 200, { ok: true, record: rec, best: rec ? sc : o.s });
     }
     if (req.method === 'POST' && p === '/api/spel/beheer') {
