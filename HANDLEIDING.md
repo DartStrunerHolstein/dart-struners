@@ -114,6 +114,12 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 - In **/beheer** onder "Spelersprofielen": naam wijzigen, pincode resetten (vergeten), twee profielen samenvoegen of een profiel verwijderen.
 - Een competitiespeler met dezelfde naam als een profiel hoort automatisch bij dat profiel.
 
+## Statistieken
+
+- **Live kijken → Spelers**: ranglijstjes van de competitie (hoogste gemiddelde, meeste 180's, hoogste uitgooi, beste leg, uitgooi-%, meeste 100+) en per speler alle cijfers: gemiddelde, eerste 9, 180/140+/100+, hoogste beurt en uitgooi, uitgooi-% op dubbels, beste leg, pijlen per leg, wedstrijden en legs, favoriete dubbel, vorm (laatste 5) en onderling.
+- Alleen wedstrijden die met darts gescoord zijn tellen mee; een uitslag die alleen met − / + is ingevuld telt wel voor wedstrijden en legs.
+- Na elke wedstrijd staat er onder de winnaar een korte vergelijking van beide spelers.
+
 ## Goed om te weten
 
 - **Reservekopie:** klik af en toe op **Exporteren** onderaan de app. Dan heb je een bestand met alle gegevens.

@@ -436,6 +436,13 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/healthz') return send(res, 200, { ok: true });
 
     if (req.method === 'GET' && p === '/api/state') return send(res, 200, state);
+    // Alle beurten van de competitie (voor de statistieken), zonder bordcoördinaten
+    if (req.method === 'GET' && p === '/api/comp/beurten') {
+      const T = (state.S && state.S.turns) || {}, out = {};
+      for (const [k, t] of Object.entries(T)) if (k[0] === 'C' && t && Array.isArray(t.list))
+        out[k] = { a: t.a, b: t.b, list: t.list.map(x => ({ leg: x.leg, side: x.side, score: x.score, bust: x.bust, out: x.out, d: Array.isArray(x.d) ? x.d.map(q => ({ lab: q.lab, v: q.v, dbl: q.dbl })) : null })) };
+      return send(res, 200, { v: state.v, turns: out });
+    }
     if (req.method === 'GET' && p === '/api/info') return send(res, 200, { publicUrl, versie: VERSIE });
 
     // Website bijwerken vanaf GitHub (alleen beheerder): git pull, daarna herstart de server zichzelf
