@@ -250,6 +250,9 @@ body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
 .kpod{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}.kpod button{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;font:700 15px Inter,sans-serif;cursor:pointer}.kpod span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);font-size:14px}.kpod button:first-child span{background:var(--pink)}
 .ktrl{display:grid;gap:8px}.ktrl button{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font:600 14px Inter,sans-serif}.ktrl div{flex:1;display:flex;flex-direction:column;gap:2px}.ktrl b{font-size:15px}.ktrl small{color:rgba(255,255,255,.6)}.ktrl small em{font-style:normal;color:var(--hl);font-weight:800}.ktrl span{color:rgba(255,255,255,.75);text-align:right}.ktrl i{font-style:normal;color:var(--pink);font-size:20px}
 @media(max-width:560px){.ktrl button{flex-wrap:wrap}.ktrl span{order:3;flex-basis:100%;text-align:left}}
+.tvboard.tap,.tvsp .tvboard.tap{width:min(34vw,58vh)}@media (max-width:760px),(max-aspect-ratio:1/1){.tvboard.tap,.tvsp .tvboard.tap{width:min(92vw,52vh)}}
+.tvboard.tap{cursor:crosshair;-webkit-tap-highlight-color:transparent;touch-action:manipulation}.tvboard.tap:active{filter:brightness(1.06)}
+.tvtap{margin:8px 0 0;text-align:center;color:rgba(255,255,255,.7);font-weight:700;font-size:clamp(13px,1.2vw,20px)}
 .kform{display:flex;gap:6px}.kform span{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:700 15px Inter,sans-serif}.kform .w{background:#1f9d55;color:#fff}.kform .v{background:rgba(255,255,255,.12);color:#fff}
 .msum{width:100%;max-width:420px;margin:12px auto 4px;border-collapse:collapse;font-size:14px}.msum th,.msum td{padding:5px 6px;text-align:center}.msum tbody th{font-weight:600;opacity:.7;font-size:12px;text-transform:uppercase;letter-spacing:.04em}.msum thead th{font-weight:800}.msum tbody tr+tr{border-top:1px solid rgba(255,255,255,.12)}
 .hfoot{margin:24px 0 0}.hfoot a{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-weight:700;text-decoration:none}.hfoot svg{width:18px;height:18px}
@@ -391,7 +394,7 @@ body.kijk .tvr{font-size:min(15vw,19vh)}
 .tvm2.solo{grid-template-columns:minmax(0,1fr)}
 .tvm2.wb{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.tvm2.wb.solo{grid-template-columns:minmax(0,1fr) auto}
 .monbk{position:fixed;left:2vw;bottom:2vh;z-index:66;min-height:52px;padding:0 22px;border-radius:999px;border:0;background:var(--pink);color:#fff;font:800 clamp(15px,1.4vw,26px) Inter,sans-serif;box-shadow:0 8px 24px rgba(255,45,138,.45);cursor:pointer}
-.tvbw{display:flex;align-items:center;justify-content:center;min-height:0}
+.tvbw{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0}
 .tvboard{width:min(26vw,50vh);height:auto;max-height:100%;filter:drop-shadow(0 1.5vh 3vh rgba(0,0,0,.5))}
 .tvsp .tvboard{width:min(19vw,44vh)}
 .tvm2.wb .tvr{font-size:min(10vw,21vh)}.tvsp .tvm2.wb .tvr{font-size:min(7.2vw,19vh)}
@@ -981,7 +984,7 @@ function dartPos(d,key){
   const r=m[1]==='T'?.594+r2*.024:m[1]==='D'?.962+r2*.03:(r2<.6?.16+r2*.62:.66+(r2-.6)*.6);
   return{x:Math.sin(a)*r,y:Math.cos(a)*r}}
 let boardSeen=new Set(),boardDone={},boardT=0;
-function boardSvg(cur,prev,keyBase){
+function boardSvg(cur,prev,keyBase,tap){
   const seg=(r0,r1,i,fill)=>{const a0=(i-.5)*Math.PI/10,a1=(i+.5)*Math.PI/10,p=(r,a)=>`${(Math.sin(a)*r*100).toFixed(2)} ${(-Math.cos(a)*r*100).toFixed(2)}`;
     return`<path d="M${p(r0,a0)} L${p(r1,a0)} A${r1*100} ${r1*100} 0 0 1 ${p(r1,a1)} L${p(r0,a1)} A${r0*100} ${r0*100} 0 0 0 ${p(r0,a0)}Z" fill="${fill}"/>`};
   let g='';
@@ -1008,7 +1011,7 @@ function boardSvg(cur,prev,keyBase){
     <linearGradient id="dshaft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8cc3"/><stop offset="1" stop-color="#a3084f"/></linearGradient>
     <linearGradient id="dflight" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffc2de"/><stop offset=".5" stop-color="#ff2d8a"/><stop offset="1" stop-color="#c40f63"/></linearGradient>
     <filter id="dblur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="1.6"/></filter></defs>`;
-  return`<svg class="tvboard" viewBox="-128 -128 256 256" role="img" aria-label="Dartbord met de laatst gegooide pijlen">${defs}<circle r="126" fill="#121014"/><circle r="101" fill="#0c0a0c"/>${g}<circle r="${RB.obull*100}" fill="#1f8a4c"/><circle r="${RB.bull*100}" fill="#d8263f"/><g class="bnum">${nums}</g>${pins}</svg>`}
+  return`<svg class="tvboard${tap?' tap':''}" viewBox="-128 -128 256 256" role="img" aria-label="${tap?'Dartbord: tik op een vak om de pijl in te voeren':'Dartbord met de laatst gegooide pijlen'}">${defs}<circle r="126" fill="#121014"/><circle r="101" fill="#0c0a0c"/>${g}<circle r="${RB.obull*100}" fill="#1f8a4c"/><circle r="${RB.bull*100}" fill="#d8263f"/><g class="bnum">${nums}</g>${pins}</svg>`}
 /* ---------- startpagina en spelen ---------- */
 const SESSK='dartstruners-sessies';
 function mySess(){try{const l=JSON.parse(localStorage.getItem(SESSK));return Array.isArray(l)?l.filter(x=>x&&/^[a-z0-9]{6}$/.test(x.id)).slice(0,10):[]}catch(e){return[]}}
@@ -1395,6 +1398,13 @@ function render(){
   const sb=document.getElementById('sbo');if(sb)sb.addEventListener('change',()=>{S.single.bo=+sb.value;save()});
   ['bo','boF','game','dout','lot'].forEach(k=>{const el=document.getElementById(k);if(el)el.addEventListener('change',()=>{S[k]=+el.value;save();render()})});
 }
+// Op het dartbord tikken (spelen zonder camera's): vak bepalen uit de plek van de tik
+function boardHit(x,y){const r=Math.hypot(x,y)/100;let a=Math.atan2(x,-y);if(a<0)a+=2*Math.PI;const n=BORD[Math.round(a/(Math.PI/10))%20];
+  if(r<=RB.bull)return{n:25,m:2};if(r<=RB.obull)return{n:25,m:1};if(r<=RB.tin)return{n,m:1};if(r<=RB.tout)return{n,m:3};if(r<=RB.din)return{n,m:1};if(r<=RB.dout)return{n,m:2};return{n:0,m:1}}
+document.addEventListener('click',e=>{if(monLocal&&tvFx&&e.target.closest&&e.target.closest('.tvfx')){tvFx=null;clearTimeout(tvFxT);renderTV();return}
+  const sv=e.target.closest&&e.target.closest('svg.tvboard.tap');if(!sv||!monLocal||!openId)return;
+  try{const pt=sv.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(sv.getScreenCTM().inverse()),h=boardHit(q.x,q.y);
+    mod=h.m;camXY={x:q.x/100*0.975,y:-q.y/100*0.975};dart(h.n)}catch(_){}});
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.topdel!==undefined){topAdmin({del:t.dataset.topdel});return}
@@ -1838,7 +1848,8 @@ function tvMatch(){
   if(!darts.length&&lastT&&Array.isArray(lastT.d)){bd=lastT.d;bk=openId+':T'+(nT-1)+':';
     if(!boardDone[bk])boardDone[bk]=Date.now();const age=Date.now()-boardDone[bk];
     if(age<2600){clearTimeout(boardT);boardT=setTimeout(renderTV,2650-age)}else fade=true}
-  const board=`<div class="tvbw">${boardSvg(bd,fade,bk)}</div>`;
+  const tap=monLocal&&!done&&!L.bull&&S.inmode==='pijl'&&(darts.length<3||edit!==null);
+  const board=`<div class="tvbw">${boardSvg(bd,fade,bk,tap)}${monLocal&&!done&&!L.bull?`<p class="tvtap">${S.inmode==='pijl'?(edit!==null?'Tik op het bord voor de juiste waarde van pijl '+(edit+1):'Tik op het bord waar je pijl zit'):'Zet invoer op <b>Per pijl</b> om op het bord te tikken'}</p>`:''}</div>`;
   const main=`<div class="tvm2${SOLO(openId)?' solo':''}${board?' wb':''}">${side(0)}${board}${SOLO(openId)?'':side(1)}${turn}</div>${hist?`<ul class="tvh">${hist}</ul>`:''}`;
   if(!isC(openId)||!S.comp.started)return{ctx,html:main};
   const T=cStand();
@@ -1914,7 +1925,7 @@ function renderTV(){
       if(go&&typeof go.a==='number'&&typeof go.b==='number')c=tvMatch();
       else c=tvOverview()}
   }catch(e){c={ctx:'',html:'<div class="tvch"><small>Even geduld</small></div>'}}
-  el.innerHTML=`<div class="tvw"><div class="tvt">${monLocal?'':`<a class="tvhome" href="/" aria-label="Naar de startpagina">←<span> Startpagina</span></a>`}<svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em>${monLive()&&liveList.length>1?`<button class="lswb" data-a="lswopen">Wissel wedstrijd (${liveList.length})</button>`:''}${!KIJK&&!SID?`<button class="lswb${monLive()&&liveList.length>1?' sm':''}" data-a="monmode">${monMode==='live'?'Toon competitie':'Toon live wedstrijden'}</button>`:''}<i>${con}</i></div>${KIJK&&!KMAIN()?lswHtml():''}${KMAIN()&&mainD?`<div class="ktabs">${[['live','Live'+(liveList.length?' ('+liveList.length+')':'')],['comp','Competitie'],['spelers','Spelers'],['top','Checkout-top']].filter(([k])=>(k!=='comp'||(mainS&&mainS.kind==='comp'&&mainS.comp&&mainS.comp.started))&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>${kijkTab==='live'&&watch!==null?`<button class="kback" data-watch="none">← Alle live wedstrijden</button>`:''}`:''}${KIJK&&!KMAIN()&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['top','Checkout-top']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}${lswOpen?`<div class="lswp" data-a="lswclose"><div class="lswin"><h2>Welke wedstrijd?</h2>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}<button class="btn" data-a="lswclose">Sluiten</button></div></div>`:''}${monLocal?`<button class="monbk" data-a="monback">✎ Aanpassen</button>`:''}<button class="tvx" data-a="${monLocal?'monback':'tvstop'}" aria-label="Monitor-weergave sluiten">×</button>`;
+  el.innerHTML=`<div class="tvw"><div class="tvt">${monLocal?'':`<a class="tvhome" href="/" aria-label="Naar de startpagina">←<span> Startpagina</span></a>`}<svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><b>De Dart <span>Struners</span></b><em>${esc(c.ctx)}</em>${monLive()&&liveList.length>1?`<button class="lswb" data-a="lswopen">Wissel wedstrijd (${liveList.length})</button>`:''}${!KIJK&&!SID&&!monLocal?`<button class="lswb${monLive()&&liveList.length>1?' sm':''}" data-a="monmode">${monMode==='live'?'Toon competitie':'Toon live wedstrijden'}</button>`:''}<i>${con}</i></div>${KIJK&&!KMAIN()?lswHtml():''}${KMAIN()&&mainD?`<div class="ktabs">${[['live','Live'+(liveList.length?' ('+liveList.length+')':'')],['comp','Competitie'],['spelers','Spelers'],['top','Checkout-top']].filter(([k])=>(k!=='comp'||(mainS&&mainS.kind==='comp'&&mainS.comp&&mainS.comp.started))&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>${kijkTab==='live'&&watch!==null?`<button class="kback" data-watch="none">← Alle live wedstrijden</button>`:''}`:''}${KIJK&&!KMAIN()&&tvGot?`<div class="ktabs">${[['live','Live'],['stand','Stand'],['wedstrijden','Wedstrijden'],['top','Checkout-top']].filter(([k])=>(k!=='stand'||(S.kind==='comp'&&S.comp.started))&&(k!=='wedstrijden'||S.kind!=='spel')&&(k!=='top'||top.list.length)).map(([k,l])=>`<button data-ktab="${k}" class="${kijkTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}${c.html}</div>${!KIJK&&tvGot?tvChatHtml():''}${tvFx?fxHtml():''}${lswOpen?`<div class="lswp" data-a="lswclose"><div class="lswin"><h2>Welke wedstrijd?</h2>${liveList.map(x=>`<button data-live="${x.sid}" class="${x.sid===TSID?'on':''}">${liveLbl(x)}</button>`).join('')}<button class="btn" data-a="lswclose">Sluiten</button></div></div>`:''}${monLocal?`<button class="monbk" data-a="monback">✎ Aanpassen</button>`:''}<button class="tvx" data-a="${monLocal?'monback':'tvstop'}" aria-label="Monitor-weergave sluiten">×</button>`;
   chatPanel();
 }
 
