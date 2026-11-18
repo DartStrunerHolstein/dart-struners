@@ -323,6 +323,15 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, page(), 'text/html; charset=utf-8');
     }
 
+    // App-bestanden (installeerbare app): manifest, service worker, iconen
+    if (req.method === 'GET' && (p === '/manifest.webmanifest' || p === '/sw.js' || /^\/icons\/[a-z0-9-]+\.png$/.test(p) || p === '/favicon.ico')) {
+      const f = p === '/favicon.ico' ? '/icons/favicon-32.png' : p;
+      const type = f.endsWith('.png') ? 'image/png' : f.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'application/manifest+json; charset=utf-8';
+      let buf; try { buf = fs.readFileSync(path.join(PUBLIC, f)); } catch { return send(res, 404, { error: 'Niet gevonden' }); }
+      res.writeHead(200, Object.assign({ 'Content-Type': type, 'Cache-Control': f.endsWith('.png') ? 'public, max-age=604800' : 'no-cache' }, HEADERS));
+      return res.end(buf);
+    }
+
     // Nieuwe vriendensessie: geeft een eigen link en code terug
     if (req.method === 'POST' && p === '/api/sessie') {
       const now = Date.now(), l = (newHits.get(ip) || []).filter(t => now - t < 3600e3);

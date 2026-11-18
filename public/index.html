@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#1a0512">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dart Struners">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>De Dart Struners</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -216,6 +223,7 @@ body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
 .hc .ha{font-size:30px;color:var(--pink);line-height:1}
 #app a:not(.btn):not(.hc){color:var(--pinkt);font-weight:700}
 .topnav{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0 14px}
+.inst{display:flex;align-items:center;gap:12px;margin:18px 0 0;max-width:760px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card)}.inst img{width:44px;height:44px;border-radius:11px;flex:none}.inst span{flex:1;display:flex;flex-direction:column;gap:2px}.inst small{color:var(--mut)}.inst .btn{flex:none}
 .hfoot{margin:24px 0 0}.hfoot a{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-weight:700;text-decoration:none}.hfoot svg{width:18px;height:18px}
 .login p{margin:0;color:var(--mut)}
 .err{color:#e0245e;font-weight:700;min-height:1.4em}
@@ -978,7 +986,17 @@ const ico=k=>`<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke
 const hcard=(href,k,t,d,attr)=>`<a class="hc" href="${href}"${attr||''}><span class="hi">${ico(k)}</span><span class="ht"><b>${t}</b><small>${d}</small></span><span class="ha" aria-hidden="true">›</span></a>`;
 function vHome(){
   return`<div class="hgrid">${hcard('/kijk','kijk','Live kijken','Volg de wedstrijden, de stand en chat mee')}${hcard('/spelen','spel','Spelen','Checkout-spel of zelf een potje met vrienden')}${hcard('/monitor','mon','Monitor','Groot scorebord voor de tv in de dartruimte')}</div>
-  <p class="hfoot"><a href="/beheer">${ico('sl')}<span>Beheer (met code)</span></a></p>`}
+  ${vInstall()}<p class="hfoot"><a href="/beheer">${ico('sl')}<span>Beheer (met code)</span></a></p>`}
+// ---------- installeerbare app ----------
+let instEv=null,iosTip=false;
+const isApp=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();instEv=e;if(HOME)render()});
+window.addEventListener('appinstalled',()=>{instEv=null;if(HOME)render()});
+function vInstall(){if(isApp())return'';
+  if(instEv)return`<div class="inst"><img src="/icons/icon-192.png" alt=""><span><b>Zet De Dart Struners als app op je scherm</b><small>Opent zonder adresbalk, met het roze icoon</small></span><button class="btn pri" data-a="install">Installeren</button></div>`;
+  if(isIOS())return`<div class="inst"><img src="/icons/icon-192.png" alt=""><span><b>Als app op je beginscherm?</b><small>${iosTip?'Tik in Safari onderaan op <b>Deel</b> (vierkantje met pijl omhoog) en kies <b>Zet op beginscherm</b>.':'Opent zonder adresbalk, met het roze icoon'}</small></span>${iosTip?'':'<button class="btn" data-a="iostip">Hoe?</button>'}</div>`;
+  return''}
 let joinErr='';
 const MIJNK='dartstruners-mijn';let newConf=false;
 const mijnSess=()=>{try{const x=localStorage.getItem(MIJNK)||'';return /^[a-z0-9]{6}$/.test(x)?x:''}catch(e){return''}};
@@ -1317,6 +1335,8 @@ document.addEventListener('click',e=>{
   if(a==='tvstop'){try{if(document.fullscreenElement)document.exitFullscreen()}catch(_){}location.href=BP||'/';return}
   if(a==='packtest'){const was=S.sound;S.sound=1;const pu=packUrls([['gameon'],['180'],['gameshot']]);S.sound=was;if(pu)playUrls(pu,true);else{packMsg='In dit pakket zit geen gameon, 180 of gameshot';(tv?renderTV:renderOv)()}return}
   if(a==='packdel'){packDel().then(()=>(tv?renderTV:renderOv)());return}
+  if(a==='install'){if(instEv){instEv.prompt();instEv.userChoice.finally(()=>{instEv=null;render()})}return}
+  if(a==='iostip'){iosTip=true;render();return}
   if(a==='newsess'){newErr='';const old=mijnSess();if(old&&!newConf){newConf=true;render();return}newConf=false;
     (async()=>{try{let code='';try{code=old?localStorage.getItem('dartstruners-pin-'+old)||'':''}catch(_){}
       const r=await fetch('/api/sessie',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({oud:old?[{id:old,code}]:[]})});const d=await r.json().catch(()=>({}));
@@ -1650,6 +1670,7 @@ function renderTV(){
   stream();
 })();
 }
+if('serviceWorker' in navigator&&location.protocol==='https:'||location.hostname==='localhost'){try{navigator.serviceWorker&&navigator.serviceWorker.register('/sw.js').catch(()=>{})}catch(e){}}
 </script>
 </body>
 </html>
