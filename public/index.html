@@ -244,6 +244,12 @@ body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
 .ksub{margin:0 0 14px}.kh2h{list-style:none;margin:0;padding:0;display:grid;gap:6px}.kh2h li{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.05)}.kh2h span{flex:1;font-weight:700}.kh2h b{color:var(--pink);font-size:18px}.kh2h em{font-style:normal;color:rgba(255,255,255,.6);width:56px;text-align:right}
 .kcos{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:640px}.kco{border-radius:12px;padding:8px 4px;text-align:center;display:flex;flex-direction:column;color:#fff}.kco b{font:22px Anton,Impact,sans-serif;font-weight:400}.kco span{font-weight:800;font-size:14px}.kco small{opacity:.75;font-size:11px;min-height:1.2em}
 .klast{display:flex;flex-wrap:wrap;gap:6px}.klast span{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.08);font-weight:800}.klast small{opacity:.6;font-weight:600}
+.lt .krk{border-color:var(--line);background:var(--card)}.lt .krk h3{color:var(--pinkt)}.lt .krk li span{flex:1;font-weight:600}.krk .empty{padding:4px 0;margin:0;text-align:left;font-size:14px}.lt .krk li::before{background:var(--line);color:var(--ink)}.lt .krk li:first-child::before{background:var(--pink);color:#fff}.lt .krks{margin:0 0 16px}
+.krk li span{flex:1;font-weight:600}
+.tscroll{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}.tst{min-width:560px}.tst td,.tst th{text-align:center;white-space:nowrap}.tst .tn{text-align:left}
+.kpod{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}.kpod button{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;font:700 15px Inter,sans-serif;cursor:pointer}.kpod span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);font-size:14px}.kpod button:first-child span{background:var(--pink)}
+.ktrl{display:grid;gap:8px}.ktrl button{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font:600 14px Inter,sans-serif}.ktrl div{flex:1;display:flex;flex-direction:column;gap:2px}.ktrl b{font-size:15px}.ktrl small{color:rgba(255,255,255,.6)}.ktrl small em{font-style:normal;color:var(--hl);font-weight:800}.ktrl span{color:rgba(255,255,255,.75);text-align:right}.ktrl i{font-style:normal;color:var(--pink);font-size:20px}
+@media(max-width:560px){.ktrl button{flex-wrap:wrap}.ktrl span{order:3;flex-basis:100%;text-align:left}}
 .kform{display:flex;gap:6px}.kform span{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:700 15px Inter,sans-serif}.kform .w{background:#1f9d55;color:#fff}.kform .v{background:rgba(255,255,255,.12);color:#fff}
 .msum{width:100%;max-width:420px;margin:12px auto 4px;border-collapse:collapse;font-size:14px}.msum th,.msum td{padding:5px 6px;text-align:center}.msum tbody th{font-weight:600;opacity:.7;font-size:12px;text-transform:uppercase;letter-spacing:.04em}.msum thead th{font-weight:800}.msum tbody tr+tr{border-top:1px solid rgba(255,255,255,.12)}
 .hfoot{margin:24px 0 0}.hfoot a{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-weight:700;text-decoration:none}.hfoot svg{width:18px;height:18px}
@@ -1093,7 +1099,10 @@ function vSplBeheer(){const L=SPL.list,e=splEd;
      :ed==='weg'?`<div class="spe"><span>Profiel ${esc(x.n)} verwijderen? Een checkout-score blijft als gast staan.</span><button class="btn pri" data-spl="weg-ok">Ja, verwijderen</button><button class="btn" data-spl="dicht">Annuleren</button></div>`:'';
     return`<li><div class="spr"><span class="n">${esc(x.n)}${x.a&&x.a.length?`<small>ook: ${x.a.map(esc).join(', ')}</small>`:''}</span><span class="spb"><button data-spl="naam" data-id="${x.id}">Naam</button><button data-spl="pin" data-id="${x.id}">Pincode</button>${L.length>1?`<button data-spl="samen" data-id="${x.id}">Samenvoegen</button>`:''}<button data-spl="weg" data-id="${x.id}" aria-label="Verwijder ${esc(x.n)}">×</button></span></div>${extra}</li>`};
   return`<h2 style="margin-top:28px">Spelersprofielen</h2><p class="stat">Spelers maken zelf een profiel aan via Spelen (naam + pincode). Een competitiespeler met dezelfde naam hoort automatisch bij dat profiel.</p>
-   ${L.length?`<ul class="list spl">${L.map(row).join('')}</ul>`:'<p class="empty">Nog geen profielen.</p>'}<div class="err">${esc(splErr)}</div>`}
+   ${L.length?`<ul class="list spl">${L.map(row).join('')}</ul>`:'<p class="empty">Nog geen profielen.</p>'}<div class="err">${esc(splErr)}</div>
+   <h2 style="margin-top:28px">Toernooi-archief</h2><p class="stat">Afgelopen toernooien uit vriendensessies. Ze staan bij Live kijken → Spelers.</p>
+   ${TRN.list.length?`<ul class="list spl">${TRN.list.map(x=>`<li><div class="spr"><span class="n">${esc(trnTitle(x))}<small>${dDate(x.at)} · ${x.players.length} spelers · kampioen ${esc(x.p1)}</small></span><span class="spb">${trDel===x.k?`<button data-trdel="${esc(x.k)}">Ja, verwijderen</button><button data-trno="1">Nee</button>`:`<button data-trask="${esc(x.k)}" aria-label="Verwijder ${esc(trnTitle(x))}">×</button>`}</span></div></li>`).join('')}</ul>`:'<p class="empty">Nog geen afgelopen toernooien.</p>'}`}
+let trDel='';
 let joinErr='';
 const MIJNK='dartstruners-mijn';let newConf=false;
 const mijnSess=()=>{try{const x=localStorage.getItem(MIJNK)||'';return /^[a-z0-9]{6}$/.test(x)?x:''}catch(e){return''}};
@@ -1362,14 +1371,15 @@ function render(){
   if(!SID&&S.kind!=='comp'){S.kind='comp';save()}
   const tStarted=S.started&&S.kind==='toernooi';document.body.classList.toggle('started',!!(tStarted||(S.kind==='comp'&&S.comp.started)));if(S.kind!=='toernooi')tab='spelers';
   if(!S.started&&tab!=='spelers')tab='spelers';
-  const tabs=[['spelers',S.started?'Overzicht':'Spelers'],['winnaars','Winnaars'],['verliezers','Verliezers'],['finale','Finale']];
+  const tabs=[['spelers',S.started?'Overzicht':'Spelers'],['winnaars','Winnaars'],['verliezers','Verliezers'],['finale','Finale'],['stats','Statistieken']];
   document.getElementById('nav').innerHTML=!tStarted?'':tabs.map(([k,l])=>`<button data-tab="${k}" class="${tab===k?'on':''}"${!S.started&&k!=='spelers'?' disabled':''}>${l}</button>`).join('');
   let h='';
   if(tab==='spelers'||!B)h=vSpelers();
   else if(tab==='winnaars')h='<h2>Winnaarsbracket</h2>'+bracket(B.W,'W');
+  else if(tab==='stats')h=vTourStats();
   else if(tab==='verliezers')h='<h2>Verliezersbracket</h2><p class="stat">Wie hier verliest, ligt eruit.</p>'+bracket(B.L,'L');
   else h=champBox()+`<h2>Finale</h2><p class="stat">Winnaar van de winnaarsbracket tegen winnaar van de verliezersbracket.</p><div style="max-width:320px">${card('F')}</div>`;
-  document.getElementById('app').innerHTML=h;
+  document.getElementById('app').innerHTML=h;tourArchive();
   const f=document.getElementById('f');
   if(f)f.addEventListener('submit',e=>{e.preventDefault();const i=document.getElementById('nm'),v=i.value.trim();if(v)gate([v],([n])=>{if(S.players.some(x=>nk(x)===nk(n))){i.value='';return}S.players.push(n);save();render();document.getElementById('nm').focus()})});
   const fc=document.getElementById('fc');
@@ -1390,6 +1400,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.topdel!==undefined){topAdmin({del:t.dataset.topdel});return}
   if(t.dataset.prfill!==undefined){const ids=(t.dataset.prt||'').split(',').map(k=>document.getElementById(k)).filter(Boolean),v=t.dataset.prfill;
     if(ids.some(el=>nk(el.value)===nk(v)))return;const el=ids.find(x=>!x.value.trim())||ids[0];if(el){el.value=v;el.dispatchEvent(new Event('input'))}return}
+  if(t.dataset.trask){trDel=t.dataset.trask;render();return}
+  if(t.dataset.trno){trDel='';render();return}
+  if(t.dataset.trdel){const k=t.dataset.trdel;trDel='';fetch('/api/toernooien/beheer',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:JSON.stringify({del:k})}).catch(()=>{}).finally(()=>trnFetch(true));return}
   if(t.dataset.prout!==undefined){prSet(prList().filter(x=>x.id!==t.dataset.prout));splDl();render();return}
   if(t.dataset.spl){const m=t.dataset.spl;
     if(t.dataset.id){splEd={id:t.dataset.id,mode:m};splErr='';render();setTimeout(()=>{const i=document.querySelector('.spe input,.spe select');if(i)i.focus()},30);return}
@@ -1408,9 +1421,10 @@ document.addEventListener('click',e=>{
   if(t.dataset.chdel){chatAdmin({del:+t.dataset.chdel});return}
   if(t.dataset.watch!==undefined&&KMAIN()){const w=t.dataset.watch;setWatch(w==='none'?null:w==='main'?'':w);return}
   if(t.dataset.live!==undefined&&tv){tvSwitch(t.dataset.live);return}
+  if(t.dataset.ktour!==undefined){kTour=t.dataset.ktour||null;if(!kTour)kSp=kSp;renderTV();try{const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
   if(t.dataset.ksptab){kSpTab=t.dataset.ksptab;renderTV();return}
-  if(t.dataset.ksp!==undefined){kSp=t.dataset.ksp||null;kSpTab='';if(kSp)sstFetch(true);renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
-  if(t.dataset.ktab){kijkTab=t.dataset.ktab;kSp=null;if(kijkTab==='live'&&KMAIN())liveFetch();renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
+  if(t.dataset.ksp!==undefined){kSp=t.dataset.ksp||null;kTour=null;kSpTab='';if(kSp)sstFetch(true);renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
+  if(t.dataset.ktab){kijkTab=t.dataset.ktab;kSp=null;kTour=null;if(kijkTab==='live'&&KMAIN())liveFetch();renderTV();try{document.getElementById('tv').scrollTop=0;const k=document.querySelector('.kscroll');if(k)k.scrollTop=0}catch(_){}return}
   if(t.dataset.copy){const v=t.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>{t.textContent='Gekopieerd';setTimeout(()=>t.textContent='Kopieer',1500)})}catch(_){}return}
   if(t.dataset.tab){tab=t.dataset.tab;try{history.replaceState(null,'','#'+tab)}catch(_){}render();window.scrollTo(0,0);return}
   if(t.dataset.score){sender=true;openId=t.dataset.score;buf='';msg='';darts=[];mod=1;renderOv();return}
@@ -1496,7 +1510,7 @@ document.addEventListener('click',e=>{
   if(a==='resume'){openId='X';darts=[];mod=1;buf='';msg='';render();return}
   if(a==='rematch'){delete S.results.X;delete S.turns.X;darts=[];mod=1;msg='';save();render();return}
   if(a==='undo'){undo();return}
-  if(a==='start'){S.seeds=S.players.slice();if(S.lot){const p=S.seeds;for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]]}}S.results=keepC(S.results);S.turns=keepC(S.turns);S.started=true;save();tab='winnaars';render()}
+  if(a==='start'){S.tid=Math.random().toString(36).slice(2,10).replace(/[^a-z0-9]/g,'x').padEnd(8,'x');S.seeds=S.players.slice();if(S.lot){const p=S.seeds;for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]]}}S.results=keepC(S.results);S.turns=keepC(S.turns);S.started=true;save();tab='winnaars';render()}
   if(a==='askreset'){confirmReset=true;render()}
   if(a==='nores'){confirmReset=false;render()}
   if(a==='cstart'){const p=S.comp.players;if(S.lot)for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]]}clearC();S.comp.started=true;ctab='wedstrijden';save();render();window.scrollTo(0,0)}
@@ -1668,9 +1682,45 @@ function matchSum(id){if(SOLO(id))return'';const M=matchStats(id),L=live(id),ps=
   const rows=[['Gemiddelde',s=>f1(stAvg(s))],['180',s=>s.t180],['140+',s=>s.t140],['100+',s=>s.t100],['Hoogste beurt',s=>s.hi||'–'],['Hoogste uitgooi',s=>s.hco||'–'],['Uitgooi-%',s=>s.dAtt?Math.round(s.dHit/s.dAtt*100)+'%':'–'],['Beste leg',s=>s.best?s.best+' pijlen':'–']];
   return`<table class="msum"><thead><tr><th>${pn(ps[0])}</th><th></th><th>${pn(ps[1])}</th></tr></thead><tbody>${rows.map(([l,f])=>`<tr><td>${f(M[0])}</td><th>${l}</th><td>${f(M[1])}</td></tr>`).join('')}</tbody></table>`}
 let kSp=null; // gekozen speler in de tab Spelers
+// ---------- toernooi-statistieken ----------
+function tourStats(){if(!B||!R)return[];const out=S.seeds.map(n=>Object.assign(stBlank(),{name:n}));
+  for(const id of Object.keys(B.M)){const o=R[id];if(!o||typeof o.a!=='number'||typeof o.b!=='number'||!out[o.a]||!out[o.b])continue;
+    const t=S.turns[id];if(t&&t.a===o.a&&t.b===o.b){stTurns(out[o.a],t,0,S.game,S.dout);stTurns(out[o.b],t,1,S.game,S.dout)}
+    out[o.a].lW+=o.sa||0;out[o.a].lL+=o.sb||0;out[o.b].lW+=o.sb||0;out[o.b].lL+=o.sa||0;
+    if(o.win!==null&&typeof o.win==='number'){const l=o.win===o.a?o.b:o.a;out[o.win].mW++;out[l].mL++}}
+  return out}
+function tourPlaces(){if(!R||!R.F||R.F.win===null)return null;const lf=B.L.length?R[B.L[B.L.length-1][0]]:null;
+  return{p1:S.seeds[R.F.win],p2:S.seeds[R.F.los],p3:lf&&typeof lf.los==='number'?S.seeds[lf.los]:null}}
+const rkBox=(t,rows,fmt)=>`<div class="krk"><h3>${t}</h3>${rows.length?`<ol>${rows.slice(0,3).map(s=>`<li><span>${esc(s.name)}</span><b>${fmt(s)}</b></li>`).join('')}</ol>`:'<p class="empty">Nog niets</p>'}</div>`;
+function vTourStats(){const A=tourStats(),pl=tourPlaces(),by=(f,v,asc)=>A.filter(f).sort((a,b)=>asc?v(a)-v(b):v(b)-v(a));
+  const rows=A.slice().sort((a,b)=>b.mW-a.mW||stAvg(b)-stAvg(a));
+  return`<h2>Statistieken</h2><p class="stat">${pl?'Toernooi afgelopen · kampioen '+esc(pl.p1)+'. Deze statistieken blijven bewaard bij Live kijken → Spelers.':'Wordt bijgewerkt tijdens het toernooi. Alleen wedstrijden die met darts gescoord zijn tellen mee voor gemiddelde en 180\'s.'}</p>
+   <div class="lt"><div class="krks">${rkBox('Hoogste gemiddelde',by(s=>s.darts>=9,stAvg),s=>f1(stAvg(s)))}${rkBox("Meeste 180's",by(s=>s.t180>0,s=>s.t180),s=>s.t180)}${rkBox('Hoogste uitgooi',by(s=>s.hco>0,s=>s.hco),s=>s.hco)}${rkBox('Beste leg',by(s=>s.best>0,s=>s.best,1),s=>s.best+' pijlen')}</div></div>
+   <div class="tscroll"><table class="tbl tst"><thead><tr><th class="tn">Speler</th><th>W–V</th><th>Legs</th><th>Gem.</th><th>180</th><th>100+</th><th>Hoogste uit</th><th>Beste leg</th><th>Uit-%</th></tr></thead><tbody>${rows.map(s=>`<tr><td class="tn">${esc(s.name)}${pl&&s.name===pl.p1?' 🏆':''}</td><td>${s.mW}–${s.mL}</td><td>${s.lW}–${s.lL}</td><td>${s.n?f1(stAvg(s)):'–'}</td><td>${s.t180}</td><td>${s.t100+s.t140+s.t180}</td><td>${s.hco||'–'}</td><td>${s.best||'–'}</td><td>${s.dAtt?Math.round(s.dHit/s.dAtt*100)+'%':'–'}</td></tr>`).join('')}</tbody></table></div>`}
+// Afgelopen toernooi bewaren op de server (ook na het verlopen van de sessie)
+let trSent='',trT=0;
+function tourArchive(){if(!SID||!admin||tv||S.kind!=='toernooi'||!S.started)return;const pl=tourPlaces();if(!pl)return;
+  if(!S.tid){S.tid=Math.random().toString(36).slice(2,10).replace(/[^a-z0-9]/g,'x').padEnd(8,'x');save()}
+  const A=tourStats(),body={tid:S.tid,naam:S.name||'',game:S.game,p1:pl.p1,p2:pl.p2,p3:pl.p3,players:A.map(s=>{const pr=splFind(s.name),o={};for(const k of ['n','darts','sum','f9s','f9d','t180','t140','t100','hi','hco','dAtt','dHit','best','wDarts','wLegs','mW','mL','lW','lL'])o[k]=s[k];return{n:s.name,pid:pr?pr.id:null,s:o}})};
+  const sig=JSON.stringify(body);if(sig===trSent)return;
+  clearTimeout(trT);trT=setTimeout(()=>{fetch(API+'/toernooi',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:sig}).then(r=>{if(r.ok)trSent=sig}).catch(()=>{})},1500)}
+// Archief op de kijkpagina
+let TRN={v:-1,list:[]},trnAt=0,kTour=null;
+function trnFetch(force){if(!force&&Date.now()-trnAt<20000)return;trnAt=Date.now();
+  fetch('/api/toernooien',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(d&&Array.isArray(d.list)&&d.v!==TRN.v){TRN={v:+d.v||0,list:d.list};if(tv)renderTV();else if(admin&&!SID&&!openId)render()}}).catch(()=>{if(TRN.v<0){TRN.v=-2;if(tv)renderTV()}})}
+const dDate=t=>{try{return new Date(t).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'})}catch(e){return''}};
+const trnTitle=x=>x.naam||('Toernooi van '+dDate(x.at));
+const place=(x,n)=>nk(n)===nk(x.p1)?'Kampioen':nk(n)===nk(x.p2)?'2e plaats':x.p3&&nk(n)===nk(x.p3)?'3e plaats':'';
+function kTourDetail(x){const A=x.players.map(p=>Object.assign({name:p.n},p.s)),rows=A.slice().sort((a,b)=>b.mW-a.mW||stAvg(b)-stAvg(a));
+  return`<button class="kback" data-ktour="">← Terug</button><h2 class="tvh2">${esc(trnTitle(x))}</h2><p class="kempty" style="margin:-4px 0 14px">${dDate(x.at)} · ${x.game} · ${x.players.length} spelers</p>
+   <div class="kpod">${[['🏆',x.p1],['2',x.p2],['3',x.p3]].filter(q=>q[1]).map(([k,n])=>`<button data-ksp="${esc(n)}"><span>${k}</span><b>${esc(n)}</b></button>`).join('')}</div>
+   <div class="tscroll"><table class="tbl sptbl tst dk"><thead><tr><th class="tn">Speler</th><th>W–V</th><th>Gem.</th><th>180</th><th>100+</th><th>Hoogste uit</th><th>Beste leg</th></tr></thead><tbody>${rows.map(s=>`<tr><td class="tn">${esc(s.name)}</td><td>${s.mW}–${s.mL}</td><td>${s.n?f1(stAvg(s)):'–'}</td><td>${s.t180}</td><td>${s.t100+s.t140+s.t180}</td><td>${s.hco||'–'}</td><td>${s.best||'–'}</td></tr>`).join('')}</tbody></table></div>`}
+function kSpTour(L){
+  return`<p class="kempty" style="margin:0 0 12px">${L.length} ${L.length===1?'toernooi':'toernooien'} · ${L.filter(q=>place(q.x,q.p.n)==='Kampioen').length}× kampioen</p>
+   <div class="ktrl">${L.map(({x,p})=>{const s=p.s,pl=place(x,p.n);return`<button data-ktour="${esc(x.k)}"><div><b>${esc(trnTitle(x))}</b><small>${dDate(x.at)}${pl?' · <em>'+pl+'</em>':''}</small></div><span>${s.mW}–${s.mL} · gem. ${s.n?f1(stAvg(s)):'–'}${s.t180?' · '+s.t180+'×180':''}${s.hco?' · uit '+s.hco:''}</span><i>›</i></button>`}).join('')}</div>`}
 let SST={v:-1,list:{}},sstAt=0,kSpTab='';
 function sstFetch(force){if(!force&&Date.now()-sstAt<20000)return;sstAt=Date.now();
-  fetch('/api/spel/stats',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(d&&d.list&&typeof d.list==='object'&&d.v!==SST.v){SST={v:+d.v||0,list:d.list};if(tv)renderTV()}}).catch(()=>{});
+  fetch('/api/spel/stats',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(d&&d.list&&typeof d.list==='object'&&d.v!==SST.v){SST={v:+d.v||0,list:d.list};if(tv)renderTV()}}).catch(()=>{if(SST.v===-1){SST.v=-2;if(tv)renderTV()}});
   if(SPL.v<0)splLoad().then(()=>{if(tv)renderTV()})}
 const coAvg=x=>x.full?x.sumFull/x.full:0;
 const coTot=x=>{let t=0,h=0,d=0;for(const n of Object.values(x.nums||{})){t+=n[0];h+=n[1];d+=n[2]}return{t,h,d}};
@@ -1678,11 +1728,15 @@ const coTot=x=>{let t=0,h=0,d=0;for(const n of Object.values(x.nums||{})){t+=n[0
 function kAll(){const comp=S.kind==='comp'&&S.comp.started,A=comp?compStats():[],map=new Map();
   for(const c of A){const pr=splFind(c.name);map.set(pr?'p:'+pr.id:'n:'+nk(c.name),{name:c.name,c,co:pr&&SST.list[pr.id]?SST.list[pr.id]:null})}
   for(const [id,x] of Object.entries(SST.list)){const k='p:'+id;if(map.has(k))map.get(k).co=x;else map.set(k,{name:x.n,c:null,co:x})}
+  for(const x of TRN.list)for(const p of x.players){const pr=p.pid?{id:p.pid}:splFind(p.n),k=pr?'p:'+pr.id:'n:'+nk(p.n);
+    let e=map.get(k);if(!e&&!pr){for(const [kk,v] of map)if(nk(v.name)===nk(p.n)){e=v;break}}
+    if(!e){e={name:p.n,c:null,co:null};map.set(k,e)}(e.tr=e.tr||[]).push({x,p})}
   return{comp,A,L:[...map.values()]}}
 function kSpelers(){
-  if(KIJK){cTFetch(mainD&&typeof mainD.v==='number'?mainD.v:ver);sstFetch()}
+  if(KIJK){cTFetch(mainD&&typeof mainD.v==='number'?mainD.v:ver);sstFetch();trnFetch()}
+  if(kTour){const x=TRN.list.find(q=>q.k===kTour);if(x)return kTourDetail(x);kTour=null}
   const {comp,A,L}=kAll();
-  if(kSp!==null){const e=L.find(x=>nk(x.name)===nk(kSp));if(e)return kSpeler(e,A);kSp=null}
+  if(kSp!==null){const e=L.find(x=>nk(x.name)===nk(kSp));if(e)return kSpeler(e,A);if(KIJK&&(TRN.v===-1||SST.v===-1))return'<p class="kempty">Statistieken laden…</p>';kSp=null}
   const lst=(t,rows,fmt)=>`<div class="krk"><h3>${t}</h3>${rows.length?`<ol>${rows.slice(0,3).map(e=>`<li><button data-ksp="${esc(e.name)}">${esc(e.name)}</button><b>${fmt(e)}</b></li>`).join('')}</ol>`:'<p class="kempty">Nog niets</p>'}</div>`;
   const C=L.filter(e=>e.c),by=(f,v,asc)=>C.filter(e=>f(e.c)).sort((a,b)=>asc?v(a.c)-v(b.c):v(b.c)-v(a.c));
   const O=L.filter(e=>e.co),byo=(f,v)=>O.filter(e=>f(e.co)).sort((a,b)=>v(b.co)-v(a.co));
@@ -1690,17 +1744,18 @@ function kSpelers(){
    <div class="krks">${lst('Hoogste gemiddelde',by(s=>s.darts>=9,stAvg),e=>f1(stAvg(e.c)))}${lst("Meeste 180's",by(s=>s.t180>0,s=>s.t180),e=>e.c.t180)}${lst('Hoogste uitgooi',by(s=>s.hco>0,s=>s.hco),e=>e.c.hco)}${lst('Beste leg',by(s=>s.best>0,s=>s.best,1),e=>e.c.best+' pijlen')}${lst('Uitgooi-%',by(s=>s.dAtt>=5,s=>s.dHit/s.dAtt),e=>Math.round(e.c.dHit/e.c.dAtt*100)+'%')}${lst('Meeste 100+',by(s=>s.t100+s.t140+s.t180>0,s=>s.t100+s.t140+s.t180),e=>e.c.t100+e.c.t140+e.c.t180)}</div>`:'';
   const coH=O.length?`<h2 class="tvh2"${comp?' style="margin-top:22px"':''}>Checkout-spel</h2><p class="kempty" style="margin:-4px 0 12px">Spelers met een profiel · uitgooi-% over alle getallen van 41 tot 60</p>
    <div class="krks">${lst('Gemiddelde score',byo(x=>x.full>0,coAvg),e=>f1(coAvg(e.co))+' / 20')}${lst('Uitgooi-%',byo(x=>coTot(x).t>=20,x=>{const q=coTot(x);return q.h/q.t}),e=>{const q=coTot(e.co);return Math.round(q.h/q.t*100)+'%'})}${lst('Meeste spellen',byo(x=>x.g>0,x=>x.g),e=>e.co.g)}</div>`:'';
-  const sub=e=>[e.c&&e.c.n?'gem. '+f1(stAvg(e.c)):'',e.co?'checkout '+(e.co.full?f1(coAvg(e.co)):e.co.best)+' / 20':''].filter(Boolean).join(' · ')||'nog geen cijfers';
-  return`${compH}${coH}${!compH&&!coH?'<p class="kempty">Nog geen statistieken. Speel een competitiewedstrijd of het checkout-spel met een profiel, dan verschijnen ze hier.</p>':''}
+  const sub=e=>[e.c&&e.c.n?'gem. '+f1(stAvg(e.c)):'',e.co?'checkout '+(e.co.full?f1(coAvg(e.co)):e.co.best)+' / 20':'',e.tr?e.tr.length+(e.tr.length===1?' toernooi':' toernooien'):''].filter(Boolean).join(' · ')||'nog geen cijfers';
+  const trH=TRN.list.length?`<h2 class="tvh2" style="margin-top:22px">Toernooien</h2><div class="ktrl">${TRN.list.slice(0,8).map(x=>`<button data-ktour="${esc(x.k)}"><div><b>${esc(trnTitle(x))}</b><small>${dDate(x.at)} · ${x.players.length} spelers</small></div><span>🏆 ${esc(x.p1)}</span><i>›</i></button>`).join('')}</div>`:'';
+  return`${compH}${coH}${trH}${!compH&&!coH&&!trH?'<p class="kempty">Nog geen statistieken. Speel een competitiewedstrijd of het checkout-spel met een profiel, dan verschijnen ze hier.</p>':''}
    ${L.length?`<h2 class="tvh2" style="margin-top:22px">Spelers</h2><p class="kempty" style="margin:-4px 0 12px">Tik op een speler voor alle statistieken</p>
    <div class="kspl">${L.slice().sort((a,b)=>a.name.localeCompare(b.name,'nl')).map(e=>`<button data-ksp="${esc(e.name)}"><b>${esc(e.name)}</b><span>${sub(e)}</span><em>›</em></button>`).join('')}</div>`:''}`}
 const tile=(l,v,sm)=>`<div class="kst"><small>${l}</small><b>${v}</b>${sm?`<span>${sm}</span>`:''}</div>`;
-function kSpeler(e,A){const tabs=[e.c?['comp','Competitie']:null,e.co?['co','Checkout-spel']:null].filter(Boolean);
+function kSpeler(e,A){const tabs=[e.c?['comp','Competitie']:null,e.co?['co','Checkout-spel']:null,e.tr?['tr','Toernooien']:null].filter(Boolean);
   if(!tabs.some(t=>t[0]===kSpTab))kSpTab=tabs[0]?tabs[0][0]:'comp';
   const pr=splFind(e.name);
   return`<button class="kback" data-ksp="">← Alle spelers</button><h2 class="tvh2">${esc(e.name)}</h2><p class="kempty" style="margin:-4px 0 12px">${pr?'Spelersprofiel':'Gast'}</p>
    ${tabs.length>1?`<div class="ktabs ksub">${tabs.map(([k,l])=>`<button data-ksptab="${k}" class="${kSpTab===k?'on':''}">${l}</button>`).join('')}</div>`:''}
-   ${kSpTab==='co'?kSpCo(e.co):kSpComp(e.c)}`}
+   ${kSpTab==='co'?kSpCo(e.co):kSpTab==='tr'?kSpTour(e.tr):kSpComp(e.c)}`}
 function kSpComp(s){const pct=s.dAtt?Math.round(s.dHit/s.dAtt*100)+'%':'–',dbl=Object.entries(s.dbl).sort((a,b)=>b[1]-a[1])[0];
   const pos=cStand().findIndex(x=>x.n===s.name)+1,h2h=Object.entries(s.h2h).sort((a,b)=>a[0].localeCompare(b[0]));
   return`<p class="kempty" style="margin:0 0 12px">Competitie${pos?' · '+pos+'e in de stand':''}</p>
@@ -1873,7 +1928,7 @@ function renderTV(){
     ready=true;render();stream();splInit();return}
   try{const r=await fetch('/api/info',{cache:'no-store'});const d=await r.json();if(d&&typeof d.versie==='string')versie=d.versie;if(d&&typeof d.publicUrl==='string'&&/^https:\/\//.test(d.publicUrl))publicUrl=d.publicUrl}catch(e){}
   if(pin){await login(pin)}else{await loadState();ready=true;render()}
-  stream();if(!tv)splInit();
+  stream();if(!tv){splInit();if(!SID)trnFetch(true)}
 })();
 }
 if('serviceWorker' in navigator&&location.protocol==='https:'||location.hostname==='localhost'){try{navigator.serviceWorker&&navigator.serviceWorker.register('/sw.js').catch(()=>{})}catch(e){}}

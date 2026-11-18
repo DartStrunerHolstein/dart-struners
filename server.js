@@ -146,6 +146,37 @@ function sstAdd(pid, score, det) {
 }
 const sstView = () => ({ v: sst.v, list: Object.fromEntries(Object.entries(sst.list).filter(([id]) => spl.list[id]).map(([id, x]) => [id, Object.assign({ n: spl.list[id].n }, x)])) });
 
+// ---------- archief van toernooien (blijft bewaard, ook als de sessie verloopt) ----------
+const TRN_FILE = path.join(DATA_DIR, 'toernooien.json');
+let trn = { v: 0, list: {} };
+try {
+  if (fs.existsSync(TRN_FILE)) {
+    const d = JSON.parse(fs.readFileSync(TRN_FILE, 'utf8'));
+    if (d && d.list && typeof d.list === 'object') trn = Object.assign(trn, d);
+  }
+} catch (e) { console.error('Kon de toernooien niet lezen:', e.message); }
+let trnTimer = null;
+function persistTrn() {
+  clearTimeout(trnTimer);
+  trnTimer = setTimeout(() => {
+    const tmp = TRN_FILE + '.tmp';
+    fs.writeFile(tmp, JSON.stringify(trn), err => {
+      if (err) return console.error('Toernooien opslaan mislukt:', err.message);
+      fs.rename(tmp, TRN_FILE, e => e && console.error('Toernooien opslaan mislukt:', e.message));
+    });
+  }, 300);
+}
+const ST_KEYS = ['n', 'darts', 'sum', 'f9s', 'f9d', 't180', 't140', 't100', 'hi', 'hco', 'dAtt', 'dHit', 'best', 'wDarts', 'wLegs', 'mW', 'mL', 'lW', 'lL'];
+function trnClean(b) {
+  const pl = (Array.isArray(b.players) ? b.players : []).slice(0, 64).map(x => {
+    const st = {}; for (const k of ST_KEYS) { const v = Number(x && x.s && x.s[k]); st[k] = Number.isFinite(v) && v >= 0 && v < 1e6 ? Math.round(v) : 0; }
+    const pid = x && typeof x.pid === 'string' && spl.list[x.pid] ? x.pid : null;
+    return { n: clean(x && x.n, 24), pid, s: st };
+  }).filter(x => x.n);
+  const nm = v => clean(v, 24) || null;
+  return { naam: clean(b.naam, 40), game: [101, 201, 301, 501].includes(+b.game) ? +b.game : 501, players: pl, p1: nm(b.p1), p2: nm(b.p2), p3: nm(b.p3) };
+}
+
 // ---------- spelersprofielen (naam + 4-cijferige pincode, geen e-mail) ----------
 const SPL_FILE = path.join(DATA_DIR, 'spelers.json');
 let spl = { v: 0, geheim: '', list: {} };
@@ -431,7 +462,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { id, code });
     }
 
-    const sm = /^\/api\/s\/([a-z0-9]{6})\/(state|wait|login|bord)$/.exec(p);
+    const sm = /^\/api\/s\/([a-z0-9]{6})\/(state|wait|login|bord|toernooi)$/.exec(p);
     if (sm) {
       const id = sm[1], x = sess[id], what = sm[2];
       if (!x) return send(res, 404, { error: 'Deze sessie bestaat niet (meer)' });
@@ -446,6 +477,21 @@ const server = http.createServer(async (req, res) => {
         w.push(y);
         req.on('close', () => { clearTimeout(y.t); sessWait.set(id, (sessWait.get(id) || []).filter(z => z !== y)); });
         return;
+      }
+      if (req.method === 'POST' && what === 'toernooi') {
+        if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+        if (!sessOk(x, req.headers['x-pin'])) { failed(ip); return send(res, 401, { error: 'Onjuiste sessiecode' }); }
+        const b = await readBody(req);
+        const tid = typeof b.tid === 'string' && /^[a-z0-9]{6,12}$/.test(b.tid) ? b.tid : null;
+        if (!tid) return send(res, 400, { error: 'Ongeldig toernooi' });
+        const c = trnClean(b);
+        if (c.players.length < 2 || !c.p1) return send(res, 400, { error: 'Toernooi is nog niet klaar' });
+        const key = id + ':' + tid, old = trn.list[key];
+        trn.list[key] = Object.assign({ at: old ? old.at : Date.now(), sid: id }, c, { u: Date.now() });
+        const keys = Object.keys(trn.list);
+        if (keys.length > 500) keys.sort((a, z) => trn.list[a].at - trn.list[z].at).slice(0, keys.length - 500).forEach(k => delete trn.list[k]);
+        trn.v++; persistTrn();
+        return send(res, 200, { ok: true });
       }
       if (req.method === 'POST' && what === 'bord') {
         if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
@@ -679,6 +725,17 @@ const server = http.createServer(async (req, res) => {
         delete spl.list[b.id]; if (sst.list[b.id]) { delete sst.list[b.id]; sst.v++; persistSst(); }
       } else return send(res, 400, { error: 'Onbekende actie' });
       splChanged();
+      return send(res, 200, { ok: true });
+    }
+    if (req.method === 'GET' && p === '/api/toernooien') {
+      const L = Object.entries(trn.list).map(([k, x]) => Object.assign({ k }, x, { players: x.players.map(y => Object.assign({}, y, { n: y.pid && spl.list[y.pid] ? spl.list[y.pid].n : y.n })) })).sort((a, b) => b.at - a.at);
+      return send(res, 200, { v: trn.v, list: L });
+    }
+    if (req.method === 'POST' && p === '/api/toernooien/beheer') {
+      if (blocked(ip)) return send(res, 429, { error: 'Te vaak geprobeerd. Wacht 5 minuten.' });
+      if (roleOf(req.headers['x-pin']) !== 'admin') { failed(ip); return send(res, 401, { error: 'Onjuiste code' }); }
+      const b = await readBody(req);
+      if (typeof b.del === 'string' && trn.list[b.del]) { delete trn.list[b.del]; trn.v++; persistTrn(); }
       return send(res, 200, { ok: true });
     }
     if (req.method === 'GET' && p === '/api/spel/stats') return send(res, 200, sstView());
