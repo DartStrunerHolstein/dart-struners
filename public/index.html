@@ -804,7 +804,7 @@ function dart(n){
 }
 function evalTurn(L,force){
   const sum=darts.reduce((q,x)=>q+x.v,0),left=L.rem[L.cur]-sum;
-  if(force||left<0||(S.dout&&left===1)||left===0||darts.length===3){const m=msg;submit(sum,darts);if(m&&!msg){msg=m;renderOv()}return}
+  if(force||left<0||(S.dout&&left===1)||left===0||darts.length===3){const m=msg,side=L.cur;submit(sum,darts);if(m&&!msg){msg=m;renderOv()}camTurnDone(side);return}
   renderOv();
 }
 function undo(){
@@ -929,8 +929,15 @@ async function camStream(){if(camLoop)return;camLoop=true;const code=kopCode;
       if(camTake(await r.json()))renderOv();
     }catch(e){await new Promise(r=>setTimeout(r,2000))}}
   camLoop=false}
+// Hoeveel pijlen Autodarts in zijn huidige beurt al heeft gezien (0–3)
+let camRound=0,camResetAt=0;
+function camReset(){if(!camOn||!kopCode)return;const now=Date.now();if(now-camResetAt<2500)return;camResetAt=now;camRound=0;
+  fetch('/api/koppel/code/'+kopCode+'/reset',{method:'POST'}).catch(()=>{})}
+// Beurt is in de app klaar, maar Autodarts wacht nog op pijlen (gemiste pijl met de hand ingevuld, uitgooien of bust)
+function camTurnDone(side){if(!camOn||camRound<1||camRound>2)return;const ik=ikSide();if(ik!==null&&side!==ik)return;camReset()}
 function camApply(e){
   const n=e.m===0?0:e.n,m=e.n===25?(e.m>=2?2:1):Math.max(1,e.m);
+  if(e.k==='dart')camRound=Math.min(3,(e.i|0)+1);else if(e.k==='takeout')camRound=0;
   // checkout-spel
   if(!openId&&(S.kind==='spel'||SPELP)&&SP().on){const p=SP();
     if(e.k==='dart'){spMod=n===0?1:m;spDart(n)}
@@ -957,7 +964,7 @@ function camInfo(){
     <div class="row"><input id="kopin" maxlength="4" placeholder="bijv. K7P2" autocomplete="off" autocapitalize="characters" value="${esc(kopCode)}" aria-label="Koppelcode"><button class="btn pri" type="submit">Koppelen</button><button class="btn" type="button" data-a="kopno">Annuleren</button></div>
     ${kopErr?`<span class="cerr">${esc(kopErr)}</span>`:''}</form>`;
   if(!camOn)return'';const ok=camLive(),st=cam.st;
-  return`<div class="caminfo ${ok?'ok':'bad'}">${ok?(st&&st.running===false?'Laptop verbonden, maar Autodarts telt niet (gestopt)':'Camera\'s tellen mee. Klopt een pijl niet? Tik op het vakje om hem te verbeteren.'):'Wachten op de laptop met code '+esc(kopCode)+'. Staat START-BORD.bat aan?'} <button type="button" class="lnk" data-a="kopnew">Andere code</button></div>`}
+  return`<div class="caminfo ${ok?'ok':'bad'}">${ok?(st&&st.running===false?'Laptop verbonden, maar Autodarts telt niet (gestopt)':'Camera\'s tellen mee. Klopt een pijl niet? Tik op het vakje om hem te verbeteren.'):'Wachten op de laptop met code '+esc(kopCode)+'. Staat START-BORD.bat aan?'} ${ok?'<button type="button" class="lnk" data-a="camreset">Autodarts resetten</button> · ':''}<button type="button" class="lnk" data-a="kopnew">Andere code</button></div>`}
 async function kopTry(code){code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(code.length!==4){kopErr='De code heeft 4 tekens.';renderOv();return}
   try{const r=await fetch('/api/koppel/code/'+code+'/wait',{cache:'no-store'});
@@ -1153,7 +1160,7 @@ function spDart(n){const p=SP();if(!p.on)return;
   msg='';spSave();renderOv()}
 function spShuffle(){const a=Array.from({length:20},(_,i)=>41+i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function spStart(){const p=SP();p.on=true;p.done=false;p.cur=0;p.darts=[];p.hits=[0,0];p.tries=[0,0];p.hist=[];p.order=spShuffle();p.idx=0;p.target=p.order[0];msg='';spMod=1;spSave();render();spSay()}
-function spNext(){const p=SP();p.darts=[];
+function spNext(){const p=SP();p.darts=[];camTurnDone(null);
   if(p.n===2&&p.cur===0){p.cur=1;spSave();renderOv();spSay();return}
   p.cur=0;p.idx++;
   if(p.idx>=p.order.length){spFinish();return}
@@ -1527,6 +1534,7 @@ document.addEventListener('click',e=>{
   if(a==='commit'&&openId){edit=null;evalTurn(live(openId),true);return}
   if(a==='close'){sheet=false;openId=null;darts=[];edit=null;render();return}
   if(a==='resume'){openId='X';darts=[];mod=1;buf='';msg='';render();return}
+  if(a==='camreset'){camResetAt=0;camReset();msg='Autodarts wordt gereset';renderOv();return}
   if(a==='monnext'&&t.dataset.id){openId=t.dataset.id;darts=[];mod=1;buf='';msg='';edit=null;render();return}
   if(a==='monklaar'){const sp=!openId;sheet=false;openId=null;darts=[];edit=null;if(sp){const p=SP();p.done=false}monClose();render();return}
   if(a==='rematch'){delete S.results.X;delete S.turns.X;darts=[];mod=1;msg='';save();render();return}

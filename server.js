@@ -272,6 +272,10 @@ function kopClean() { const old = Date.now() - 90 * 864e5; let n = 0; for (const
 setInterval(kopClean, 6 * 3600e3); kopClean();
 const roomOfKop = id => { if (!kopRoom.has(id)) kopRoom.set(id, {}); return kopRoom.get(id); };
 const kopByCode = c => { c = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); for (const [id, x] of Object.entries(kop)) if (x.code === c) return id; return null; };
+// Opdrachten van de telefoon naar het doorgeefprogramma (bijv. Autodarts resetten)
+const kopCmd = new Map(), kopCmdWait = new Map(), kopCmdHits = new Map();
+const kopCmdView = id => kopCmd.get(id) || { n: 0, cmd: '' };
+function kopCmdNotify(id) { const w = kopCmdWait.get(id) || []; kopCmdWait.set(id, []); for (const y of w) { clearTimeout(y.t); try { send(y.res, 200, kopCmdView(id)); } catch (e) {} } }
 function kopNotify(id) { const w = kopWait.get(id) || []; kopWait.set(id, []); const v = camView(roomOfKop(id)); for (const y of w) { clearTimeout(y.t); try { send(y.res, 200, v); } catch (e) {} } }
 function newKopCode() { const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; for (;;) { let c = ''; for (let i = 0; i < 4; i++) c += ch[crypto.randomInt(ch.length)]; if (!kopByCode(c)) return c; } }
 
@@ -610,6 +614,33 @@ const server = http.createServer(async (req, res) => {
       if (Date.now() - (x.u || 0) > 3600e3) { x.u = Date.now(); persistKop(); }
       kopNotify(id);
       return send(res, 200, { ok: true, code: x.code, telefoon: Date.now() - (kopSeen.get(id) || 0) < 35000 });
+    }
+    // De laptop wacht hier op opdrachten van de telefoon
+    const ko = /^\/api\/koppel\/([a-f0-9]{18})\/opdracht$/.exec(p);
+    if (ko && req.method === 'GET') {
+      const id = ko[1], x = kop[id];
+      if (!x) return send(res, 404, { error: 'Onbekend bord' });
+      if (!sessOk(x, req.headers['x-secret'])) return send(res, 401, { error: 'Onjuist geheim' });
+      const n = Number(url.searchParams.get('n'));
+      if (!Number.isFinite(n) || n !== kopCmdView(id).n) return send(res, 200, kopCmdView(id));
+      const w = kopCmdWait.get(id) || []; kopCmdWait.set(id, w);
+      if (w.length > 5) return send(res, 200, kopCmdView(id));
+      const y = { res, t: setTimeout(() => { kopCmdWait.set(id, (kopCmdWait.get(id) || []).filter(z => z !== y)); send(res, 200, kopCmdView(id)); }, 25000) };
+      w.push(y);
+      req.on('close', () => { clearTimeout(y.t); kopCmdWait.set(id, (kopCmdWait.get(id) || []).filter(z => z !== y)); });
+      return;
+    }
+    // De telefoon vraagt de laptop om Autodarts te resetten (beurt in de app afgerond, Autodarts wacht nog op pijlen)
+    const kr = /^\/api\/koppel\/code\/([A-Za-z0-9]{4})\/reset$/.exec(p);
+    if (kr && req.method === 'POST') {
+      const id = kopByCode(kr[1]);
+      if (!id) return send(res, 404, { error: 'Deze koppelcode bestaat niet' });
+      const now = Date.now(), l = (kopCmdHits.get(id) || []).filter(t => now - t < 60000);
+      if (l.length >= 20) return send(res, 429, { error: 'Te vaak' });
+      l.push(now); kopCmdHits.set(id, l);
+      kopCmd.set(id, { n: kopCmdView(id).n + 1, cmd: 'reset', at: now });
+      kopCmdNotify(id);
+      return send(res, 200, { ok: true });
     }
     const kw = /^\/api\/koppel\/code\/([A-Za-z0-9]{4})\/wait$/.exec(p);
     if (kw && req.method === 'GET') {

@@ -22,6 +22,7 @@ Werkt overal: in de competitie, in een vriendensessie en bij het checkout-spel v
 - Klopt een pijl niet? Tik op het vakje en kies de goede.
 - **Bullen** tik je zelf aan.
 - Camera uit = gewoon zelf invullen.
+- Ziet de camera een pijl niet en vul je hem zelf in (bijv. **Mis**)? Dan reset de laptop Autodarts vanzelf, zodat de volgende speler weer gewoon geteld wordt. In het venster staat dan "Autodarts gereset". Met de hand kan het ook: tik in de app onder Camera op **Autodarts resetten**.
 
 ## Andere locatie of nieuwe code
 

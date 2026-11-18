@@ -176,6 +176,33 @@ async function verstuur(cfg, force) {
 }
 function pijl(cfg, ev) { queue.push(ev); verstuur(cfg); }
 
+// Opdrachten van de telefoon: Autodarts resetten als de beurt in de app al klaar is
+// (bijv. een gemiste pijl met de hand als Mis ingevuld), anders wacht Autodarts nog op die pijl.
+let negeerTakeoutTot = 0;
+async function resetBord(cfg) {
+  for (const m of ['POST', 'PUT']) {
+    try {
+      const r = await fetch(cfg.board + '/api/reset', { method: m, signal: AbortSignal.timeout(3000) });
+      if (r.ok) { negeerTakeoutTot = Date.now() + 5000; log('Autodarts gereset: de beurt is in de app afgerond ✓'); return; }
+    } catch (e) {}
+  }
+  log('Autodarts resetten lukte niet. Druk zo nodig in Autodarts zelf op Reset.');
+}
+async function luisterNaarOpdrachten(cfg) {
+  let n = null;
+  for (;;) {
+    try {
+      const r = await fetch(SITE + '/api/koppel/' + cfg.id + '/opdracht?n=' + (n === null ? -1 : n), { headers: { 'X-Secret': cfg.secret }, signal: AbortSignal.timeout(35000), cache: 'no-store' });
+      if (r.status === 404 || r.status === 401) { await sleep(10000); continue; }
+      const d = await r.json();
+      if (d && Number.isFinite(d.n)) {
+        if (n !== null && d.n !== n && d.cmd === 'reset') { if (TEST) log('(test) Opdracht ontvangen: Autodarts resetten'); else await resetBord(cfg); }
+        n = d.n;
+      }
+    } catch (e) { await sleep(3000); }
+  }
+}
+
 async function luisterNaarBord(cfg) {
   let vorige = null, weg = 0;
   log('Luisteren naar Autodarts op ' + cfg.board + ' …');
@@ -203,7 +230,10 @@ async function luisterNaarBord(cfg) {
           pijl(cfg, { k: 'dart', i, ...p });
         }
         // pijlen uit het bord gehaald
-        if (num === 0 && vorige.num > 0) { log('Pijlen eruit, volgende beurt'); pijl(cfg, { k: 'takeout' }); }
+        if (num === 0 && vorige.num > 0) {
+          if (Date.now() < negeerTakeoutTot) negeerTakeoutTot = 0; // dit kwam door onze eigen reset
+          else { log('Pijlen eruit, volgende beurt'); pijl(cfg, { k: 'takeout' }); }
+        }
         if (vorige.status !== nu.status && nu.status && !/^Throw$|^Takeout/.test(nu.status)) log('Autodarts: ' + nu.status);
       }
       vorige = nu;
@@ -263,6 +293,7 @@ async function testModus(cfg) {
   setInterval(() => verstuur(cfg, true), 10000); // teken van leven voor de status op de telefoon
   setInterval(() => { if (!telefoon) toonCode(cfg.code); }, 120000);
   verstuur(cfg, true);
+  luisterNaarOpdrachten(cfg);
   if (TEST) return testModus(cfg);
   rl.close();
   luisterNaarBord(cfg);
