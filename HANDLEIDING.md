@@ -116,6 +116,9 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 
 ## Statistieken
 
+- Via de startpagina (**Statistieken**) of Live kijken → tab **Statistieken**: kies eerst een onderdeel (**Competitie**, **1 tegen 1**, **Checkout-spel**, **Toernooien**), dan een speler, dan zie je de scores. Onderaan staat waar die speler nog meer in voorkomt.
+- **1 tegen 1**: elke afgelopen wedstrijd in een vriendensessie wordt bewaard (solo niet). Verwijderen kan in /beheer onder 1 tegen 1-wedstrijden.
+
 - **Live kijken → Spelers**: ranglijstjes van de competitie (hoogste gemiddelde, meeste 180's, hoogste uitgooi, beste leg, uitgooi-%, meeste 100+) en per speler alle cijfers: gemiddelde, eerste 9, 180/140+/100+, hoogste beurt en uitgooi, uitgooi-% op dubbels, beste leg, pijlen per leg, wedstrijden en legs, favoriete dubbel, vorm (laatste 5) en onderling.
 - Alleen wedstrijden die met darts gescoord zijn tellen mee; een uitslag die alleen met − / + is ingevuld telt wel voor wedstrijden en legs.
 - **Checkout-spel** (alleen met een profiel): gespeeld, beste en gemiddelde score, uitgooi-%, pijlen per uitgooi, laatste pijl, een kleurentabel per getal (41–60) en de laatste spellen. Na een spel staat er een link naar je statistieken.
