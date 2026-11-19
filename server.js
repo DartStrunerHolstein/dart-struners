@@ -509,12 +509,15 @@ const server = http.createServer(async (req, res) => {
         const b = await readBody(req);
         const mid = typeof b.mid === 'string' && /^[a-z0-9]{6,12}$/.test(b.mid) ? b.mid : null;
         if (!mid) return send(res, 400, { error: 'Ongeldige wedstrijd' });
-        const c = trnClean(b);
-        if (c.players.length !== 2) return send(res, 400, { error: 'Een wedstrijd heeft 2 spelers' });
-        const win = b.win === 0 || b.win === 1 ? b.win : null;
+        const c = trnClean(b), soort = ['1v1', '3', '2v2'].includes(b.soort) ? b.soort : '1v1';
+        const need = { '1v1': 2, '3': 3, '2v2': 4 }[soort], ns = soort === '3' ? 3 : 2;
+        if (c.players.length !== need) return send(res, 400, { error: 'Verkeerd aantal spelers' });
+        c.players.forEach((p, i) => { const t = Number(b.players[i] && b.players[i].t); p.t = Number.isInteger(t) && t >= 0 && t < ns ? t : (soort === '2v2' ? i >> 1 : i); });
+        const win = Number.isInteger(b.win) && b.win >= 0 && b.win < ns ? b.win : null;
         if (win === null) return send(res, 400, { error: 'Wedstrijd is nog niet klaar' });
+        const legs = Array.isArray(b.legs) ? b.legs.slice(0, ns).map(v => Math.max(0, Math.min(20, Math.floor(+v) || 0))) : null;
         const key = id + ':' + mid, old = wed.list[key];
-        wed.list[key] = { at: old ? old.at : Date.now(), u: Date.now(), sid: id, game: c.game, win, players: c.players };
+        wed.list[key] = { at: old ? old.at : Date.now(), u: Date.now(), sid: id, soort, game: c.game, win, legs, players: c.players };
         const keys = Object.keys(wed.list);
         if (keys.length > 5000) keys.sort((a, z) => wed.list[a].at - wed.list[z].at).slice(0, keys.length - 5000).forEach(k => delete wed.list[k]);
         wed.v++; persistWed();
@@ -801,7 +804,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { v: trn.v, list: L });
     }
     if (req.method === 'GET' && p === '/api/wedstrijden') {
-      const L = Object.entries(wed.list).map(([k, x]) => ({ k, at: x.at, game: x.game, win: x.win, players: x.players.map(y => Object.assign({}, y, { n: y.pid && spl.list[y.pid] ? spl.list[y.pid].n : y.n })) })).sort((a, b) => a.at - b.at);
+      const L = Object.entries(wed.list).map(([k, x]) => ({ k, at: x.at, soort: x.soort || '1v1', legs: x.legs || null, game: x.game, win: x.win, players: x.players.map(y => Object.assign({}, y, { n: y.pid && spl.list[y.pid] ? spl.list[y.pid].n : y.n })) })).sort((a, b) => a.at - b.at);
       return send(res, 200, { v: wed.v, list: L });
     }
     if (req.method === 'POST' && p === '/api/wedstrijden/beheer') {

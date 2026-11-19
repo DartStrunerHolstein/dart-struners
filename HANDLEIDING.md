@@ -114,10 +114,16 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 - In **/beheer** onder "Spelersprofielen": naam wijzigen, pincode resetten (vergeten), twee profielen samenvoegen of een profiel verwijderen.
 - Een competitiespeler met dezelfde naam als een profiel hoort automatisch bij dat profiel.
 
+## Wedstrijd: solo, 1 tegen 1, met z'n drieën, 2 tegen 2
+
+- In een sessie: **Wedstrijd** en kies met hoeveel jullie spelen.
+- **Met z'n drieën**: ieder voor zich, om de beurt; wie als eerste uit is wint de leg.
+- **2 tegen 2**: twee koppels, één score per koppel. Volgorde: koppel 1 speler 1, koppel 2 speler 1, koppel 1 speler 2, koppel 2 speler 2. Wie er gooit staat geel bij het koppel. Elke leg begint de andere speler van het koppel.
+
 ## Statistieken
 
 - Via de startpagina (**Statistieken**) of Live kijken → tab **Statistieken**: kies eerst een onderdeel (**Competitie**, **1 tegen 1**, **Checkout-spel**, **Toernooien**), dan een speler, dan zie je de scores. Onderaan staat waar die speler nog meer in voorkomt.
-- **1 tegen 1**: elke afgelopen wedstrijd in een vriendensessie wordt bewaard (solo niet). Verwijderen kan in /beheer onder 1 tegen 1-wedstrijden.
+- **Enkele wedstrijden**: elke afgelopen wedstrijd in een vriendensessie wordt bewaard (1 tegen 1, met z'n drieën, 2 tegen 2; solo niet). Gemiddelde, 180's en uitgooien per speler, winst/verlies per soort. Verwijderen kan in /beheer onder Enkele wedstrijden.
 
 - **Live kijken → Spelers**: ranglijstjes van de competitie (hoogste gemiddelde, meeste 180's, hoogste uitgooi, beste leg, uitgooi-%, meeste 100+) en per speler alle cijfers: gemiddelde, eerste 9, 180/140+/100+, hoogste beurt en uitgooi, uitgooi-% op dubbels, beste leg, pijlen per leg, wedstrijden en legs, favoriete dubbel, vorm (laatste 5) en onderling.
 - Alleen wedstrijden die met darts gescoord zijn tellen mee; een uitslag die alleen met − / + is ingevuld telt wel voor wedstrijden en legs.

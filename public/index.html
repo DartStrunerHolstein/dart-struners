@@ -257,6 +257,10 @@ body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
 .tvtap{margin:8px 0 0;text-align:center;color:rgba(255,255,255,.7);font-weight:700;font-size:clamp(13px,1.2vw,20px)}
 .kdis{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}.kdis button{display:grid;grid-template-columns:1fr auto auto;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;padding:16px 18px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;cursor:pointer;font:600 14px Inter,sans-serif}.kdis b{font-size:clamp(17px,1.5vw,24px)}.kdis small{grid-row:2;color:rgba(255,255,255,.6)}.kdis span{grid-row:1/3;grid-column:2;color:rgba(255,255,255,.75);font-weight:700}.kdis em{grid-row:1/3;grid-column:3;font-style:normal;color:var(--pink);font-size:22px}
 .kalso{display:flex;flex-wrap:wrap;gap:8px}.kalso button{padding:10px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font:700 14px Inter,sans-serif;cursor:pointer}
+.pl.n3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.pl.n3 .pp{padding:8px 6px}.pl.n3 .rem{font-size:clamp(30px,9vw,56px)}
+.pkop,.tvkop{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 8px;margin:2px 0 4px;font-size:13px;opacity:.75}.pkop .nu,.tvkop .nu{opacity:1;color:var(--hl);font-weight:800}.tvkop{font-size:clamp(12px,1.4vw,24px)}
+.tvm2.wb.n3{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto minmax(0,1fr) auto}#tv .tvm2.n3 .tvp{order:0}#tv .tvm2.n3 .tvbw{grid-column:1/-1;grid-row:2;order:0}#tv .tvm2.n3 .tvd{grid-column:1/-1;grid-row:3;order:0}#tv .tvm2.n3 .tvr{font-size:min(6vw,9vh);margin:0}#tv .tvm2.n3 .tvp{padding:1.2vh 1vw}#tv .tvm2.n3 .tvn{font-size:clamp(14px,min(2vw,3.6vh),44px)}#tv .tvm2.n3 .tvst{margin-top:.6vh}#tv .tvm2.n3 .tvtap{margin-top:4px}#tv .tvm2.n3 .tvact{margin-top:6px}#tv .tvm2.n3 .tvboard{width:min(60vw,38vh)}
+@media (max-width:760px),(max-aspect-ratio:1/1){#tv .tvm2.wb.n3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}#tv .tvm2.n3 .tvr{font-size:min(11vw,8vh)}#tv .tvm2.n3 .tvp{padding:8px 4px}#tv .tvm2.n3 .tvst{display:none}#tv .tvm2.n3 .tvn{font-size:15px}#tv .tvm2.n3 .tvboard{width:min(90vw,46vh)}}
 .kform{display:flex;gap:6px}.kform span{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:700 15px Inter,sans-serif}.kform .w{background:#1f9d55;color:#fff}.kform .v{background:rgba(255,255,255,.12);color:#fff}
 .msum{width:100%;max-width:420px;margin:12px auto 4px;border-collapse:collapse;font-size:14px}.msum th,.msum td{padding:5px 6px;text-align:center}.msum tbody th{font-weight:600;opacity:.7;font-size:12px;text-transform:uppercase;letter-spacing:.04em}.msum thead th{font-weight:800}.msum tbody tr+tr{border-top:1px solid rgba(255,255,255,.12)}
 .hfoot{margin:24px 0 0}.hfoot a{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-weight:700;text-decoration:none}.hfoot svg{width:18px;height:18px}
@@ -666,22 +670,35 @@ function getO(id){
     return{a:m.h,b:m.u,sa,sb,need:3,win:sa>=3?m.h:sb>=3?m.u:null,los:sa>=3?m.u:sb>=3?m.h:null}}
   if(id==='X'&&S.single.solo){const r=S.results.X||{sa:0,sb:0},need=S.single.bo;
     return{a:0,b:1,sa:r.sa,sb:0,need,win:r.sa>=need?0:null}}
+  if(id==='X'&&XM()==='3'){const r=S.results.X||{},s=Array.isArray(r.s)&&r.s.length===3?r.s:[0,0,0],need=Math.ceil(S.single.bo/2),w=s.findIndex(v=>v>=need);
+    return{a:0,b:1,sa:s[0],sb:s[1],s,n:3,need,win:w>=0?w:null}}
   if(id==='X'){const r=S.results.X||{sa:0,sb:0},need=Math.ceil(S.single.bo/2);
     return{a:0,b:1,sa:r.sa,sb:r.sb,need,win:r.sa>=need?0:r.sb>=need?1:null}}
   return R&&R[id];
 }
 const SOLO=id=>id==='X'&&!!S.single.solo;
+// Soort wedstrijd: solo, 1 tegen 1, met z'n drieën (ieder voor zich) of 2 tegen 2 (koppels, één score)
+const XM=()=>S.single.solo?'solo':(S.single.mode==='3'||S.single.mode==='2v2'?S.single.mode:'1v1');
+const XML={solo:'Solo','1v1':'1 tegen 1','3':"Met z'n drieën",'2v2':'2 tegen 2'};
+const NS=id=>id==='X'?({solo:1,'3':3}[XM()]||2):2;
+const legsOf=(r,i)=>r&&Array.isArray(r.s)?(+r.s[i]||0):(i?r.sb:r.sa)||0;
+const legsTxt=L=>L.ps.map((_,i)=>legsOf(L.r,i)).join(' – ');
+const KOP=id=>id==='X'&&XM()==='2v2'&&Array.isArray(S.single.team);
+const thrW=(L,side)=>(L.lt.filter(x=>x.side===side).length+L.leg)%2; // wie van het koppel gooit
+const thrName=(L,side)=>KOP(openId)?(S.single.team[side]||[])[thrW(L,side)]||sideName(L,side):sideName(L,side);
+const turnName=x=>KOP(openId)&&typeof x.w==='number'?(S.single.team[x.side]||[])[x.w]||null:null;
 const pn=p=>openId==='X'?esc(S.single.names[p]):isC(openId)?esc(S.comp.players[p]):nm(p);
 function live(id){
-  const o=getO(id);let r=S.results[id];if(!r||r.a!==o.a||r.b!==o.b)r={a:o.a,b:o.b,sa:0,sb:0};
+  const o=getO(id),n=NS(id);let r=S.results[id];if(!r||r.a!==o.a||r.b!==o.b)r={a:o.a,b:o.b,sa:0,sb:0};
+  if(n===3&&!(Array.isArray(r.s)&&r.s.length===3))r=Object.assign({},r,{s:[0,0,0]});
   let t=S.turns[id];if(!t||t.a!==o.a||t.b!==o.b)t=S.turns[id]={a:o.a,b:o.b,list:[]};
-  const leg=r.sa+r.sb,lt=t.list.filter(x=>x.leg===leg);
-  const rem=[0,1].map(s=>S.game-lt.filter(x=>x.side===s&&!x.bust).reduce((q,x)=>q+x.score,0));
-  const solo=SOLO(id),first=t.first===1?1:0,bull=!solo&&t.first===undefined&&!t.list.length&&r.sa+r.sb===0&&o.win===null;
-  const cur=solo?0:(first+leg+lt.length)%2;
-  const st=[0,1].map(s=>{const m=t.list.filter(x=>x.side===s),sc=m.filter(x=>!x.bust).reduce((q,x)=>q+x.score,0);
+  const SI=n===3?[0,1,2]:[0,1],leg=n===3?r.s[0]+r.s[1]+r.s[2]:r.sa+r.sb,lt=t.list.filter(x=>x.leg===leg);
+  const rem=SI.map(s=>S.game-lt.filter(x=>x.side===s&&!x.bust).reduce((q,x)=>q+x.score,0));
+  const solo=SOLO(id),first=Number.isInteger(t.first)&&t.first>0&&t.first<n?t.first:0,bull=!solo&&t.first===undefined&&!t.list.length&&leg===0&&o.win===null;
+  const cur=solo?0:(first+leg+lt.length)%n,ps=n===3?[0,1,2]:[o.a,o.b];
+  const st=SI.map(s=>{const m=t.list.filter(x=>x.side===s),sc=m.filter(x=>!x.bust).reduce((q,x)=>q+x.score,0);
     return{avg:m.length?(sc/m.length).toFixed(1):'–',last:m.length?(m[m.length-1].bust?'bust':m[m.length-1].score):'–',darts:lt.filter(x=>x.side===s).length*3}});
-  return{o,r,t,leg,lt,rem,cur,st,bull};
+  return{o,r,t,leg,lt,rem,cur,st,bull,ps,n};
 }
 /* ---------- stem en eigen geluiden ---------- */
 let vNL=null,vEN=null,sheet=false;const clipUrl={};
@@ -783,16 +800,17 @@ function submit(v,ds){
   const L=live(openId);if(L.o.win!==null)return;
   if(!(v>=0&&v<=180)){msg='Maximaal 180 per beurt';buf='';renderOv();return}
   const rem=L.rem[L.cur],bust=v>rem||(S.dout&&rem-v===1)||(ds&&v===rem&&S.dout&&!ds[ds.length-1].dbl),out=!bust&&v===rem;
-  L.t.list.push({leg:L.leg,side:L.cur,score:v,bust,out,d:ds?ds.map(dClean):null});darts=[];mod=1;edit=null;
+  const tr={leg:L.leg,side:L.cur,score:v,bust,out,d:ds?ds.map(dClean):null};if(KOP(openId))tr.w=thrW(L,L.cur);
+  L.t.list.push(tr);darts=[];mod=1;edit=null;
   const who=sideName(L,L.cur);
-  if(out){L.r[L.cur?'sb':'sa']++;S.results[openId]=L.r;msg=`Leg voor ${who}!`}
+  if(out){if(Array.isArray(L.r.s)){L.r.s[L.cur]++;L.r.sa=L.r.s[0];L.r.sb=L.r.s[1]}else L.r[L.cur?'sb':'sa']++;S.results[openId]=L.r;msg=`Leg voor ${who}!`}
   else msg=bust?(ds&&v===rem?`Bust! Uitgooien moet op een dubbel. ${who} blijft op ${rem}`:`Bust! ${who} blijft op ${rem}`):'';
   buf='';save();render();
   if(out){const L2=live(openId);if(L2.o.win!==null){ev({k:SOLO(openId)?'leg':'match',who});play('match',T.match(who),[['matchshot'],['gameshot']])}else{ev({k:'leg',who});play('leg',T.leg(who),[['gameshot']])}}
   else if(bust){ev({k:'bust',who});play('bust',T.bust(),[['busted']])}
   else{let clip=false;const sk=[[String(v)]];
     if(v===180){ev({k:'180',who});clip=play('180',T.score(v),sk)}else if(v===0)clip=play('noscore',T.noscore(),sk);else if(v>=100){ev({k:'ton',who,v});clip=play('ton',T.score(v),sk)}else say(T.score(v),false,sk);
-    const L2=live(openId),nx=L2.cur,r2=L2.rem[nx];if(!clip&&r2<=170&&checkout(r2))say(T.req(sideName(L2,nx),r2),false,[['yr_'+r2],['you_require',String(r2)]])}
+    const L2=live(openId),nx=L2.cur,r2=L2.rem[nx];if(!clip&&r2<=170&&checkout(r2))say(T.req(thrName(L2,nx),r2),false,[['yr_'+r2],['you_require',String(r2)]])}
 }
 function dart(n){
   sender=true;
@@ -830,29 +848,29 @@ function renderOv(){
   const go=openId&&getO(openId);
   if(!admin||!go||typeof go.a!=='number'||typeof go.b!=='number'){openId=null;ov.hidden=true;ov.innerHTML='';document.body.style.overflow='';return}
   ov.hidden=false;document.body.style.overflow='hidden';
-  const L=live(openId),o=L.o,done=o.win!==null,need=o.need,bo=openId==='X'?S.single.bo:isC(openId)?5:openId==='F'?S.boF:S.bo,ps=[o.a,o.b];
+  const L=live(openId),o=L.o,done=o.win!==null,need=o.need,bo=openId==='X'?S.single.bo:isC(openId)?5:openId==='F'?S.boF:S.bo,ps=L.ps;
   const dsum=darts.reduce((q,x)=>q+x.v,0);if(!done)L.rem[L.cur]-=dsum;const dleft=3-darts.length;
-  const panel=i=>{const sets=i?L.r.sb:L.r.sa,ck=!done&&!L.bull&&L.cur===i?checkout(L.rem[i],dleft):'';
-    return`<div class="pp${!done&&!L.bull&&L.cur===i?' on':''}${done&&o.win===ps[i]?' won':''}"><div class="pn">${pn(ps[i])}</div>
+  const panel=i=>{const sets=legsOf(L.r,i),on=!done&&!L.bull&&L.cur===i,ck=on?checkout(L.rem[i],dleft):'';
+    return`<div class="pp${on?' on':''}${done&&o.win===ps[i]?' won':''}"><div class="pn">${pn(ps[i])}</div>${KOP(openId)?`<div class="pkop">${S.single.team[i].map((n,j)=>`<span class="${!done&&!L.bull&&thrW(L,i)===j?'nu':''}">${esc(n)}</span>`).join('')}</div>`:''}
     <div class="lg">Legs <b>${sets}</b></div>
     <div class="rem">${L.rem[i]}</div><div class="ck">${ck?'Uit: '+ck:'&nbsp;'}</div>
     <div class="av"><span><small>GEM.</small>${L.st[i].avg}</span><span><small>LAATSTE</small>${L.st[i].last}</span></div></div>`};
-  const hist=L.lt.slice(-6).reverse().map(x=>`<li><span>${pn(ps[x.side])}${x.d?` <em>${x.d.map(q=>esc(q.lab||q)).join(' · ')}</em>`:''}</span><b>${x.bust?'Bust':x.score}</b></li>`).join('');
+  const hist=L.lt.slice(-6).reverse().map(x=>`<li><span>${turnName(x)?esc(turnName(x)):pn(ps[x.side])}${x.d?` <em>${x.d.map(q=>esc(q.lab||q)).join(' · ')}</em>`:''}</span><b>${x.bust?'Bust':x.score}</b></li>`).join('');
   const remC=L.rem[L.cur];
   const chips=[...(remC<=170&&checkout(remC)?[['Uit '+remC,remC]]:[]),...[26,41,45,60,81,85,100,140,180].map(v=>[v,v])];
   ov.innerHTML=`<div class="ovb">
-   <div class="ovh"><span>${SOLO(openId)?'Solo · '+o.need+(o.need>1?' legs':' leg'):openId==='X'?'Losse wedstrijd':isC(openId)?'Competitie · ronde '+cMatches()[+openId.slice(1)].rd:openId==='F'?'Finale':openId}${SOLO(openId)?'':' · Best of '+bo+' legs'} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'}</span><span class="ovr"><button class="snd${S.sound?' on':''}" data-a="sound" aria-label="Geluid ${S.sound?'uit':'aan'}zetten" aria-pressed="${S.sound?'true':'false'}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>${S.sound?'<path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>':'<path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'}</svg></button><button class="snd" data-a="monlocal" title="Groot scherm met dartbord">Monitor</button>${camBtn()}<button class="snd" data-a="sheet" aria-label="Geluiden instellen">Stem</button><button class="x" data-a="close" aria-label="Sluiten">×</button></span></div>${camInfo()}${ikHtml()}
-   ${sheet?sheetHtml():''}${sheet?'':`<div class="pl${SOLO(openId)?' solo':''}">${panel(0)}${SOLO(openId)?'':panel(1)}</div>
-   ${done?`<div class="wonb">${SOLO(openId)?`<small>Solo klaar</small><div class="cn">${o.need} ${o.need>1?'legs':'leg'}</div><p>${L.t.list.reduce((q,x)=>q+(x.d&&x.d.length?x.d.length:3),0)} pijlen · gemiddelde ${L.st[0].avg}</p>`:`<small>Wedstrijd gewonnen</small><div class="cn">${pn(o.win)}</div><p>${L.r.sa} – ${L.r.sb} in legs</p>${matchSum(openId)}`}<div class="row">${openId==='X'?'<button class="btn pri" data-a="rematch">'+(SOLO(openId)?'Nog een keer':'Nog een wedstrijd')+'</button><button class="btn" data-a="close">Sluiten</button>':'<button class="btn pri" data-a="close">Terug naar '+(isC(openId)?'competitie':'bracket')+'</button>'}<button class="btn" data-a="undo">Laatste beurt terug</button></div></div>`:L.bull?`
-   <div class="bullb"><h3>Bullen</h3><p>Beide spelers gooien één pijl op de bull. Wie het dichtst bij zit, begint de eerste leg. Daarna wisselt het per leg.</p>
-   <div class="bullk"><button class="btn pri" data-bull="0">${pn(ps[0])}</button><button class="btn pri" data-bull="1">${pn(ps[1])}</button></div>
+   <div class="ovh"><span>${SOLO(openId)?'Solo · '+o.need+(o.need>1?' legs':' leg'):openId==='X'?XML[XM()]:isC(openId)?'Competitie · ronde '+cMatches()[+openId.slice(1)].rd:openId==='F'?'Finale':openId}${SOLO(openId)?'':' · Best of '+bo+' legs'} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'}</span><span class="ovr"><button class="snd${S.sound?' on':''}" data-a="sound" aria-label="Geluid ${S.sound?'uit':'aan'}zetten" aria-pressed="${S.sound?'true':'false'}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>${S.sound?'<path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>':'<path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'}</svg></button><button class="snd" data-a="monlocal" title="Groot scherm met dartbord">Monitor</button>${camBtn()}<button class="snd" data-a="sheet" aria-label="Geluiden instellen">Stem</button><button class="x" data-a="close" aria-label="Sluiten">×</button></span></div>${camInfo()}${ikHtml()}
+   ${sheet?sheetHtml():''}${sheet?'':`<div class="pl${SOLO(openId)?' solo':''}${L.n===3?' n3':''}">${SOLO(openId)?panel(0):ps.map((_,i)=>panel(i)).join('')}</div>
+   ${done?`<div class="wonb">${SOLO(openId)?`<small>Solo klaar</small><div class="cn">${o.need} ${o.need>1?'legs':'leg'}</div><p>${L.t.list.reduce((q,x)=>q+(x.d&&x.d.length?x.d.length:3),0)} pijlen · gemiddelde ${L.st[0].avg}</p>`:`<small>Wedstrijd gewonnen</small><div class="cn">${pn(o.win)}</div><p>${legsTxt(L)} in legs</p>${matchSum(openId)}`}<div class="row">${openId==='X'?'<button class="btn pri" data-a="rematch">'+(SOLO(openId)?'Nog een keer':'Nog een wedstrijd')+'</button><button class="btn" data-a="close">Sluiten</button>':'<button class="btn pri" data-a="close">Terug naar '+(isC(openId)?'competitie':'bracket')+'</button>'}<button class="btn" data-a="undo">Laatste beurt terug</button></div></div>`:L.bull?`
+   <div class="bullb"><h3>Bullen</h3><p>${L.n===3?'Alle drie gooien':KOP(openId)?'Uit elk koppel gooit één speler':'Beide spelers gooien'} één pijl op de bull. Wie het dichtst bij zit, begint de eerste leg. Daarna wisselt het per leg.</p>
+   <div class="bullk">${ps.map((p,i)=>`<button class="btn pri" data-bull="${i}">${pn(p)}</button>`).join('')}</div>
    <button class="btn" data-bull="0" data-skip="1">Overslaan, ${pn(ps[0])} begint</button></div>`:`
    <div class="mode"><button data-mode="pijl" class="${S.inmode==='pijl'?'on':''}">Per pijl</button><button data-mode="beurt" class="${S.inmode==='beurt'?'on':''}">Per beurt</button></div>
    ${S.inmode==='pijl'?`
-   <div class="disp"><small>${pn(ps[L.cur])} gooit · leg ${L.leg+1}</small><div class="slots">${[0,1,2].map(i=>darts[i]?`<button data-slot="${i}" class="f${edit===i?' ed':''}" aria-label="Pijl ${i+1} wijzigen">${esc(darts[i].lab)}<small>${edit===i?'kies nieuw':'wijzig'}</small></button>`:`<span>pijl ${i+1}</span>`).join('')}</div><div class="dr"><div class="msg">${edit!==null?`Kies de juiste waarde voor pijl ${edit+1}`:(msg?`<span class="warn">${esc(msg)}</span>`:'Deze beurt '+dsum)}</div>${darts.length&&edit===null?'<button class="done" data-a="commit">Beurt klaar</button>':''}</div></div>
+   <div class="disp"><small>${esc(thrName(L,L.cur)||"")} gooit · leg ${L.leg+1}</small><div class="slots">${[0,1,2].map(i=>darts[i]?`<button data-slot="${i}" class="f${edit===i?' ed':''}" aria-label="Pijl ${i+1} wijzigen">${esc(darts[i].lab)}<small>${edit===i?'kies nieuw':'wijzig'}</small></button>`:`<span>pijl ${i+1}</span>`).join('')}</div><div class="dr"><div class="msg">${edit!==null?`Kies de juiste waarde voor pijl ${edit+1}`:(msg?`<span class="warn">${esc(msg)}</span>`:'Deze beurt '+dsum)}</div>${darts.length&&edit===null?'<button class="done" data-a="commit">Beurt klaar</button>':''}</div></div>
    <div class="mods">${[[1,'Single'],[2,'Dubbel'],[3,'Triple']].map(([m,l])=>`<button data-mod="${m}" class="${mod===m&&m>1?'on':''}">${l}</button>`).join('')}</div>
    <div class="nums">${Array.from({length:20},(_,i)=>`<button data-n="${i+1}">${mod===3?'T':mod===2?'D':''}${i+1}</button>`).join('')}<button data-n="25" class="w2">${mod===2?'Bull 50':'25'}</button><button data-n="0" class="w2">Mis</button><button data-a="undo" class="w1" aria-label="Pijl terug">⌫</button></div>`:`
-   <div class="disp"><small>${pn(ps[L.cur])} gooit · leg ${L.leg+1}${L.lt.length?'':' · begint'}</small><div class="big">${buf||'0'}</div><div class="msg">${esc(msg)}</div></div>
+   <div class="disp"><small>${esc(thrName(L,L.cur)||"")} gooit · leg ${L.leg+1}${L.lt.length?'':' · begint'}</small><div class="big">${buf||'0'}</div><div class="msg">${esc(msg)}</div></div>
    <div class="chips">${chips.map(([l,v])=>`<button data-q="${v}"${typeof l==='string'?' class="uit"':''}>${l}</button>`).join('')}</div>
    <div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="del" aria-label="Wis">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button></div>`}
    ${S.inmode==='beurt'?`<div class="row" style="justify-content:space-between"><button class="btn" data-a="undo"${L.t.list.length?'':' disabled'}>Ongedaan maken</button><button class="btn" data-q="0">Niks gegooid</button></div>`:''}`}
@@ -899,13 +917,21 @@ function champBox(){
   return`<div class="champ"><svg viewBox="-240 -170 360 300" aria-hidden="true"><use href="#ball"/><use href="#dart" transform="translate(-62 -48) rotate(32)"/></svg><div><small>Kampioen</small><div class="cn">${nm(f.win)}</div><ol><li>${nm(f.win)}</li><li>${nm(f.los)}</li>${third}</ol></div></div>`;
 }
 function vSingle(){
-  const r=S.results.X,t=S.turns.X,busy=(r&&(r.sa||r.sb))||(t&&t.list.length),o=getO('X');
-  const so=!!S.single.solo;
-  return`<h2>${so?'Solo':'Losse wedstrijd'}</h2><p class="stat">${so?'Alleen oefenen: speel een aantal legs en zie je gemiddelde.':'Eén tegen één, zonder bracket.'}</p>
-  <div class="mode" style="max-width:560px;margin-bottom:10px"><button data-solo="0" class="${so?'':'on'}">1 tegen 1</button><button data-solo="1" class="${so?'on':''}">Solo</button></div>
-  <form id="fs" style="max-width:560px;display:grid;gap:8px"><input type="text" id="p1" maxlength="24" list="spl-dl" autocomplete="off" placeholder="${so?'Je naam':'Speler 1'}" value="${esc(S.single.names[0])}" aria-label="Speler 1">${so?'':`<input type="text" id="p2" maxlength="24" list="spl-dl" autocomplete="off" placeholder="Speler 2" value="${esc(S.single.names[1])}" aria-label="Speler 2">`}${prChips(so?'p1':'p1,p2')}
+  const r=S.results.X,t=S.turns.X,busy=(r&&(r.sa||r.sb||(Array.isArray(r.s)&&r.s.some(Boolean))))||(t&&t.list.length),o=getO('X'),m=XM(),so=m==='solo';
+  const N={solo:1,'1v1':2,'3':3,'2v2':4}[m],inp=Array.isArray(S.single.inp)?S.single.inp:[];
+  const val=i=>esc(inp[i]!==undefined?inp[i]:(m==='2v2'?(S.single.team&&S.single.team[i>>1]?S.single.team[i>>1][i&1]:''):S.single.names[i]||''));
+  const ph=m==='solo'?['Je naam']:m==='2v2'?['Koppel 1 · speler 1','Koppel 1 · speler 2','Koppel 2 · speler 1','Koppel 2 · speler 2']:['Speler 1','Speler 2','Speler 3'];
+  const ids=Array.from({length:N},(_,i)=>'p'+(i+1));
+  const field=i=>`<input type="text" id="p${i+1}" maxlength="24" list="spl-dl" autocomplete="off" placeholder="${ph[i]}" value="${val(i)}" aria-label="${ph[i]}">`;
+  const fields=m==='2v2'?`<div class="kopf"><b>Koppel 1</b>${field(0)}${field(1)}</div><div class="kopf"><b>Koppel 2</b>${field(2)}${field(3)}</div>`:ids.map((_,i)=>field(i)).join('');
+  const desc={solo:'Alleen oefenen: speel een aantal legs en zie je gemiddelde.','1v1':'Eén tegen één, zonder bracket.','3':'Ieder voor zich, om de beurt. Wie als eerste uit is wint de leg.','2v2':'Twee koppels, één score per koppel. Volgorde: koppel 1 speler 1, koppel 2 speler 1, koppel 1 speler 2, koppel 2 speler 2.'}[m];
+  const res=so?esc(S.single.names[0]||'Jij')+' '+o.sa+' van '+o.need+' legs':m==='3'?S.single.names.slice(0,3).map((n,i)=>esc(n)+' '+o.s[i]).join(' · '):esc(S.single.names[0])+' '+o.sa+' – '+o.sb+' '+esc(S.single.names[1]);
+  return`<h2>Wedstrijd</h2><p class="stat">Met hoeveel spelen jullie?</p>
+  <div class="mode m4" style="max-width:560px;margin-bottom:6px">${[['solo','Solo'],['1v1','1 tegen 1'],['3',"Met z'n drieën"],['2v2','2 tegen 2']].map(([k,l])=>`<button data-smode="${k}" class="${m===k?'on':''}">${l}</button>`).join('')}</div>
+  <p class="stat" style="margin:0 0 10px">${desc}</p>
+  <form id="fs" style="max-width:560px;display:grid;gap:8px">${fields}${prChips(ids.join(','))}
   <div class="set"><label>${so?'Aantal legs':'Wedstrijd'}<select id="sbo">${(so?[1,3,5,10]:[1,3,5,7]).map(v=>`<option value="${v}"${v==S.single.bo?' selected':''}>${so?v+(v>1?' legs':' leg'):'Best of '+v}</option>`).join('')}</select></label>${gameSel()}</div>
-  <div class="row"><button class="btn pri">${so?'Start solo':'Start wedstrijd'}</button>${busy?`<button type="button" class="btn" data-a="resume">${o.win!==null?'Uitslag bekijken':'Verder spelen'} · ${so?esc(S.single.names[0]||'Jij')+' '+o.sa+' van '+o.need+' legs':esc(S.single.names[0])+' '+o.sa+' – '+o.sb+' '+esc(S.single.names[1])}</button>`:''}</div></form>`;
+  <div class="err" id="fserr"></div><div class="row"><button class="btn pri">${so?'Start solo':'Start wedstrijd'}</button>${busy?`<button type="button" class="btn" data-a="resume">${o.win!==null?'Uitslag bekijken':'Verder spelen'} · ${res}</button>`:''}</div></form>`;
 }
 const gameSel=()=>`<label>Spel<select id="game">${[101,201,301,501,701].map(v=>`<option value="${v}"${v==S.game?' selected':''}>${v}</option>`).join('')}</select></label>
   <label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label>`;
@@ -956,9 +982,9 @@ function camApply(e){
 }
 // Samen op afstand: elk apparaat telt met zijn eigen bord alleen in de beurt van 'zijn' speler
 const IKK=()=>'dartstruners-ik-'+(SID||'main')+'-'+openId;
-function ikSide(){try{const v=localStorage.getItem(IKK());return v==='0'?0:v==='1'?1:null}catch(e){return null}}
+function ikSide(){try{const v=localStorage.getItem(IKK());return v==='0'?0:v==='1'?1:v==='2'?2:null}catch(e){return null}}
 function ikHtml(){if(!camOn||!openId||SOLO(openId))return'';const L=live(openId),ik=ikSide();
-  return`<div class="ikben"><span>Mijn camera telt voor:</span>${[0,1].map(i=>`<button data-ik="${i}" class="${ik===i?'on':''}">${pn(L.o[i?'b':'a'])}</button>`).join('')}<button data-ik="" class="${ik===null?'on':''}">Allebei</button></div>`}
+  return`<div class="ikben"><span>Mijn camera telt voor:</span>${L.ps.map((p,i)=>`<button data-ik="${i}" class="${ik===i?'on':''}">${pn(p)}</button>`).join('')}<button data-ik="" class="${ik===null?'on':''}">${L.n===3?'Iedereen':'Allebei'}</button></div>`}
 function camBtn(){const ok=camLive();
   return`<button class="snd cam${camOn?' on':''}" data-a="cam" aria-pressed="${camOn}" title="${camOn?'Camera telt mee op dit apparaat':'Camera tellen aanzetten'}"><i class="dot ${camOn?(ok?'ok':'bad'):''}"></i>Camera</button>`}
 function camInfo(){
@@ -1116,8 +1142,8 @@ function vSplBeheer(){const L=SPL.list,e=splEd;
    ${L.length?`<ul class="list spl">${L.map(row).join('')}</ul>`:'<p class="empty">Nog geen profielen.</p>'}<div class="err">${esc(splErr)}</div>
    <h2 style="margin-top:28px">Toernooi-archief</h2><p class="stat">Afgelopen toernooien uit vriendensessies. Ze staan bij Live kijken → Spelers.</p>
    ${TRN.list.length?`<ul class="list spl">${TRN.list.map(x=>`<li><div class="spr"><span class="n">${esc(trnTitle(x))}<small>${dDate(x.at)} · ${x.players.length} spelers · kampioen ${esc(x.p1)}</small></span><span class="spb">${trDel===x.k?`<button data-trdel="${esc(x.k)}">Ja, verwijderen</button><button data-trno="1">Nee</button>`:`<button data-trask="${esc(x.k)}" aria-label="Verwijder ${esc(trnTitle(x))}">×</button>`}</span></div></li>`).join('')}</ul>`:'<p class="empty">Nog geen afgelopen toernooien.</p>'}
-   <h2 style="margin-top:28px">1 tegen 1-wedstrijden</h2><p class="stat">${WED.list.length} bewaarde wedstrijden. Ze tellen mee bij Statistieken → 1 tegen 1. Hieronder de laatste 15.</p>
-   ${WED.list.length?`<ul class="list spl">${WED.list.slice(-15).reverse().map(x=>{const p=x.players;return`<li><div class="spr"><span class="n">${esc(p[0].n)} – ${esc(p[1].n)}<small>${dDate(x.at)} · ${x.game} · ${p[0].s.lW} – ${p[1].s.lW} · winnaar ${esc(p[x.win].n)}</small></span><span class="spb">${trDel===x.k?`<button data-wdel="${esc(x.k)}">Ja, verwijderen</button><button data-trno="1">Nee</button>`:`<button data-trask="${esc(x.k)}" aria-label="Verwijder wedstrijd">×</button>`}</span></div></li>`}).join('')}</ul>`:'<p class="empty">Nog geen wedstrijden.</p>'}`}
+   <h2 style="margin-top:28px">Enkele wedstrijden</h2><p class="stat">${WED.list.length} bewaarde wedstrijden (1 tegen 1, met z'n drieën, 2 tegen 2). Ze tellen mee bij Statistieken → Enkele wedstrijden. Hieronder de laatste 15.</p>
+   ${WED.list.length?`<ul class="list spl">${WED.list.slice(-15).reverse().map(x=>{const P=x.players,sides=[];P.forEach((p,i)=>{const t=typeof p.t==='number'?p.t:i;(sides[t]=sides[t]||[]).push(p.n)});const lg=Array.isArray(x.legs)?x.legs.join(' – '):P[0].s.lW+' – '+P[1].s.lW;return`<li><div class="spr"><span class="n">${sides.map(a=>esc(a.join(' & '))).join(' – ')}<small>${dDate(x.at)} · ${XML[x.soort||'1v1']||''} · ${x.game} · ${lg} · winnaar ${esc((sides[x.win]||[]).join(' & '))}</small></span><span class="spb">${trDel===x.k?`<button data-wdel="${esc(x.k)}">Ja, verwijderen</button><button data-trno="1">Nee</button>`:`<button data-trask="${esc(x.k)}" aria-label="Verwijder wedstrijd">×</button>`}</span></div></li>`}).join('')}</ul>`:'<p class="empty">Nog geen wedstrijden.</p>'}`}
 let trDel='';
 let joinErr='';
 const MIJNK='dartstruners-mijn';let newConf=false;
@@ -1314,7 +1340,7 @@ function vSpelers(){
   const join=remOpen&&!openId&&getO(remOpen)?`<div class="conf" style="max-width:760px;margin:0 0 14px"><p style="margin:0 0 10px">Er loopt een wedstrijd op een ander apparaat: <b>${(()=>{try{const L=live(remOpen);return esc(String(sideName2(remOpen,L,0)))+' – '+esc(String(sideName2(remOpen,L,1)))}catch(e){return'wedstrijd'}})()}</b></p><div class="row"><button class="btn pri" data-a="join">Meedoen</button></div></div>`:'';
   const nav=`<p class="stat topnav"><a href="/">← Startpagina</a><a href="/spelen">Spelen</a><a href="/kijk">Live kijken</a></p>`;
   const inv=nav+join+`<div class="row invbar"><button class="btn pri" data-a="invite">Uitnodigen</button><span class="stat" style="margin:0">${esc(invMsg)||'Samen spelen of meetellen? Stuur je vriend een link.'}</span></div>`;
-  const kt=`<div class="mode kind">${[['toernooi','Toernooi'],...(SID?[]:[['comp','Competitie']]),['single','1 tegen 1'],['spel','Checkout-spel']].map(([k,l])=>`<button data-kind="${k}" class="${S.kind===k?'on':''}">${l}</button>`).join('')}</div>`;
+  const kt=`<div class="mode kind">${[['toernooi','Toernooi'],...(SID?[]:[['comp','Competitie']]),['single','Wedstrijd'],['spel','Checkout-spel']].map(([k,l])=>`<button data-kind="${k}" class="${S.kind===k?'on':''}">${l}</button>`).join('')}</div>`;
   if(S.kind==='spel')return inv+kt+vSpel()+linksHtml();
   if(S.kind==='single')return inv+kt+vSingle()+linksHtml();
   if(S.kind==='comp')return kt+vComp()+linksHtml();
@@ -1403,11 +1429,16 @@ function render(){
   renderOv();
   const fs=document.getElementById('fs');
   if(fs)fs.addEventListener('submit',e=>{e.preventDefault();
-    const e2=document.getElementById('p2'),nn=[document.getElementById('p1').value.trim()||(S.single.solo?'Jij':'Thuis'),e2?e2.value.trim()||'Uit':S.single.names[1]||''];
-    gate(S.single.solo?[nn[0]]:nn,()=>{S.single.names=nn.map(x=>x?fixName(x):x);S.single.mid=newMid();
+    const m=XM(),N={solo:1,'1v1':2,'3':3,'2v2':4}[m],def=m==='solo'?['Jij']:m==='2v2'?['Speler 1','Speler 2','Speler 3','Speler 4']:['Thuis','Uit','Speler 3'];
+    const raw=Array.from({length:N},(_,i)=>{const el=document.getElementById('p'+(i+1));return(el&&el.value.trim())||def[i]});
+    const fe=document.getElementById('fserr');if(new Set(raw.map(nk)).size<raw.length){if(fe)fe.textContent='Elke speler moet een andere naam hebben';return}
+    gate(raw,()=>{const nn=raw.map(fixName);
+    if(m==='2v2'){S.single.team=[[nn[0],nn[1]],[nn[2],nn[3]]];S.single.names=[nn[0]+' & '+nn[1],nn[2]+' & '+nn[3]]}
+    else{S.single.names=m==='3'?nn.slice(0,3):nn.length===1?[nn[0],S.single.names[1]||'']:nn.slice(0,2);if(m!=='3')delete S.single.team}
+    S.single.inp=raw;S.single.mid=newMid();
     delete S.results.X;delete S.turns.X;save();openId='X';darts=[];mod=1;buf='';msg='';render()})});
   ['sp1','sp2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)el.addEventListener('input',()=>{SP().names[i]=el.value;save()})});
-  ['p1','p2'].forEach((k,i)=>{const el=document.getElementById(k);if(el)el.addEventListener('input',()=>{S.single.names[i]=el.value;save()})});
+  ['p1','p2','p3','p4'].forEach((k,i)=>{const el=document.getElementById(k);if(el&&document.getElementById('fs'))el.addEventListener('input',()=>{if(!Array.isArray(S.single.inp))S.single.inp=[];S.single.inp[i]=el.value;save()})});
   const sb=document.getElementById('sbo');if(sb)sb.addEventListener('change',()=>{S.single.bo=+sb.value;save()});
   ['bo','boF','game','dout','lot'].forEach(k=>{const el=document.getElementById(k);if(el)el.addEventListener('change',()=>{S[k]=+el.value;save();render()})});
 }
@@ -1447,6 +1478,8 @@ document.addEventListener('click',e=>{
   if(t.dataset.ik!==undefined&&openId){try{if(t.dataset.ik==='')localStorage.removeItem(IKK());else localStorage.setItem(IKK(),t.dataset.ik)}catch(_){}renderOv();return}
   if(t.dataset.sn!==undefined){spDart(+t.dataset.sn);return}
   if(t.dataset.smod){const m=+t.dataset.smod;spMod=spMod===m?1:m;renderOv();return}
+  if(t.dataset.smode){const v=t.dataset.smode;if(XM()!==v){S.single.mode=v==='solo'?'1v1':v;S.single.solo=v==='solo'?1:0;delete S.results.X;delete S.turns.X;
+    if(v==='solo'&&![1,3,5,10].includes(+S.single.bo))S.single.bo=3;if(v!=='solo'&&![1,3,5,7].includes(+S.single.bo))S.single.bo=3}save();render();return}
   if(t.dataset.solo!==undefined){const v=+t.dataset.solo;if(!!S.single.solo!==!!v){S.single.solo=v;delete S.results.X;delete S.turns.X;if(v&&![1,3,5,10].includes(+S.single.bo))S.single.bo=3;if(!v&&![1,3,5,7].includes(+S.single.bo))S.single.bo=3}save();render();return}
   if(t.dataset.spn){const p=SP();p.n=+t.dataset.spn;save();render();return}
   if(t.dataset.chdel){chatAdmin({del:+t.dataset.chdel});return}
@@ -1459,7 +1492,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.copy){const v=t.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>{t.textContent='Gekopieerd';setTimeout(()=>t.textContent='Kopieer',1500)})}catch(_){}return}
   if(t.dataset.tab){tab=t.dataset.tab;try{history.replaceState(null,'','#'+tab)}catch(_){}render();window.scrollTo(0,0);return}
   if(t.dataset.score){sender=true;openId=t.dataset.score;buf='';msg='';darts=[];mod=1;renderOv();return}
-  if(t.dataset.bull&&openId){const L=live(openId);if(!L.bull)return;const s=t.dataset.bull==='1'?1:0;L.t.first=s;S.turns[openId]=L.t;
+  if(t.dataset.bull&&openId){const L=live(openId);if(!L.bull)return;const s=Math.max(0,Math.min(L.n-1,parseInt(t.dataset.bull,10)||0));L.t.first=s;S.turns[openId]=L.t;
     const who=sideName(L,s);msg=t.dataset.skip?'':`${who} wint het bullen en begint`;save();renderOv();
     if(!t.dataset.skip){ev({k:'bull',who});say(caller()?`${who} to throw first. Game on!`:`${who} begint. Daar gaan we!`,true,[['gameon']])}return}
   if(t.dataset.mode&&openId){S.inmode=t.dataset.mode;darts=[];mod=1;edit=null;buf='';msg='';save();renderOv();return}
@@ -1682,11 +1715,13 @@ const BOGEY=new Set([169,168,166,165,163,162,159]);
 const dblFin=(r,dout)=>dout?(r===50||(r>=2&&r<=40&&r%2===0)):(r>=1&&r<=20)||r===25||r===50;
 const stBlank=()=>({n:0,darts:0,sum:0,f9s:0,f9d:0,t180:0,t140:0,t100:0,t60:0,hi:0,hco:0,dAtt:0,dHit:0,lW:0,lL:0,best:0,wDarts:0,wLegs:0,mW:0,mL:0,form:[],h2h:{},dbl:{},bust:0});
 // Verwerkt de beurten van één wedstrijd voor één kant (0/1) en telt op in st
-function stTurns(st,t,side,game,dout){if(!t||!Array.isArray(t.list))return;
+// w: bij 2 tegen 2 alleen de beurten van die speler van het koppel (de score van het koppel loopt wel door)
+function stTurns(st,t,side,game,dout,w){if(!t||!Array.isArray(t.list))return;
   const legs={};for(const x of t.list){if(x&&typeof x.leg==='number')(legs[x.leg]=legs[x.leg]||[]).push(x)}
   for(const lg of Object.keys(legs)){let rem=game,k=0,ld=0;
     for(const x of legs[lg]){if(x.side!==side)continue;
       const before=rem,ds=Array.isArray(x.d)&&x.d.length?x.d:null,dd=x.out&&ds?ds.length:3,sc=x.bust?0:(+x.score||0);
+      if(typeof w==='number'&&x.w!==w){ld+=dd;if(!x.bust)rem-=sc;continue}
       st.n++;st.darts+=dd;st.sum+=sc;ld+=dd;if(k<3){st.f9s+=sc;st.f9d+=dd}k++;
       if(x.bust)st.bust++;
       if(sc===180)st.t180++;else if(sc>=140)st.t140++;else if(sc>=100)st.t100++;else if(sc>=60)st.t60++;
@@ -1711,9 +1746,10 @@ function compStats(){const P=S.comp.players,out=P.map(n=>Object.assign(stBlank()
       const hw=w.h2h[l.name]=w.h2h[l.name]||{w:0,l:0},hl=l.h2h[w.name]=l.h2h[w.name]||{w:0,l:0};hw.w++;hl.l++}});
   return out}
 // Eén wedstrijd (voor de samenvatting na afloop)
-function matchStats(id){const L=live(id),out=[stBlank(),stBlank()];stTurns(out[0],L.t,0,S.game,S.dout);stTurns(out[1],L.t,1,S.game,S.dout);return out}
-function matchSum(id){if(SOLO(id))return'';const M=matchStats(id),L=live(id),ps=[L.o.a,L.o.b];if(!M[0].n&&!M[1].n)return'';
+function matchStats(id){const L=live(id),out=L.ps.map(()=>stBlank());L.ps.forEach((_,i)=>stTurns(out[i],L.t,i,S.game,S.dout));return out}
+function matchSum(id){if(SOLO(id))return'';const M=matchStats(id),L=live(id),ps=L.ps;if(!M.some(m=>m.n))return'';
   const rows=[['Gemiddelde',s=>f1(stAvg(s))],['180',s=>s.t180],['140+',s=>s.t140],['100+',s=>s.t100],['Hoogste beurt',s=>s.hi||'–'],['Hoogste uitgooi',s=>s.hco||'–'],['Uitgooi-%',s=>s.dAtt?Math.round(s.dHit/s.dAtt*100)+'%':'–'],['Beste leg',s=>s.best?s.best+' pijlen':'–']];
+  if(L.n===3)return`<table class="msum m3"><thead><tr><th></th>${ps.map(p=>`<th>${pn(p)}</th>`).join('')}</tr></thead><tbody>${rows.map(([l,f])=>`<tr><th>${l}</th>${M.map(m=>`<td>${f(m)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   return`<table class="msum"><thead><tr><th>${pn(ps[0])}</th><th></th><th>${pn(ps[1])}</th></tr></thead><tbody>${rows.map(([l,f])=>`<tr><td>${f(M[0])}</td><th>${l}</th><td>${f(M[1])}</td></tr>`).join('')}</tbody></table>`}
 let kSp=null; // gekozen speler in de tab Spelers
 // ---------- toernooi-statistieken ----------
@@ -1736,9 +1772,12 @@ const newMid=()=>Math.random().toString(36).slice(2,10).replace(/[^a-z0-9]/g,'x'
 let mSent='',mT=0;
 function matchArchive(){if(!SID||!admin||tv||S.kind!=='single'||S.single.solo)return;const o=getO('X');if(!o||o.win===null)return;
   if(!S.single.mid){S.single.mid=newMid();save()}
-  const out=[stBlank(),stBlank()],t=S.turns.X;if(t&&t.a===0&&t.b===1){stTurns(out[0],t,0,S.game,S.dout);stTurns(out[1],t,1,S.game,S.dout)}
-  out[0].lW=o.sa;out[0].lL=o.sb;out[1].lW=o.sb;out[1].lL=o.sa;
-  const body={mid:S.single.mid,game:S.game,win:o.win,players:[0,1].map(i=>{const n=S.single.names[i]||(i?'Uit':'Thuis'),pr=splFind(n),q={};for(const k of ['n','darts','sum','f9s','f9d','t180','t140','t100','hi','hco','dAtt','dHit','best','wDarts','wLegs','lW','lL'])q[k]=out[i][k];return{n,pid:pr?pr.id:null,s:q}})};
+  const m=XM(),t=S.turns.X,ok=t&&t.a===0&&t.b===1,KEYS=['n','darts','sum','f9s','f9d','t180','t140','t100','hi','hco','dAtt','dHit','best','wDarts','wLegs','lW','lL'];
+  const legs=m==='3'?o.s:[o.sa,o.sb],tot=legs.reduce((a,b)=>a+b,0);
+  const one=(n,side,w)=>{const st=stBlank();if(ok)stTurns(st,t,side,S.game,S.dout,w);st.lW=legs[side];st.lL=tot-legs[side];const pr=splFind(n),q={};for(const k of KEYS)q[k]=st[k];return{n,pid:pr?pr.id:null,t:side,s:q}};
+  const players=m==='2v2'&&Array.isArray(S.single.team)?[one(S.single.team[0][0],0,0),one(S.single.team[0][1],0,1),one(S.single.team[1][0],1,0),one(S.single.team[1][1],1,1)]
+    :(m==='3'?[0,1,2]:[0,1]).map(i=>one(S.single.names[i]||(i?'Uit':'Thuis'),i));
+  const body={mid:S.single.mid,soort:m,game:S.game,win:o.win,legs,players};
   const sig=JSON.stringify(body);if(sig===mSent)return;
   clearTimeout(mT);mT=setTimeout(()=>{fetch(API+'/wedstrijd',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:sig}).then(r=>{if(r.ok)mSent=sig}).catch(()=>{})},1200)}
 // Afgelopen toernooi bewaren op de server (ook na het verlopen van de sessie)
@@ -1775,14 +1814,15 @@ function wedFetch(force){if(!force&&Date.now()-wedAt<20000)return;wedAt=Date.now
   fetch('/api/wedstrijden',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(d&&Array.isArray(d.list)&&d.v!==WED.v){WED={v:+d.v||0,list:d.list};if(tv)renderTV();else if(admin&&!SID&&!openId)render()}}).catch(()=>{if(WED.v<0){WED.v=-2;if(tv)renderTV()}})}
 const pKey=p=>{const pr=p.pid?{id:p.pid}:splFind(p.n);return pr?'p:'+pr.id:'n:'+nk(p.n)};
 function wedStats(){const map=new Map();
-  for(const x of WED.list){if(!x.players||x.players.length!==2)continue;
-    x.players.forEach((p,i)=>{const k=pKey(p);let s=map.get(k);if(!s){s=Object.assign(stBlank(),{name:p.n});map.set(k,s)}s.name=p.n;
+  for(const x of WED.list){const P=x.players||[],so=x.soort||'1v1';if(P.length<2)continue;
+    P.forEach((p,i)=>{const k=pKey(p);let s=map.get(k);if(!s){s=Object.assign(stBlank(),{name:p.n,kind:{}});map.set(k,s)}s.name=p.n;
       const q=p.s||{};for(const f of ['n','darts','sum','f9s','f9d','t180','t140','t100','dAtt','dHit','wDarts','wLegs','lW','lL'])s[f]+=+q[f]||0;
       s.hi=Math.max(s.hi,+q.hi||0);s.hco=Math.max(s.hco,+q.hco||0);if(q.best&&(!s.best||q.best<s.best))s.best=+q.best;
-      const won=x.win===i,o=x.players[1-i].n;if(won)s.mW++;else s.mL++;s.form.push(won?'W':'V');
-      const h=s.h2h[o]=s.h2h[o]||{w:0,l:0};if(won)h.w++;else h.l++})}
+      const side=typeof p.t==='number'?p.t:i,won=x.win===side,kd=s.kind[so]=s.kind[so]||{w:0,l:0};
+      if(won){s.mW++;kd.w++}else{s.mL++;kd.l++}s.form.push(won?'W':'V');
+      if(so==='1v1'&&P.length===2){const o=P[1-i].n,h=s.h2h[o]=s.h2h[o]||{w:0,l:0};if(won)h.w++;else h.l++}})}
   return[...map.values()]}
-const DIS=[['comp','Competitie','Stand, gemiddelden en onderling in de competitie'],['1v1','1 tegen 1','Alle losse wedstrijden tegen elkaar (geen solo)'],['co','Checkout-spel','41 tot 60 uitgooien, per getal'],['tr','Toernooien','Afgelopen toernooien en wie er won']];
+const DIS=[['comp','Competitie','Stand, gemiddelden en onderling in de competitie'],['1v1','Enkele wedstrijden',"1 tegen 1, met z'n drieën en 2 tegen 2 (geen solo)"],['co','Checkout-spel','41 tot 60 uitgooien, per getal'],['tr','Toernooien','Afgelopen toernooien en wie er won']];
 function kStatsData(){const comp=S.kind==='comp'&&S.comp.started;
   return{comp:comp?compStats():[],'1v1':wedStats(),co:Object.entries(SST.list).map(([id,x])=>Object.assign({name:x.n,id},x)),tr:TRN.list}}
 const lstR=(t,rows,fmt,nameOf)=>`<div class="krk"><h3>${t}</h3>${rows.length?`<ol>${rows.slice(0,3).map(e=>`<li><button data-ksp="${esc(nameOf?nameOf(e):e.name)}">${esc(nameOf?nameOf(e):e.name)}</button><b>${fmt(e)}</b></li>`).join('')}</ol>`:'<p class="kempty">Nog niets</p>'}</div>`;
@@ -1801,7 +1841,7 @@ function kSpelers(){
   const back=`<button class="kback" data-kdis="">← Statistieken</button>`,title=DIS.find(d=>d[0]===kDis)[1];
   if(kSp!==null){const det=kSpDis(kDis,D,kSp);if(det)return`<button class="kback" data-ksp="">← ${title}</button>`+det;if(loading)return back+'<p class="kempty">Statistieken laden…</p>';kSp=null}
   if(kDis==='comp'){const A=D.comp;return`${back}<h2 class="tvh2">Competitie</h2><p class="kempty" style="margin:-4px 0 12px">Alleen wedstrijden die met darts gescoord zijn tellen mee</p>${rankX01(A)}${plist(A,s=>s.n?'gem. '+f1(stAvg(s))+' · '+s.mW+'–'+s.mL:'nog geen beurten')}`}
-  if(kDis==='1v1'){const A=D['1v1'];return`${back}<h2 class="tvh2">1 tegen 1</h2><p class="kempty" style="margin:-4px 0 12px">Afgelopen wedstrijden uit vriendensessies · solo telt niet mee</p>${A.length?rankX01(A)+plist(A,s=>(s.mW+s.mL)+' wedstrijden · '+s.mW+'–'+s.mL+(s.n?' · gem. '+f1(stAvg(s)):'')):`<p class="kempty">${loading?'Laden…':'Nog geen afgelopen 1 tegen 1-wedstrijden. Speel er een in een vriendensessie, dan verschijnt hij hier.'}</p>`}`}
+  if(kDis==='1v1'){const A=D['1v1'];return`${back}<h2 class="tvh2">Enkele wedstrijden</h2><p class="kempty" style="margin:-4px 0 12px">1 tegen 1, met z'n drieën en 2 tegen 2 uit vriendensessies · solo telt niet mee</p>${A.length?rankX01(A)+plist(A,s=>(s.mW+s.mL)+' wedstrijden · '+s.mW+'–'+s.mL+(s.n?' · gem. '+f1(stAvg(s)):'')):`<p class="kempty">${loading?'Laden…':'Nog geen afgelopen wedstrijden. Speel er een in een vriendensessie, dan verschijnt hij hier.'}</p>`}`}
   if(kDis==='co'){const O=D.co,byo=(f,v)=>O.filter(f).sort((a,b)=>v(b)-v(a));
     return`${back}<h2 class="tvh2">Checkout-spel</h2><p class="kempty" style="margin:-4px 0 12px">Spelers met een profiel · uitgooi-% over alle getallen van 41 tot 60</p>${O.length?`<div class="krks">${lstR('Gemiddelde score',byo(x=>x.full>0,coAvg),x=>f1(coAvg(x))+' / 20')}${lstR('Uitgooi-%',byo(x=>coTot(x).t>=20,x=>{const q=coTot(x);return q.h/q.t}),x=>{const q=coTot(x);return Math.round(q.h/q.t*100)+'%'})}${lstR('Beste score',byo(x=>x.best>0,x=>x.best),x=>x.best+' / 20')}${lstR('Meeste spellen',byo(x=>x.g>0,x=>x.g),x=>x.g)}</div>`+plist(O,x=>x.g+' gespeeld · beste '+x.best+' / 20'):`<p class="kempty">${loading?'Laden…':'Nog geen statistieken. Speel het checkout-spel met een profiel.'}</p>`}`}
   // toernooien
@@ -1820,8 +1860,8 @@ function kSpDis(dis,D,name){const f=L=>L.find(x=>nk(x.name)===nk(name));let body
   return`<h2 class="tvh2">${esc(nm)}</h2><p class="kempty" style="margin:-4px 0 12px">${pr?'Spelersprofiel':'Gast'}</p>${body}${also?`<h3 class="kh">Ook van ${esc(nm)}</h3><div class="kalso">${also}</div>`:''}`}
 function kSpComp(s,ctx){const pct=s.dAtt?Math.round(s.dHit/s.dAtt*100)+'%':'–',dbl=Object.entries(s.dbl).sort((a,b)=>b[1]-a[1])[0];
   const pos=ctx==='1v1'?0:cStand().findIndex(x=>x.n===s.name)+1,h2h=Object.entries(s.h2h).sort((a,b)=>a[0].localeCompare(b[0]));
-  return`<p class="kempty" style="margin:0 0 12px">${ctx==='1v1'?'1 tegen 1 · '+(s.mW+s.mL)+' wedstrijden':'Competitie'+(pos?' · '+pos+'e in de stand':'')}</p>
-   <div class="ksts">${tile('Gemiddelde',f1(stAvg(s)),'per beurt van 3 pijlen')}${tile('Eerste 9',f1(s.f9d?s.f9s/s.f9d*3:0),'gem. eerste 3 beurten')}${tile('180',s.t180)}${tile('140+',s.t140)}${tile('100+',s.t100)}${tile('Hoogste beurt',s.hi||'–')}${tile('Hoogste uitgooi',s.hco||'–')}${tile('Uitgooi-%',pct,s.dAtt?s.dHit+' van '+s.dAtt+' pijlen op een dubbel':'')}${tile('Beste leg',s.best?s.best:'–',s.best?'pijlen':'')}${tile('Pijlen per leg',s.wLegs?f1(s.wDarts/s.wLegs):'–','gemiddeld, gewonnen legs')}${tile('Wedstrijden',s.mW+' – '+s.mL,'gewonnen – verloren')}${tile('Legs',s.lW+' – '+s.lL,'voor – tegen')}${ctx==='1v1'?'':tile('Favoriete dubbel',dbl?esc(dbl[0]):'–',dbl?dbl[1]+'× uitgegooid':'')}${tile('Beurten',s.n,s.bust?s.bust+'× bust':'')}</div>
+  return`<p class="kempty" style="margin:0 0 12px">${ctx==='1v1'?'Enkele wedstrijden · '+(s.mW+s.mL)+' gespeeld':'Competitie'+(pos?' · '+pos+'e in de stand':'')}</p>
+   <div class="ksts">${tile('Gemiddelde',f1(stAvg(s)),'per beurt van 3 pijlen')}${tile('Eerste 9',f1(s.f9d?s.f9s/s.f9d*3:0),'gem. eerste 3 beurten')}${tile('180',s.t180)}${tile('140+',s.t140)}${tile('100+',s.t100)}${tile('Hoogste beurt',s.hi||'–')}${tile('Hoogste uitgooi',s.hco||'–')}${tile('Uitgooi-%',pct,s.dAtt?s.dHit+' van '+s.dAtt+' pijlen op een dubbel':'')}${tile('Beste leg',s.best?s.best:'–',s.best?'pijlen':'')}${tile('Pijlen per leg',s.wLegs?f1(s.wDarts/s.wLegs):'–','gemiddeld, gewonnen legs')}${ctx==='1v1'&&s.kind?['1v1','3','2v2'].filter(k=>s.kind[k]).map(k=>tile(XML[k],s.kind[k].w+' – '+s.kind[k].l,'gewonnen – verloren')).join(''):tile('Wedstrijden',s.mW+' – '+s.mL,'gewonnen – verloren')}${tile('Legs',s.lW+' – '+s.lL,'voor – tegen')}${ctx==='1v1'?'':tile('Favoriete dubbel',dbl?esc(dbl[0]):'–',dbl?dbl[1]+'× uitgegooid':'')}${tile('Beurten',s.n,s.bust?s.bust+'× bust':'')}</div>
    <h3 class="kh">Vorm</h3>${s.form.length?`<div class="kform">${s.form.slice(-5).map(x=>`<span class="${x==='W'?'w':'v'}">${x}</span>`).join('')}</div>`:'<p class="kempty">Nog geen wedstrijden gespeeld</p>'}
    <h3 class="kh">Onderling</h3>${h2h.length?`<ul class="kh2h">${h2h.map(([n,r])=>`<li><span>${esc(n)}</span><b>${r.w} – ${r.l}</b><em>${r.w>r.l?'voor':r.w<r.l?'achter':'gelijk'}</em></li>`).join('')}</ul>`:'<p class="kempty">Nog niet tegen iemand gespeeld</p>'}`}
 function kSpCo(x){const q=coTot(x),fin=Object.entries(x.fin||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
@@ -1856,7 +1896,8 @@ function setWatch(x){
   kijkTab='live';renderTV();try{document.getElementById('tv').scrollTop=0}catch(e){}}
 function liveSum(){
   if(openId){const L=live(openId),o=L.o;if(!o)return null;
-    const t=SOLO(openId)?'Solo':openId==='X'?'1 tegen 1':isC(openId)?'Competitie':'Toernooi';
+    const t=openId==='X'?XML[XM()]:isC(openId)?'Competitie':'Toernooi';
+    if(L.n===3)return{t,a:S.single.names.slice(0,3).join(' · '),b:'',sc:legsTxt(L).replace(/ /g,'')};
     return{t,a:String(sideName(L,0)||''),b:SOLO(openId)?'':String(sideName(L,1)||''),sc:SOLO(openId)?String(L.rem[0])+' over':L.r.sa+'–'+L.r.sb}}
   if(S.kind==='spel'&&S.spel&&S.spel.on){const p=SP();return{t:'Checkout-spel',a:spN(0),b:p.n===2?spN(1):'',sc:p.hits[0]+(p.n===2?'–'+p.hits[1]:'')+' pnt'}}
   return null}
@@ -1881,19 +1922,19 @@ function tvTable(T){
   return`<table class="tbl tvtb"><thead><tr><th>#</th><th class="tn">Speler</th><th>G</th><th>W</th><th>V</th><th>Legs</th><th>+/−</th><th>Pnt</th></tr></thead><tbody>${T.map((r,i)=>{const d=r.lf-r.la;return`<tr><td><span class="rk${i===0&&r.pt>0?' one':''}">${i+1}</span></td><td class="tn">${esc(r.n)}</td><td>${r.g}</td><td>${r.w}</td><td>${r.l}</td><td>${r.lf}–${r.la}</td><td>${d>0?'+'+d:d}</td><td class="pt">${r.pt}</td></tr>`}).join('')}</tbody></table>`;
 }
 function tvMatch(){
-  const L=live(openId),o=L.o,done=o.win!==null,ps=[o.a,o.b],bo=openId==='X'?S.single.bo:isC(openId)?5:openId==='F'?S.boF:S.bo;
+  const L=live(openId),o=L.o,done=o.win!==null,ps=L.ps,bo=openId==='X'?S.single.bo:isC(openId)?5:openId==='F'?S.boF:S.bo;
   const dsum=darts.reduce((q,x)=>q+x.v,0),rem=L.rem.slice();if(!done)rem[L.cur]-=dsum;
   let nmR=openId;
-  if(SOLO(openId))nmR='Solo';else if(openId==='X')nmR='1 tegen 1';else if(isC(openId)){const m=cMatches()[+openId.slice(1)];nmR='Competitie · ronde '+(m?m.rd:'')}
+  if(SOLO(openId))nmR='Solo';else if(openId==='X')nmR=XML[XM()];else if(isC(openId)){const m=cMatches()[+openId.slice(1)];nmR='Competitie · ronde '+(m?m.rd:'')}
   else if(openId==='F')nmR='Finale';else if(B&&B.M[openId]){const m=B.M[openId];nmR=roundName(m.br,m.r,(m.br==='W'?B.W:B.L).length)}
   const ctx=`${nmR} · ${SOLO(openId)?bo+(bo>1?' legs':' leg'):'best of '+bo+' legs'} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'}`;
-  const side=i=>{const on=!done&&!L.bull&&L.cur===i,won=done&&o.win===ps[i],legs=i?L.r.sb:L.r.sa,ck=on?checkout(rem[i],3-darts.length):'';
-    return`<div class="tvp${on?' on':''}${won?' won':''}"><div class="tvn">${pn(ps[i])}</div><div class="tvl">LEGS <b>${legs}</b></div><div class="tvr">${rem[i]}</div><div class="tvck">${won?(SOLO(openId)?'KLAAR':'WINNAAR'):ck?'UIT: '+ck:on?'AAN DE BEURT':'&nbsp;'}</div><div class="tvst"><span><small>GEMIDDELD</small>${L.st[i].avg}</span><span><small>LAATSTE</small>${L.st[i].last}</span></div></div>`};
+  const side=i=>{const on=!done&&!L.bull&&L.cur===i,won=done&&o.win===ps[i],legs=legsOf(L.r,i),ck=on?checkout(rem[i],3-darts.length):'';
+    return`<div class="tvp${on?' on':''}${won?' won':''}"><div class="tvn">${pn(ps[i])}</div>${KOP(openId)?`<div class="tvkop">${S.single.team[i].map((n,j)=>`<span class="${!done&&!L.bull&&thrW(L,i)===j?'nu':''}">${esc(n)}</span>`).join('')}</div>`:''}<div class="tvl">LEGS <b>${legs}</b></div><div class="tvr">${rem[i]}</div><div class="tvck">${won?(SOLO(openId)?'KLAAR':'WINNAAR'):ck?'UIT: '+ck:on?'AAN DE BEURT':'&nbsp;'}</div><div class="tvst"><span><small>GEMIDDELD</small>${L.st[i].avg}</span><span><small>LAATSTE</small>${L.st[i].last}</span></div></div>`};
   const nx=monLocal&&done?nextMatch():null;
-  const turn=done?`<div class="tvd"><b>${SOLO(openId)?pn(0)+' is klaar · gemiddelde '+L.st[0].avg:pn(o.win)+' wint met '+Math.max(L.r.sa,L.r.sb)+' – '+Math.min(L.r.sa,L.r.sb)}</b>${monLocal?`<div class="tvact">${openId==='X'?`<button class="pri" data-a="rematch">${SOLO(openId)?'Nog een keer':'Nog een wedstrijd'}</button>`:nx?`<button class="pri" data-a="monnext" data-id="${nx}">Volgende wedstrijd</button>`:''}<button data-a="undo">Laatste beurt terug</button><button data-a="monklaar">Klaar</button></div>`:''}</div>`
-    :L.bull?`<div class="tvd tvbull"><small>Eerst bullen</small><b>Wie gooit het dichtst bij de bull?</b>${monLocal?`<div class="tvact"><button class="pri" data-bull="0">${pn(ps[0])}</button><button class="pri" data-bull="1">${pn(ps[1])}</button><button data-bull="0" data-skip="1">Overslaan</button></div>`:''}</div>`
-    :`<div class="tvd"><small>${pn(ps[L.cur])} gooit · leg ${L.leg+1}</small>${S.inmode==='pijl'?`<div class="tvsl">${[0,1,2].map(i=>monLocal?`<button data-a="monedit" data-i="${i}" class="${darts[i]?'f':''}">${darts[i]?esc(darts[i].lab):''}</button>`:`<span class="${darts[i]?'f':''}">${darts[i]?esc(darts[i].lab):''}</span>`).join('')}</div><b>${dsum?'Deze beurt '+dsum:''}</b>`:''}</div>`;
-  const hist=L.lt.slice(-8).reverse().map(x=>`<li><span>${pn(ps[x.side])}</span><b>${x.bust?'BUST':x.score}</b></li>`).join('');
+  const turn=done?`<div class="tvd"><b>${SOLO(openId)?pn(0)+' is klaar · gemiddelde '+L.st[0].avg:pn(o.win)+' wint met '+(L.n===3?legsTxt(L):Math.max(L.r.sa,L.r.sb)+' – '+Math.min(L.r.sa,L.r.sb))}</b>${monLocal?`<div class="tvact">${openId==='X'?`<button class="pri" data-a="rematch">${SOLO(openId)?'Nog een keer':'Nog een wedstrijd'}</button>`:nx?`<button class="pri" data-a="monnext" data-id="${nx}">Volgende wedstrijd</button>`:''}<button data-a="undo">Laatste beurt terug</button><button data-a="monklaar">Klaar</button></div>`:''}</div>`
+    :L.bull?`<div class="tvd tvbull"><small>Eerst bullen</small><b>Wie gooit het dichtst bij de bull?</b>${monLocal?`<div class="tvact">${ps.map((p,i)=>`<button class="pri" data-bull="${i}">${pn(p)}</button>`).join('')}<button data-bull="0" data-skip="1">Overslaan</button></div>`:''}</div>`
+    :`<div class="tvd"><small>${esc(thrName(L,L.cur)||'')} gooit · leg ${L.leg+1}</small>${S.inmode==='pijl'?`<div class="tvsl">${[0,1,2].map(i=>monLocal?`<button data-a="monedit" data-i="${i}" class="${darts[i]?'f':''}">${darts[i]?esc(darts[i].lab):''}</button>`:`<span class="${darts[i]?'f':''}">${darts[i]?esc(darts[i].lab):''}</span>`).join('')}</div><b>${dsum?'Deze beurt '+dsum:''}</b>`:''}</div>`;
+  const hist=L.lt.slice(-8).reverse().map(x=>`<li><span>${turnName(x)?esc(turnName(x)):pn(ps[x.side])}</span><b>${x.bust?'BUST':x.score}</b></li>`).join('');
   // dartbord: de pijlen van deze beurt. Is de beurt net klaar, dan blijft hij nog even helder staan
   // (zodat de laatste pijl netjes invliegt) en vervaagt daarna tot de volgende speler gooit.
   const nT=L.t.list.length,lastT=nT?L.t.list[nT-1]:null;
@@ -1903,7 +1944,7 @@ function tvMatch(){
     if(age<2600){clearTimeout(boardT);boardT=setTimeout(renderTV,2650-age)}else fade=true}
   const tap=monLocal&&!done&&!L.bull&&S.inmode==='pijl'&&(darts.length<3||edit!==null);
   const board=`<div class="tvbw">${boardSvg(bd,fade,bk,tap)}${monLocal&&!done&&!L.bull?(S.inmode==='pijl'?`<p class="tvtap">${edit!==null?'Tik op het bord voor de juiste waarde van pijl '+(edit+1):'Tik op het bord waar je pijl zit'}</p><div class="tvact"><button data-n="0"${tap?'':' disabled'}>Mis</button><button data-a="undo">⌫ Pijl terug</button></div>`:`<p class="tvtap">Invoer staat op Per beurt</p><div class="tvact"><button class="pri" data-mode="pijl">Tikken op het bord</button></div>`):''}</div>`;
-  const main=`<div class="tvm2${SOLO(openId)?' solo':''}${board?' wb':''}">${side(0)}${board}${SOLO(openId)?'':side(1)}${turn}</div>${hist?`<ul class="tvh">${hist}</ul>`:''}`;
+  const main=L.n===3?`<div class="tvm2 n3 wb">${side(0)}${side(1)}${side(2)}${board}${turn}</div>`:`<div class="tvm2${SOLO(openId)?' solo':''}${board?' wb':''}">${side(0)}${board}${SOLO(openId)?'':side(1)}${turn}</div>${hist?`<ul class="tvh">${hist}</ul>`:''}`;
   if(!isC(openId)||!S.comp.started)return{ctx,html:main};
   const T=cStand();
   return{ctx,html:`<div class="tvsp"><div class="tvmn">${main}</div><aside class="tvsd"><h3>Live stand</h3><table class="tvmini"><thead><tr><th>#</th><th class="tn">SPELER</th><th>W</th><th>+/−</th><th>PNT</th></tr></thead><tbody>${T.map((r,i)=>{const d=r.lf-r.la;return`<tr class="${ps.includes(r.i)?'me':''}"><td>${i+1}</td><td class="tn">${esc(r.n)}</td><td>${r.w}</td><td>${d>0?'+'+d:d}</td><td class="pt">${r.pt}</td></tr>`}).join('')}</tbody></table><p class="tvsdn"><i></i>speelt nu</p></aside></div>`};
