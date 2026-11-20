@@ -120,6 +120,11 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 - **Met z'n drieën**: ieder voor zich, om de beurt; wie als eerste uit is wint de leg.
 - **2 tegen 2**: twee koppels, één score per koppel. Volgorde: koppel 1 speler 1, koppel 2 speler 1, koppel 1 speler 2, koppel 2 speler 2. Wie er gooit staat geel bij het koppel. Elke leg begint de andere speler van het koppel.
 
+## Competitie downloaden
+
+- In /beheer onder de stand: **Competitie downloaden (PDF)**. Je ziet een overzicht met stand, hoogtepunten, statistieken per speler en alle uitslagen per ronde. Tik op **Opslaan als PDF** en kies bij printer "Opslaan als PDF".
+- **Nieuwe competitie** waarschuwt eerst dat de huidige competitie verdwijnt, met de knop **Eerst downloaden (PDF)**.
+
 ## Statistieken
 
 - Via de startpagina (**Statistieken**) of Live kijken → tab **Statistieken**: kies eerst een onderdeel (**Competitie**, **1 tegen 1**, **Checkout-spel**, **Toernooien**), dan een speler, dan zie je de scores. Onderaan staat waar die speler nog meer in voorkomt.

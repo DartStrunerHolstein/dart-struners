@@ -261,6 +261,18 @@ body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
 .pkop,.tvkop{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 8px;margin:2px 0 4px;font-size:13px;opacity:.75}.pkop .nu,.tvkop .nu{opacity:1;color:var(--hl);font-weight:800}.tvkop{font-size:clamp(12px,1.4vw,24px)}
 .tvm2.wb.n3{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto minmax(0,1fr) auto}#tv .tvm2.n3 .tvp{order:0}#tv .tvm2.n3 .tvbw{grid-column:1/-1;grid-row:2;order:0}#tv .tvm2.n3 .tvd{grid-column:1/-1;grid-row:3;order:0}#tv .tvm2.n3 .tvr{font-size:min(6vw,9vh);margin:0}#tv .tvm2.n3 .tvp{padding:1.2vh 1vw}#tv .tvm2.n3 .tvn{font-size:clamp(14px,min(2vw,3.6vh),44px)}#tv .tvm2.n3 .tvst{margin-top:.6vh}#tv .tvm2.n3 .tvtap{margin-top:4px}#tv .tvm2.n3 .tvact{margin-top:6px}#tv .tvm2.n3 .tvboard{width:min(60vw,38vh)}
 @media (max-width:760px),(max-aspect-ratio:1/1){#tv .tvm2.wb.n3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}#tv .tvm2.n3 .tvr{font-size:min(11vw,8vh)}#tv .tvm2.n3 .tvp{padding:8px 4px}#tv .tvm2.n3 .tvst{display:none}#tv .tvm2.n3 .tvn{font-size:15px}#tv .tvm2.n3 .tvboard{width:min(90vw,46vh)}}
+#rpt{position:fixed;inset:0;z-index:300;overflow:auto;background:#e9e4e7;-webkit-overflow-scrolling:touch}#rpt[hidden]{display:none}
+.rpbar{position:sticky;top:0;z-index:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:#1a0512;color:#fff}.rpbar span{font-size:13px;opacity:.85;flex:1 1 260px}
+.rpdoc{max-width:860px;margin:16px auto 40px;background:#fff;color:#1a1a1a;padding:32px 36px;border-radius:6px;box-shadow:0 6px 30px rgba(0,0,0,.15);font:14px/1.45 Inter,Arial,sans-serif}
+.rpdoc h1{font:700 30px Anton,Impact,sans-serif;letter-spacing:.02em;margin:0;color:#1a0512;text-transform:uppercase}.rpdoc h2{font-size:17px;margin:26px 0 8px;color:#c2185b;border-bottom:2px solid #f3c6da;padding-bottom:4px}.rpdoc h3{font-size:13px;margin:0 0 4px;color:#555}
+.rph{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;border-bottom:3px solid #ff2d8a;padding-bottom:12px}.rph small{color:#c2185b;font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:11px}.rph p{margin:4px 0 0;color:#555;font-size:12.5px}
+.rpk{text-align:right;flex:none}.rpk small{display:block}.rpk b{font-size:22px;color:#1a0512}
+.rpt{width:100%;border-collapse:collapse;font-size:13.5px}.rpt th,.rpt td{padding:5px 6px;text-align:center;border-bottom:1px solid #eee}.rpt th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#777;border-bottom:1.5px solid #ccc}.rpt .l{text-align:left}.rpt .r{text-align:right}.rpt.sm{font-size:12.5px}.rpt .w{font-weight:800}.rpt .rpsc{white-space:nowrap;font-weight:700;width:70px;text-align:center}.rpsw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rphl{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.rphl div{border:1px solid #eee;border-radius:8px;padding:8px 10px}.rphl small{display:block;font-size:10.5px;color:#777;text-transform:uppercase;letter-spacing:.04em}.rphl b{display:block;font-size:20px}.rphl span{font-size:12.5px;color:#333}
+.rpn{margin:-2px 0 8px;color:#777;font-size:12px}.rpr{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 18px}.rprd{break-inside:avoid}.rpf{margin-top:26px;color:#999;font-size:11px;text-align:center}
+@media(max-width:640px){.rpdoc{padding:18px 14px;margin:8px}.rphl{grid-template-columns:repeat(2,1fr)}.rpr{grid-template-columns:1fr}.rpt.sm{font-size:11.5px}.rpdoc{overflow-x:auto}}
+.btn.danger{background:#b3261e;border-color:#b3261e;color:#fff}
+@media print{@page{size:A4;margin:12mm}.rpsw{overflow:visible}.rpsw table{min-width:0!important}body.rpopen>*:not(#rpt){display:none!important}body.rpopen{background:#fff!important}#rpt{position:static;overflow:visible;background:#fff}.rpbar{display:none}.rpdoc{box-shadow:none;margin:0;max-width:none;padding:0;border-radius:0}.rpt tr,.rphl div{break-inside:avoid}h2{break-after:avoid}}
 .kform{display:flex;gap:6px}.kform span{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:700 15px Inter,sans-serif}.kform .w{background:#1f9d55;color:#fff}.kform .v{background:rgba(255,255,255,.12);color:#fff}
 .msum{width:100%;max-width:420px;margin:12px auto 4px;border-collapse:collapse;font-size:14px}.msum th,.msum td{padding:5px 6px;text-align:center}.msum tbody th{font-weight:600;opacity:.7;font-size:12px;text-transform:uppercase;letter-spacing:.04em}.msum thead th{font-weight:800}.msum tbody tr+tr{border-top:1px solid rgba(255,255,255,.12)}
 .hfoot{margin:24px 0 0}.hfoot a{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-weight:700;text-decoration:none}.hfoot svg{width:18px;height:18px}
@@ -1272,6 +1284,28 @@ function cStand(){
     h.g++;u.g++;h.lf+=o.sa;h.la+=o.sb;u.lf+=o.sb;u.la+=o.sa;const W=o.win===m.h?h:u,Lo=o.win===m.h?u:h;W.w++;W.pt+=2;Lo.l++});
   return T.sort((a,b)=>b.pt-a.pt||(b.lf-b.la)-(a.lf-a.la)||b.lf-a.lf||a.n.localeCompare(b.n));
 }
+// ---------- competitie downloaden als PDF (via afdrukken → Opslaan als PDF) ----------
+function compReport(){const A=compStats(),T=cStand(),M=cMatches(),P=S.comp.players,dt=new Date();
+  const done=M.filter((m,k)=>getO('C'+k).win!==null).length,klaar=M.length>0&&done===M.length;
+  const by=(f,v,asc)=>A.filter(f).sort((a,b)=>asc?v(a)-v(b):v(b)-v(a))[0];
+  const hl=[['Hoogste gemiddelde',by(s=>s.darts>=9,stAvg),s=>f1(stAvg(s))],["Meeste 180's",by(s=>s.t180>0,s=>s.t180),s=>s.t180],['Hoogste uitgooi',by(s=>s.hco>0,s=>s.hco),s=>s.hco],['Beste leg',by(s=>s.best>0,s=>s.best,1),s=>s.best+' pijlen']].filter(x=>x[1]);
+  const rounds={};M.forEach((m,k)=>{(rounds[m.rd]=rounds[m.rd]||[]).push([m,k])});
+  const pct=s=>s.dAtt?Math.round(s.dHit/s.dAtt*100)+'%':'–';
+  return`<header class="rph"><div><small>De Dart Struners</small><h1>Competitie</h1><p>Gedownload op ${dt.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'} · best of 5 legs · ${done} van ${M.length} wedstrijden gespeeld</p></div>${T.length?`<div class="rpk"><small>${klaar?'Kampioen':'Koploper'}</small><b>${esc(T[0].n)}</b></div>`:''}</header>
+  <h2>Stand</h2><table class="rpt"><thead><tr><th>#</th><th class="l">Speler</th><th>G</th><th>W</th><th>V</th><th>Legs</th><th>Saldo</th><th>Punten</th></tr></thead><tbody>${T.map((r,i)=>`<tr><td>${i+1}</td><td class="l">${esc(r.n)}</td><td>${r.g}</td><td>${r.w}</td><td>${r.l}</td><td>${r.lf}–${r.la}</td><td>${r.lf-r.la>0?'+':''}${r.lf-r.la}</td><td><b>${r.pt}</b></td></tr>`).join('')}</tbody></table>
+  ${hl.length?`<h2>Hoogtepunten</h2><div class="rphl">${hl.map(([l,s,f])=>`<div><small>${l}</small><b>${f(s)}</b><span>${esc(s.name)}</span></div>`).join('')}</div>`:''}
+  <h2>Statistieken per speler</h2><p class="rpn">Alleen wedstrijden die met darts gescoord zijn tellen mee voor gemiddelde, 180's en uitgooien.</p>
+  <div class="rpsw"><table class="rpt sm" style="min-width:640px"><thead><tr><th class="l">Speler</th><th>Gem.</th><th>Eerste 9</th><th>180</th><th>140+</th><th>100+</th><th>Hoogste beurt</th><th>Hoogste uit</th><th>Uit-%</th><th>Beste leg</th><th>Pijlen/leg</th><th>W–V</th></tr></thead><tbody>${A.slice().sort((a,b)=>stAvg(b)-stAvg(a)).map(s=>`<tr><td class="l">${esc(s.name)}</td><td>${s.n?f1(stAvg(s)):'–'}</td><td>${s.f9d?f1(s.f9s/s.f9d*3):'–'}</td><td>${s.t180}</td><td>${s.t140}</td><td>${s.t100}</td><td>${s.hi||'–'}</td><td>${s.hco||'–'}</td><td>${pct(s)}</td><td>${s.best||'–'}</td><td>${s.wLegs?f1(s.wDarts/s.wLegs):'–'}</td><td>${s.mW}–${s.mL}</td></tr>`).join('')}</tbody></table></div>
+  <h2>Uitslagen</h2><div class="rpr">${Object.keys(rounds).map(rd=>`<div class="rprd"><h3>Ronde ${rd}</h3><table class="rpt sm">${rounds[rd].map(([m,k])=>{const o=getO('C'+k),d=o.win!==null;return`<tr><td class="l${d&&o.win===m.h?' w':''}">${esc(P[m.h])}</td><td class="rpsc">${d||o.sa||o.sb?o.sa+' – '+o.sb:'–'}</td><td class="r${d&&o.win===m.u?' w':''}">${esc(P[m.u])}</td></tr>`}).join('')}</table></div>`).join('')}</div>
+  <footer class="rpf">De Dart Struners · dartstruners.alwaysdata.net</footer>`}
+let rpTitle='';
+function openReport(){let el=document.getElementById('rpt');
+  if(!el){el=document.createElement('div');el.id='rpt';document.body.appendChild(el);
+    el.addEventListener('click',e=>{const b=e.target.closest('[data-rp]');if(!b)return;
+      if(b.dataset.rp==='print'){rpTitle=document.title;document.title='Competitie De Dart Struners '+new Date().toISOString().slice(0,10);try{window.print()}catch(_){}setTimeout(()=>{document.title=rpTitle},1500)}
+      else{el.hidden=true;document.body.classList.remove('rpopen')}})}
+  el.innerHTML=`<div class="rpbar"><button class="btn pri" data-rp="print">Opslaan als PDF</button><button class="btn" data-rp="close">Sluiten</button><span>Kies in het printvenster bij printer: <b>Opslaan als PDF</b>. Op iPhone: deel-knop → Opslaan in Bestanden.</span></div><article class="rpdoc">${compReport()}</article>`;
+  el.hidden=false;document.body.classList.add('rpopen');el.scrollTop=0}
 function cCard(id,m){
   const o=getO(id),done=o.win!==null,P=S.comp.players;
   const side=(p,sc,k)=>`<div class="pr ${done?(o.win===p?'win':'lose'):''}"><span class="nm">${esc(P[p])}<span class="hu">${k==='sa'?'thuis':'uit'}</span></span><button data-cm="${id}" data-k="${k}" data-d="-1" aria-label="Leg eraf">−</button><b>${sc}</b><button data-cm="${id}" data-k="${k}" data-d="1" aria-label="Leg erbij">+</button></div>`;
@@ -1300,7 +1334,7 @@ function vComp(){
     h+=`<h2>Wedstrijden</h2><p class="stat">${done} van ${M.length} gespeeld · eerst de heenronde, daarna de terugwedstrijden</p>`+
       Object.keys(rounds).map(r=>`<h3 class="rd">Ronde ${r}${r===next?' · nu aan de beurt':''}</h3><div class="grid" style="margin-bottom:8px">${rounds[r].map(k=>cCard('C'+k,M[k])).join('')}</div>`).join('');
   }
-  h+=`<div class="set" style="margin-top:20px">${gameSel()}</div>`+(!ADM()?'':cConf?`<div class="conf"><p style="margin:0 0 10px">Alle uitslagen van de competitie worden gewist. De spelers blijven staan.</p><div class="row"><button class="btn pri" data-a="creset">Ja, opnieuw beginnen</button><button class="btn" data-a="cno">Annuleren</button></div></div>`:`<button class="btn" data-a="cask">Nieuwe competitie</button>`);
+  h+=`<div class="set" style="margin-top:20px">${gameSel()}</div>`+(!ADM()?'':cConf?`<div class="conf"><p style="margin:0 0 6px"><b>Let op: de huidige competitie verdwijnt.</b></p><p style="margin:0 0 10px">De stand, alle uitslagen en de competitie-statistieken worden gewist en zijn daarna niet meer terug te halen. De spelers blijven staan. Download de gegevens eerst als je ze wilt bewaren.</p><div class="row"><button class="btn pri" data-a="crpt">Eerst downloaden (PDF)</button><button class="btn danger" data-a="creset">Verwijderen en opnieuw beginnen</button><button class="btn" data-a="cno">Annuleren</button></div></div>`:`<div class="row"><button class="btn" data-a="crpt">Competitie downloaden (PDF)</button><button class="btn" data-a="cask">Nieuwe competitie</button></div>`);
   return tg+h;
 }
 let publicUrl=null;
@@ -1583,6 +1617,7 @@ document.addEventListener('click',e=>{
   if(a==='cstart'){const p=S.comp.players;if(S.lot)for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]]}clearC();S.comp.started=true;ctab='wedstrijden';save();render();window.scrollTo(0,0)}
   if(a==='cask'){cConf=true;render()}
   if(a==='cno'){cConf=false;render()}
+  if(a==='crpt'){openReport();return}
   if(a==='creset'){clearC();S.comp.started=false;cConf=false;save();render()}
   if(a==='reset'){S.started=false;S.results=keepC(S.results);S.turns=keepC(S.turns);S.seeds=[];confirmReset=false;save();tab='spelers';render()}
 });
