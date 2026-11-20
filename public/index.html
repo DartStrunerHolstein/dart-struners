@@ -669,7 +669,7 @@ let openId=null,buf='',msg='',darts=[],mod=1,edit=null;
 const DBL=[20,16,18,12,10,8,19,17,14,15,13,11,9,7,6,5,4,3,2,1];
 const ALL=(()=>{const a=[];for(let i=20;i>=1;i--)a.push(['T'+i,3*i]);a.push(['Bull',50],['25',25]);for(let i=20;i>=1;i--)a.push([''+i,i]);return a})();
 // Opzetpijlen: geen T1–T6 of dubbels als dezelfde score ook met een enkele (makkelijkere) pijl kan
-const SETUP=(()=>{const a=[];for(let i=20;i>=7;i--)a.push(['T'+i,3*i]);a.push(['Bull',50],['25',25]);for(let i=20;i>=1;i--)a.push([''+i,i]);return a})();
+const SETUP=(()=>{const a=[];for(let i=20;i>=7;i--)a.push(['T'+i,3*i]);a.push(['Bull',50],['25',25]);for(let i=20;i>=1;i--)a.push(['S'+i,i]);return a})();
 const SETP=SETUP.filter(([l,v])=>!(l[0]==='T'&&v<45)); // eerst de gebruikelijke: T20–T15, bull, 25 en enkele
 const LAST=()=>S.dout?[...DBL.map(d=>['D'+d,2*d]),['Bull',50]]:SETUP;
 function checkout(rem,n=3){
@@ -1211,7 +1211,7 @@ function routes(t,left){
   const fin=SEGS.filter(x=>S.dout?x.d:1),fp=l=>{const i=FPREF.indexOf(l);return i<0?30:i},out=[];
   fin.filter(f=>f.v===t).forEach(f=>out.push({r:[f.l],k:fp(f.l)-100}));
   if(left>1)SEGS.filter(a=>!(a.t>0&&a.t<3&&a.v<=20)).forEach(a=>fin.forEach(f=>{if(a.v+f.v===t)out.push({r:[a.l,f.l],k:a.t*25+fp(f.l)})}));
-  const seen=new Set();return out.sort((x,y)=>x.k-y.k).filter(x=>{const k=x.r.join(' ');if(seen.has(k))return false;seen.add(k);return true}).map(x=>x.r)}
+  const seen=new Set(),sl=l=>/^\d+$/.test(l)&&l!=='25'?'S'+l:l;return out.sort((x,y)=>x.k-y.k).filter(x=>{const k=x.r.join(' ');if(seen.has(k))return false;seen.add(k);return true}).map(x=>x.r.map(sl))}
 const SP=()=>{if(!S.spel||typeof S.spel!=='object')S.spel=DEF().spel;const p=S.spel,d=DEF().spel;for(const k in d)if(!(k in p))p[k]=d[k];if(!Array.isArray(p.darts))p.darts=[];if(!Array.isArray(p.hist))p.hist=[];if(!Array.isArray(p.hits))p.hits=[0,0];if(!Array.isArray(p.tries))p.tries=[0,0];if(!Array.isArray(p.names))p.names=['',''];return p};
 const spN=i=>{const p=SP(),n=String(p.names[i]||'').trim();return n||(p.n===2?'Speler '+(i+1):'Jij')};
 let spMod=1,spHidden=false,spConf=false;
