@@ -120,6 +120,12 @@ Op de meekijkpagina kunnen kijkers chatten met alleen een naam. Nieuwe berichten
 - **Met z'n drieën**: ieder voor zich, om de beurt; wie als eerste uit is wint de leg.
 - **2 tegen 2**: twee koppels, één score per koppel. Volgorde: koppel 1 speler 1, koppel 2 speler 1, koppel 1 speler 2, koppel 2 speler 2. Wie er gooit staat geel bij het koppel. Elke leg begint de andere speler van het koppel.
 
+## Dubbels op maat
+
+- De app telt per speler hoe vaak hij op elke dubbel gooit en raakt (competitie, enkele wedstrijden, toernooien en checkout-spel; alleen als er per pijl of met de camera wordt ingevuld).
+- Bij Statistieken → speler staat onder **Dubbels** zijn raak-% per dubbel.
+- Vanaf 20 pijlen op dubbels kiest de uitgooitip routes die op zijn beste dubbels eindigen (met evenveel pijlen). Een ★ achter de tip betekent: aangepast aan deze speler.
+
 ## Competitie downloaden
 
 - In /beheer onder de stand: **Competitie downloaden (PDF)**. Je ziet een overzicht met stand, hoogtepunten, statistieken per speler en alle uitslagen per ronde. Tik op **Opslaan als PDF** en kies bij printer "Opslaan als PDF".

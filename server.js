@@ -130,7 +130,23 @@ function persistSst() {
     });
   }, 300);
 }
-// det = [{t: 41..60, ok: 0/1, d: pijlen, f: laatste pijl}]
+// ---------- dubbels per speler: hoe vaak gegooid op een dubbel en hoe vaak raak ----------
+// Een pijl telt als "op een dubbel" als de rest op dat moment met één dubbel uit te gooien is (2–40 even, of 50 = bull)
+const DDK = /^(D([1-9]|1[0-9]|20)|Bull)$/;
+const labVal = l => { l = String(l || ''); if (l === 'Bull') return [50, true]; if (l === '25') return [25, false]; const m = /^([SDT]?)(\d{1,2})$/.exec(l); if (!m) return [0, false]; const n = +m[2]; return m[1] === 'T' ? [3 * n, false] : m[1] === 'D' ? [2 * n, true] : [n, false]; };
+const ddTarget = r => r === 50 ? 'Bull' : (r >= 2 && r <= 40 && r % 2 === 0 ? 'D' + r / 2 : null);
+function ddDarts(dd, rem, darts) { // darts = [[waarde, dubbel]]
+  let r = rem;
+  for (const [v, dbl] of darts) {
+    const tg = ddTarget(r);
+    if (tg) { const e = dd[tg] = dd[tg] || [0, 0]; e[0]++; if (r - v === 0 && dbl) { e[1]++; return; } }
+    r -= v; if (r <= 1) return;
+  }
+}
+function ddClean(o) { const out = {}; if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) if (DDK.test(k) && Array.isArray(v)) { const a = Math.max(0, Math.min(1e5, Math.floor(+v[0]) || 0)), h = Math.max(0, Math.min(a, Math.floor(+v[1]) || 0)); if (a) out[k] = [a, h]; } return out; }
+function ddAdd(into, from) { for (const [k, v] of Object.entries(from || {})) { const e = into[k] = into[k] || [0, 0]; e[0] += v[0]; e[1] += v[1]; } }
+
+// det = [{t: 41..60, ok: 0/1, d: pijlen, f: laatste pijl, r: [labels]}]
 function sstAdd(pid, score, det) {
   const x = sst.list[pid] = sst.list[pid] || { g: 0, full: 0, sumFull: 0, best: 0, nums: {}, fin: {}, last: [] };
   const L = (Array.isArray(det) ? det : []).slice(0, 20).filter(a => a && Number.isInteger(a.t) && a.t >= 41 && a.t <= 60);
@@ -140,6 +156,7 @@ function sstAdd(pid, score, det) {
   for (const a of L) {
     const k = String(a.t), n = x.nums[k] = x.nums[k] || [0, 0, 0], d = Math.max(1, Math.min(3, +a.d || 3));
     n[0]++; if (a.ok) { n[1]++; n[2] += d; const f = clean(a.f, 8); if (f) x.fin[f] = (x.fin[f] || 0) + 1; }
+    if (Array.isArray(a.r)) { x.dd = x.dd || {}; ddDarts(x.dd, a.t, a.r.slice(0, 3).map(labVal)); }
   }
   x.last = (x.last || []).concat([{ s: score, n: L.length, at: Date.now() }]).slice(-10);
   sst.v++; persistSst(); return true;
@@ -171,6 +188,7 @@ function trnClean(b) {
   const pl = (Array.isArray(b.players) ? b.players : []).slice(0, 64).map(x => {
     const st = {}; for (const k of ST_KEYS) { const v = Number(x && x.s && x.s[k]); st[k] = Number.isFinite(v) && v >= 0 && v < 1e6 ? Math.round(v) : 0; }
     const pid = x && typeof x.pid === 'string' && spl.list[x.pid] ? x.pid : null;
+    const dd = ddClean(x && x.s && x.s.dd); if (Object.keys(dd).length) st.dd = dd;
     return { n: clean(x && x.n, 24), pid, s: st };
   }).filter(x => x.n);
   const nm = v => clean(v, 24) || null;
@@ -789,6 +807,7 @@ const server = http.createServer(async (req, res) => {
           sb.g += sa.g; sb.full += sa.full; sb.sumFull += sa.sumFull; sb.best = Math.max(sb.best, sa.best);
           for (const [k, n] of Object.entries(sa.nums)) { const m = sb.nums[k] = sb.nums[k] || [0, 0, 0]; m[0] += n[0]; m[1] += n[1]; m[2] += n[2]; }
           for (const [k, n] of Object.entries(sa.fin)) sb.fin[k] = (sb.fin[k] || 0) + n;
+          if (sa.dd) { sb.dd = sb.dd || {}; ddAdd(sb.dd, sa.dd); }
           sb.last = sb.last.concat(sa.last).sort((a, c) => a.at - c.at).slice(-10);
           sst.list[b.naar] = sb; delete sst.list[b.id]; sst.v++; persistSst(); }
       } else if (b.actie === 'weg') {
@@ -802,6 +821,26 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/api/toernooien') {
       const L = Object.entries(trn.list).map(([k, x]) => Object.assign({ k }, x, { players: x.players.map(y => Object.assign({}, y, { n: y.pid && spl.list[y.pid] ? spl.list[y.pid].n : y.n })) })).sort((a, b) => b.at - a.at);
       return send(res, 200, { v: trn.v, list: L });
+    }
+    // Dubbels per speler uit alle onderdelen (competitie, enkele wedstrijden, toernooien, checkout-spel)
+    if (req.method === 'GET' && p === '/api/dubbels') {
+      const out = {}, key = n => { const id = splByName(n); return id ? 'p:' + id : 'n:' + String(n || '').trim().toLowerCase(); };
+      const put = (n, dd) => { if (!n || !dd) return; const k = key(n), e = out[k] = out[k] || { n: n, dd: {} }; if (k.startsWith('p:')) e.n = spl.list[k.slice(2)].n; ddAdd(e.dd, dd); };
+      const S0 = state.S || {}, P = (S0.comp && S0.comp.players) || [], game = +S0.game || 501;
+      if (S0.dout !== 0) for (const [k, t] of Object.entries(S0.turns || {})) {
+        if (k[0] !== 'C' || !t || !Array.isArray(t.list)) continue;
+        const side = [t.a, t.b], legs = {};
+        for (const x of t.list) if (x && Number.isInteger(x.leg)) (legs[x.leg] = legs[x.leg] || []).push(x);
+        for (const L of Object.values(legs)) { const rem = [game, game], dd = [{}, {}];
+          for (const x of L) { const sd = x.side === 1 ? 1 : 0;
+            if (Array.isArray(x.d) && x.d.length) ddDarts(dd[sd], rem[sd], x.d.map(q => [+q.v || 0, !!q.dbl]));
+            if (!x.bust) rem[sd] -= +x.score || 0; }
+          [0, 1].forEach(i => { if (Number.isInteger(side[i]) && P[side[i]]) put(P[side[i]], dd[i]); }); }
+      }
+      for (const x of Object.values(wed.list)) for (const p of x.players || []) if (p.s && p.s.dd) put(p.pid && spl.list[p.pid] ? spl.list[p.pid].n : p.n, p.s.dd);
+      for (const x of Object.values(trn.list)) for (const p of x.players || []) if (p.s && p.s.dd) put(p.pid && spl.list[p.pid] ? spl.list[p.pid].n : p.n, p.s.dd);
+      for (const [id, x] of Object.entries(sst.list)) if (x.dd && spl.list[id]) put(spl.list[id].n, x.dd);
+      return send(res, 200, { list: out });
     }
     if (req.method === 'GET' && p === '/api/wedstrijden') {
       const L = Object.entries(wed.list).map(([k, x]) => ({ k, at: x.at, soort: x.soort || '1v1', legs: x.legs || null, game: x.game, win: x.win, players: x.players.map(y => Object.assign({}, y, { n: y.pid && spl.list[y.pid] ? spl.list[y.pid].n : y.n })) })).sort((a, b) => a.at - b.at);

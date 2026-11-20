@@ -275,6 +275,7 @@ body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
 @media print{@page{size:A4;margin:12mm}.rpsw{overflow:visible}.rpsw table{min-width:0!important}body.rpopen>*:not(#rpt){display:none!important}body.rpopen{background:#fff!important}#rpt{position:static;overflow:visible;background:#fff}.rpbar{display:none}.rpdoc{box-shadow:none;margin:0;max-width:none;padding:0;border-radius:0}.rpt tr,.rphl div{break-inside:avoid}h2{break-after:avoid}}
 .bdl{list-style:none;margin:0;padding:0;display:grid;gap:6px;text-align:left}.bdl li{display:flex;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.bdl li.w{border-color:var(--hl);background:rgba(255,214,10,.12)}.bdl i{opacity:.6;font-weight:500}.bdmsg{margin:4px 0 0}.bdor{font-size:13px!important;opacity:.7;margin-top:6px!important}
 .tvbull .bdl{max-width:760px;margin:10px auto 0;font-size:clamp(14px,1.6vw,26px)}.tvbull .bdmsg{font-size:clamp(14px,1.5vw,24px);margin-top:10px;color:#fff}
+.kdd{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px;max-width:760px}.kdd span{position:relative;overflow:hidden;border-radius:10px;padding:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;align-items:center}.kdd span::before{content:'';position:absolute;left:0;bottom:0;height:4px;width:var(--p);background:var(--pink)}.kdd span.few{opacity:.55}.kdd b{font-size:15px}.kdd em{font-style:normal;font-weight:800;color:var(--hl)}.kdd small{opacity:.6;font-size:11px}
 .kform{display:flex;gap:6px}.kform span{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:700 15px Inter,sans-serif}.kform .w{background:#1f9d55;color:#fff}.kform .v{background:rgba(255,255,255,.12);color:#fff}
 .msum{width:100%;max-width:420px;margin:12px auto 4px;border-collapse:collapse;font-size:14px}.msum th,.msum td{padding:5px 6px;text-align:center}.msum tbody th{font-weight:600;opacity:.7;font-size:12px;text-transform:uppercase;letter-spacing:.04em}.msum thead th{font-weight:800}.msum tbody tr+tr{border-top:1px solid rgba(255,255,255,.12)}
 .hfoot{margin:24px 0 0}.hfoot a{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-weight:700;text-decoration:none}.hfoot svg{width:18px;height:18px}
@@ -671,10 +672,21 @@ const ALL=(()=>{const a=[];for(let i=20;i>=1;i--)a.push(['T'+i,3*i]);a.push(['Bu
 // Opzetpijlen: geen T1–T6 of dubbels als dezelfde score ook met een enkele (makkelijkere) pijl kan
 const SETUP=(()=>{const a=[];for(let i=20;i>=7;i--)a.push(['T'+i,3*i]);a.push(['Bull',50],['25',25]);for(let i=20;i>=1;i--)a.push(['S'+i,i]);return a})();
 const SETP=SETUP.filter(([l,v])=>!(l[0]==='T'&&v<45)); // eerst de gebruikelijke: T20–T15, bull, 25 en enkele
-const LAST=()=>S.dout?[...DBL.map(d=>['D'+d,2*d]),['Bull',50]]:SETUP;
-function checkout(rem,n=3){
+const LAST=o=>S.dout?[...(o||DBL).map(d=>['D'+d,2*d]),['Bull',50]]:SETUP;
+// ---------- dubbels die een speler het beste liggen ----------
+let DDS={list:{}},ddAt=0;
+function ddFetch(force){if(!force&&Date.now()-ddAt<300000)return;ddAt=Date.now();fetch('/api/dubbels',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(d&&d.list&&typeof d.list==='object'){DDS=d;if(tv)renderTV();else renderOv()}}).catch(()=>{})}
+function ddFor(name){if(!name)return null;const pr=splFind(name),e=DDS.list[pr?'p:'+pr.id:'n:'+nk(name)];return e&&e.dd?e.dd:null}
+const ddTot=dd=>{let a=0,h=0;for(const v of Object.values(dd||{})){a+=v[0];h+=v[1]}return{a,h}};
+// Volgorde van dubbels voor deze speler: eerst zijn sterke dubbels (min. 6 pijlen, beter dan zijn gemiddelde), dan de standaard
+function ddKnown(name){const dd=ddFor(name);if(!dd)return[];const {a,h}=ddTot(dd);if(a<20)return[];const base=h/a;
+  return DBL.filter(n=>dd['D'+n]&&dd['D'+n][0]>=6).map(n=>({n,r:(dd['D'+n][1]+1)/(dd['D'+n][0]+3)})).filter(x=>x.r>=base).sort((x,y)=>y.r-x.r).map(x=>x.n)}
+function ddOrder(name){const known=ddKnown(name);return known.length?[...known,...DBL.filter(n=>!known.includes(n))]:null}
+// Uitgooi-tip, op maat als er genoeg bekend is (★ = anders dan het standaardvoorstel)
+function ckFor(rem,n,name){const c=checkout(rem,n);if(!c||!S.dout)return c;const o=ddOrder(name);if(!o)return c;const p=checkout(rem,n,o);return p&&p!==c?p+' ★':c}
+function checkout(rem,n=3,ord){
   if(rem>(n===3?170:n===2?110:50)||rem<1)return'';
-  const L=LAST();
+  const L=LAST(ord);
   for(const[n,v]of L)if(v===rem)return n;
   if(n>1)for(const P of [SETP,SETUP])for(const[d,dv]of L)for(const[x,xv]of P)if(xv+dv===rem)return x+' '+d;
   if(n<3)return'';
@@ -867,7 +879,7 @@ function renderOv(){
   ov.hidden=false;document.body.style.overflow='hidden';
   const L=live(openId),o=L.o,done=o.win!==null,need=o.need,bo=openId==='X'?S.single.bo:isC(openId)?5:openId==='F'?S.boF:S.bo,ps=L.ps;
   const dsum=darts.reduce((q,x)=>q+x.v,0);if(!done)L.rem[L.cur]-=dsum;const dleft=3-darts.length;
-  const panel=i=>{const sets=legsOf(L.r,i),on=!done&&!L.bull&&L.cur===i,ck=on?checkout(L.rem[i],dleft):'';
+  const panel=i=>{const sets=legsOf(L.r,i),on=!done&&!L.bull&&L.cur===i,ck=on?ckFor(L.rem[i],dleft,thrName(L,i)):'';
     return`<div class="pp${on?' on':''}${done&&o.win===ps[i]?' won':''}"><div class="pn">${pn(ps[i])}</div>${KOP(openId)?`<div class="pkop">${S.single.team[i].map((n,j)=>`<span class="${!done&&!L.bull&&thrW(L,i)===j?'nu':''}">${esc(n)}</span>`).join('')}</div>`:''}
     <div class="lg">Legs <b>${sets}</b></div>
     <div class="rem">${L.rem[i]}</div><div class="ck">${ck?'Uit: '+ck:'&nbsp;'}</div>
@@ -1125,7 +1137,7 @@ function splDl(){let d=document.getElementById('spl-dl');if(!d){d=document.creat
   const L=prList(),seen=new Set(L.map(x=>x.id));d.innerHTML=L.map(x=>`<option value="${esc(x.n)}"></option>`).join('')+SPL.list.filter(x=>!seen.has(x.id)).map(x=>`<option value="${esc(x.n)}"></option>`).join('')}
 async function splLoad(){try{const r=await fetch('/api/spelers',{cache:'no-store'});const d=await r.json();if(d&&Array.isArray(d.list))SPL={v:+d.v||0,list:d.list.filter(x=>x&&typeof x.id==='string'&&typeof x.n==='string')}}catch(e){}splDl()}
 async function prCheck(){const L=prList();if(!L.length)return;try{const r=await fetch('/api/spelers/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({list:L})});if(!r.ok)return;const d=await r.json();if(d&&Array.isArray(d.list))prSet(d.list)}catch(e){}}
-async function splInit(){await Promise.all([splLoad(),prCheck()]);splDl();if(!tv&&!openId)render()}
+async function splInit(){ddFetch(true);await Promise.all([splLoad(),prCheck()]);splDl();if(!tv&&!openId)render()}
 async function prPost(url,body){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Dat lukte niet');return d}
 // Snel invullen: profielen van dit apparaat als knopjes onder de naamvelden
 function prChips(ids){const L=prList();if(!L.length)return'';
@@ -1207,8 +1219,9 @@ function vSpelenPage(){const mine=mijnSess(),L=mySess().filter(x=>x.id!==mine);
 /* ---------- checkout-spel: getal 41-60, 3 pijlen, uitgooien ---------- */
 const SEGS=(()=>{const a=[];for(let i=1;i<=20;i++){a.push({l:String(i),v:i,d:0,t:0},{l:'D'+i,v:2*i,d:1,t:2},{l:'T'+i,v:3*i,d:0,t:1})}a.push({l:'25',v:25,d:0,t:1.5},{l:'Bull',v:50,d:1,t:3});return a})();
 const FPREF=['D20','D16','D10','D8','D18','D12','D4','D14','D6','D2','D19','D17','D15','D13','D11','D9','D7','D5','D3','D1','Bull'];
-function routes(t,left){
-  const fin=SEGS.filter(x=>S.dout?x.d:1),fp=l=>{const i=FPREF.indexOf(l);return i<0?30:i},out=[];
+function routes(t,left,name){
+  const o=S.dout?ddOrder(name):null,PREF=o?[...o.map(n=>'D'+n),'Bull']:FPREF;
+  const fin=SEGS.filter(x=>S.dout?x.d:1),fp=l=>{const i=PREF.indexOf(l);return i<0?30:i},out=[];
   fin.filter(f=>f.v===t).forEach(f=>out.push({r:[f.l],k:fp(f.l)-100}));
   if(left>1)SEGS.filter(a=>!(a.t>0&&a.t<3&&a.v<=20)).forEach(a=>fin.forEach(f=>{if(a.v+f.v===t)out.push({r:[a.l,f.l],k:a.t*25+fp(f.l)})}));
   const seen=new Set(),sl=l=>/^\d+$/.test(l)&&l!=='25'?'S'+l:l;return out.sort((x,y)=>x.k-y.k).filter(x=>{const k=x.r.join(' ');if(seen.has(k))return false;seen.add(k);return true}).map(x=>x.r.map(sl))}
@@ -1244,7 +1257,7 @@ function topRefresh(){const el=document.getElementById('sptop');if(el)el.innerHT
 async function spFinish(){const p=SP();p.on=false;p.done=true;p.darts=[];spHidden=false;msg='Score opslaan…';spSave();render();window.scrollTo(0,0);
   const rec=[],noTop=[],todo=(p.n===2?[0,1]:[0]).filter(i=>String(p.names[i]||'').trim());
   for(const i of todo){const nm=String(p.names[i]).trim();
-    const pr=prOf(nm),det=p.hist.filter(h=>h.w===i).reverse().map(h=>({t:h.t,ok:h.ok?1:0,d:h.r.length,f:h.ok?String(h.r[h.r.length-1]||''):''}));
+    const pr=prOf(nm),det=p.hist.filter(h=>h.w===i).reverse().map(h=>({t:h.t,ok:h.ok?1:0,d:h.r.length,f:h.ok?String(h.r[h.r.length-1]||''):'',r:h.r.slice(0,3)}));
     try{const r=await fetch('/api/spel/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pr?{name:nm,score:p.hits[i],pid:pr.id,t:pr.t,det}:{name:nm,score:p.hits[i]})});const d=await r.json().catch(()=>({}));
       if(r.ok&&d.record&&p.hits[i]>0)rec.push(nm);
       if(r.status===403){if(pr)prSet(prList().filter(x=>x.id!==pr.id));noTop.push(nm)}}catch(e){}}
@@ -1275,7 +1288,7 @@ function vSpel(){const p=SP();
   <div class="set"><label>Uitgooien<select id="dout"><option value="1"${S.dout?' selected':''}>Dubbel uit</option><option value="0"${S.dout?'':' selected'}>Enkel uit</option></select></label></div>
   <p class="stat" style="margin:4px 0 12px">Vul een naam in om op het leaderboard te komen.</p>
   <div class="row"><button class="btn pri" data-a="spstart">Start spel</button></div>${top}`}
-function spOv(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,left=3-p.darts.length,rs=routes(rem,left);
+function spOv(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,left=3-p.darts.length,rs=routes(rem,left,spN(p.cur));
   return`<div class="ovb">
    <div class="ovh"><span>Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen</span><span class="ovr"><button class="btn" data-a="monlocal">Monitor</button>${camBtn()}<button class="btn" data-a="sound">${S.sound?'Geluid aan':'Geluid uit'}</button><button class="btn" data-a="spclose">Menu</button></span></div>
    ${camInfo()}<div class="spt"><small>Getal ${Math.min(p.idx+1,20)} van 20 · ${p.n===2?esc(spN(p.cur))+' gooit uit':'gooi uit'}</small><div class="spn">${rem}</div><small>${p.darts.length?'van '+p.target+' · nog '+left+(left>1?' pijlen':' pijl'):'3 pijlen'}</small></div>
@@ -1286,7 +1299,7 @@ function spOv(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum
    <div class="nums">${Array.from({length:20},(_,i)=>`<button data-sn="${i+1}">${spMod===3?'T':spMod===2?'D':''}${i+1}</button>`).join('')}<button data-sn="25" class="w2">${spMod===2?'Bull 50':'25'}</button><button data-sn="0" class="w2">Mis</button><button data-a="spundo" class="w1" aria-label="Pijl terug">⌫</button></div>
    ${spTable(true)}
    <div class="row"><button class="btn" data-a="spstop">Stoppen</button></div></div>`}
-function tvSpel(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,rs=p.on?routes(rem,3-p.darts.length):[],ix=p.n===2?[0,1]:[0];
+function tvSpel(){const p=SP(),sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,rs=p.on?routes(rem,3-p.darts.length,spN(p.cur)):[],ix=p.n===2?[0,1]:[0];
   const ctx=`Checkout-spel · ${S.dout?'dubbel uit':'enkel uit'} · 3 pijlen`;
   const board=`<div class="tvspb">${ix.map(i=>`<div class="tvspp${p.on&&p.cur===i&&p.n===2?' on':''}"><b>${esc(spN(i))}</b><span>${p.hits[i]}</span><small>${p.hits[i]===1?'punt':'punten'} · ${p.tries[i]} van 20 gespeeld</small></div>`).join('')}</div>`;
   if(!p.on){const w=p.n===2&&p.hits[0]!==p.hits[1]?spN(p.hits[0]>p.hits[1]?0:1)+' wint!':p.n===2?'Gelijkspel!':'Klaar!';
@@ -1779,7 +1792,7 @@ let watch=null,mainD=null,mainS=null,watchGen=0,watchCtl=null;
 // ---------- statistieken (berekend uit de bewaarde beurten) ----------
 const BOGEY=new Set([169,168,166,165,163,162,159]);
 const dblFin=(r,dout)=>dout?(r===50||(r>=2&&r<=40&&r%2===0)):(r>=1&&r<=20)||r===25||r===50;
-const stBlank=()=>({n:0,darts:0,sum:0,f9s:0,f9d:0,t180:0,t140:0,t100:0,t60:0,hi:0,hco:0,dAtt:0,dHit:0,lW:0,lL:0,best:0,wDarts:0,wLegs:0,mW:0,mL:0,form:[],h2h:{},dbl:{},bust:0});
+const stBlank=()=>({dd:{},n:0,darts:0,sum:0,f9s:0,f9d:0,t180:0,t140:0,t100:0,t60:0,hi:0,hco:0,dAtt:0,dHit:0,lW:0,lL:0,best:0,wDarts:0,wLegs:0,mW:0,mL:0,form:[],h2h:{},dbl:{},bust:0});
 // Verwerkt de beurten van één wedstrijd voor één kant (0/1) en telt op in st
 // w: bij 2 tegen 2 alleen de beurten van die speler van het koppel (de score van het koppel loopt wel door)
 function stTurns(st,t,side,game,dout,w){if(!t||!Array.isArray(t.list))return;
@@ -1792,7 +1805,7 @@ function stTurns(st,t,side,game,dout,w){if(!t||!Array.isArray(t.list))return;
       if(x.bust)st.bust++;
       if(sc===180)st.t180++;else if(sc>=140)st.t140++;else if(sc>=100)st.t100++;else if(sc>=60)st.t60++;
       if(sc>st.hi)st.hi=sc;
-      if(ds){let r=before;for(let i=0;i<ds.length;i++){if(dblFin(r,dout))st.dAtt++;const v=+ds[i].v||0;if(r-v===0&&(!dout||ds[i].dbl)){st.dHit++;break}r-=v;if(r<=(dout?1:0))break}}
+      if(ds){let r=before;for(let i=0;i<ds.length;i++){const tg=dout&&dblFin(r,dout)?(r===50?'Bull':'D'+r/2):null,e=tg?(st.dd[tg]=st.dd[tg]||[0,0]):null;if(dblFin(r,dout))st.dAtt++;if(e)e[0]++;const v=+ds[i].v||0;if(r-v===0&&(!dout||ds[i].dbl)){st.dHit++;if(e)e[1]++;break}r-=v;if(r<=(dout?1:0))break}}
       else if(dblFin(before,dout)){st.dAtt+=x.out?1:3;if(x.out)st.dHit++}
       if(x.out){if(before>st.hco)st.hco=before;st.wLegs++;st.wDarts+=ld;if(!st.best||ld<st.best)st.best=ld;
         if(ds){const l=String(ds[ds.length-1].lab||'');if(l)st.dbl[l]=(st.dbl[l]||0)+1}}
@@ -1840,7 +1853,7 @@ function matchArchive(){if(!SID||!admin||tv||S.kind!=='single'||S.single.solo)re
   if(!S.single.mid){S.single.mid=newMid();save()}
   const m=XM(),t=S.turns.X,ok=t&&t.a===0&&t.b===1,KEYS=['n','darts','sum','f9s','f9d','t180','t140','t100','hi','hco','dAtt','dHit','best','wDarts','wLegs','lW','lL'];
   const legs=m==='3'?o.s:[o.sa,o.sb],tot=legs.reduce((a,b)=>a+b,0);
-  const one=(n,side,w)=>{const st=stBlank();if(ok)stTurns(st,t,side,S.game,S.dout,w);st.lW=legs[side];st.lL=tot-legs[side];const pr=splFind(n),q={};for(const k of KEYS)q[k]=st[k];return{n,pid:pr?pr.id:null,t:side,s:q}};
+  const one=(n,side,w)=>{const st=stBlank();if(ok)stTurns(st,t,side,S.game,S.dout,w);st.lW=legs[side];st.lL=tot-legs[side];const pr=splFind(n),q={dd:st.dd};for(const k of KEYS)q[k]=st[k];return{n,pid:pr?pr.id:null,t:side,s:q}};
   const players=m==='2v2'&&Array.isArray(S.single.team)?[one(S.single.team[0][0],0,0),one(S.single.team[0][1],0,1),one(S.single.team[1][0],1,0),one(S.single.team[1][1],1,1)]
     :(m==='3'?[0,1,2]:[0,1]).map(i=>one(S.single.names[i]||(i?'Uit':'Thuis'),i));
   const body={mid:S.single.mid,soort:m,game:S.game,win:o.win,legs,players};
@@ -1850,7 +1863,7 @@ function matchArchive(){if(!SID||!admin||tv||S.kind!=='single'||S.single.solo)re
 let trSent='',trT=0;
 function tourArchive(){if(!SID||!admin||tv||S.kind!=='toernooi'||!S.started)return;const pl=tourPlaces();if(!pl)return;
   if(!S.tid){S.tid=Math.random().toString(36).slice(2,10).replace(/[^a-z0-9]/g,'x').padEnd(8,'x');save()}
-  const A=tourStats(),body={tid:S.tid,naam:S.name||'',game:S.game,p1:pl.p1,p2:pl.p2,p3:pl.p3,players:A.map(s=>{const pr=splFind(s.name),o={};for(const k of ['n','darts','sum','f9s','f9d','t180','t140','t100','hi','hco','dAtt','dHit','best','wDarts','wLegs','mW','mL','lW','lL'])o[k]=s[k];return{n:s.name,pid:pr?pr.id:null,s:o}})};
+  const A=tourStats(),body={tid:S.tid,naam:S.name||'',game:S.game,p1:pl.p1,p2:pl.p2,p3:pl.p3,players:A.map(s=>{const pr=splFind(s.name),o={dd:s.dd};for(const k of ['n','darts','sum','f9s','f9d','t180','t140','t100','hi','hco','dAtt','dHit','best','wDarts','wLegs','mW','mL','lW','lL'])o[k]=s[k];return{n:s.name,pid:pr?pr.id:null,s:o}})};
   const sig=JSON.stringify(body);if(sig===trSent)return;
   clearTimeout(trT);trT=setTimeout(()=>{fetch(API+'/toernooi',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':pin},body:sig}).then(r=>{if(r.ok)trSent=sig}).catch(()=>{})},1500)}
 // Archief op de kijkpagina
@@ -1897,7 +1910,7 @@ function rankX01(A){const by=(f,v,asc)=>A.filter(f).sort((a,b)=>asc?v(a)-v(b):v(
 const plist=(L,sub)=>`<h2 class="tvh2" style="margin-top:22px">Spelers</h2><p class="kempty" style="margin:-4px 0 12px">Tik op een speler voor de scores</p>
   <div class="kspl">${L.slice().sort((a,b)=>a.name.localeCompare(b.name,'nl')).map(e=>`<button data-ksp="${esc(e.name)}"><b>${esc(e.name)}</b><span>${sub(e)}</span><em>›</em></button>`).join('')}</div>`;
 function kSpelers(){
-  if(KIJK){cTFetch(mainD&&typeof mainD.v==='number'?mainD.v:ver);sstFetch();trnFetch();wedFetch()}
+  if(KIJK){cTFetch(mainD&&typeof mainD.v==='number'?mainD.v:ver);sstFetch();trnFetch();wedFetch();ddFetch()}
   if(kTour){const x=TRN.list.find(q=>q.k===kTour);if(x)return kTourDetail(x);kTour=null}
   const D=kStatsData(),loading=KIJK&&(TRN.v===-1||SST.v===-1||WED.v===-1);
   const dis=DIS.filter(([k])=>k!=='comp'||(S.kind==='comp'&&S.comp.started));
@@ -1915,6 +1928,11 @@ function kSpelers(){
   const TL=[...T.values()],titles=e=>e.tr.filter(q=>place(q.x,q.p.n)==='Kampioen').length;
   return`${back}<h2 class="tvh2">Toernooien</h2>${TRN.list.length?`<div class="ktrl">${TRN.list.slice(0,12).map(x=>`<button data-ktour="${esc(x.k)}"><div><b>${esc(trnTitle(x))}</b><small>${dDate(x.at)} · ${x.players.length} spelers</small></div><span>🏆 ${esc(x.p1)}</span><i>›</i></button>`).join('')}</div>
    <div class="krks" style="margin-top:16px">${lstR('Meeste titels',TL.filter(e=>titles(e)>0).sort((a,b)=>titles(b)-titles(a)),e=>titles(e)+'×')}${lstR('Meeste toernooien',TL.slice().sort((a,b)=>b.tr.length-a.tr.length),e=>e.tr.length)}</div>`+plist(TL,e=>e.tr.length+(e.tr.length===1?' toernooi':' toernooien')+(titles(e)?' · '+titles(e)+'× kampioen':'')):`<p class="kempty">${loading?'Laden…':'Nog geen afgelopen toernooien.'}</p>`}`}
+// Dubbels van een speler (alle onderdelen samen)
+function ddHtml(name){const dd=ddFor(name);if(!dd)return'';const {a,h}=ddTot(dd);if(!a)return'';
+  const L=Object.entries(dd).filter(([,v])=>v[0]>=1).sort((x,y)=>((y[1][1]+1)/(y[1][0]+3))-((x[1][1]+1)/(x[1][0]+3))),best=ddKnown(name).slice(0,3);
+  return`<h3 class="kh">Dubbels</h3><p class="kempty" style="margin:-4px 0 10px">${h} van ${a} pijlen op een dubbel raak (${Math.round(h/a*100)}%) · alle onderdelen samen${a<20?' · vanaf 20 pijlen op dubbels stelt de app uitgooiroutes voor die op jouw beste dubbels eindigen':best.length?' · uitgooiroutes eindigen bij voorkeur op <b>'+best.map(n=>'D'+n).join(', ')+'</b> (★ in de wedstrijd)':''}</p>
+   <div class="kdd">${L.map(([k,v])=>{const r=v[1]/v[0];return`<span style="--p:${Math.round(r*100)}%" class="${v[0]>=6?'':'few'}"><b>${k}</b><em>${Math.round(r*100)}%</em><small>${v[1]}/${v[0]}</small></span>`}).join('')}</div>`}
 const tile=(l,v,sm)=>`<div class="kst"><small>${l}</small><b>${v}</b>${sm?`<span>${sm}</span>`:''}</div>`;
 // Spelerspagina binnen één onderdeel, met links naar zijn andere onderdelen
 function kSpDis(dis,D,name){const f=L=>L.find(x=>nk(x.name)===nk(name));let body='',nm=name;
@@ -1923,7 +1941,7 @@ function kSpDis(dis,D,name){const f=L=>L.find(x=>nk(x.name)===nk(name));let body
   else if(dis==='co'){const x=f(D.co);if(!x)return'';nm=x.name;body=kSpCo(x)}
   else{const L=[];for(const x of TRN.list)for(const p of x.players)if(nk(p.n)===nk(name))L.push({x,p});if(!L.length)return'';nm=L[0].p.n;body=kSpTour(L)}
   const pr=splFind(nm),also=DIS.filter(([k])=>k!==dis&&(k==='tr'?TRN.list.some(x=>x.players.some(p=>nk(p.n)===nk(nm))):f(D[k]||[]))).map(([k,l])=>`<button data-kdis="${k}" data-kspk="${esc(nm)}">${l} ›</button>`).join('');
-  return`<h2 class="tvh2">${esc(nm)}</h2><p class="kempty" style="margin:-4px 0 12px">${pr?'Spelersprofiel':'Gast'}</p>${body}${also?`<h3 class="kh">Ook van ${esc(nm)}</h3><div class="kalso">${also}</div>`:''}`}
+  return`<h2 class="tvh2">${esc(nm)}</h2><p class="kempty" style="margin:-4px 0 12px">${pr?'Spelersprofiel':'Gast'}</p>${body}${ddHtml(nm)}${also?`<h3 class="kh">Ook van ${esc(nm)}</h3><div class="kalso">${also}</div>`:''}`}
 function kSpComp(s,ctx){const pct=s.dAtt?Math.round(s.dHit/s.dAtt*100)+'%':'–',dbl=Object.entries(s.dbl).sort((a,b)=>b[1]-a[1])[0];
   const pos=ctx==='1v1'?0:cStand().findIndex(x=>x.n===s.name)+1,h2h=Object.entries(s.h2h).sort((a,b)=>a[0].localeCompare(b[0]));
   return`<p class="kempty" style="margin:0 0 12px">${ctx==='1v1'?'Enkele wedstrijden · '+(s.mW+s.mL)+' gespeeld':'Competitie'+(pos?' · '+pos+'e in de stand':'')}</p>
@@ -1994,7 +2012,7 @@ function tvMatch(){
   if(SOLO(openId))nmR='Solo';else if(openId==='X')nmR=XML[XM()];else if(isC(openId)){const m=cMatches()[+openId.slice(1)];nmR='Competitie · ronde '+(m?m.rd:'')}
   else if(openId==='F')nmR='Finale';else if(B&&B.M[openId]){const m=B.M[openId];nmR=roundName(m.br,m.r,(m.br==='W'?B.W:B.L).length)}
   const ctx=`${nmR} · ${SOLO(openId)?bo+(bo>1?' legs':' leg'):'best of '+bo+' legs'} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'}`;
-  const side=i=>{const on=!done&&!L.bull&&L.cur===i,won=done&&o.win===ps[i],legs=legsOf(L.r,i),ck=on?checkout(rem[i],3-darts.length):'';
+  const side=i=>{const on=!done&&!L.bull&&L.cur===i,won=done&&o.win===ps[i],legs=legsOf(L.r,i),ck=on?ckFor(rem[i],3-darts.length,thrName(L,i)):'';
     return`<div class="tvp${on?' on':''}${won?' won':''}"><div class="tvn">${pn(ps[i])}</div>${KOP(openId)?`<div class="tvkop">${S.single.team[i].map((n,j)=>`<span class="${!done&&!L.bull&&thrW(L,i)===j?'nu':''}">${esc(n)}</span>`).join('')}</div>`:''}<div class="tvl">LEGS <b>${legs}</b></div><div class="tvr">${rem[i]}</div><div class="tvck">${won?(SOLO(openId)?'KLAAR':'WINNAAR'):ck?'UIT: '+ck:on?'AAN DE BEURT':'&nbsp;'}</div><div class="tvst"><span><small>GEMIDDELD</small>${L.st[i].avg}</span><span><small>LAATSTE</small>${L.st[i].last}</span></div></div>`};
   const nx=monLocal&&done?nextMatch():null;
   const turn=done?`<div class="tvd"><b>${SOLO(openId)?pn(0)+' is klaar · gemiddelde '+L.st[0].avg:pn(o.win)+' wint met '+(L.n===3?legsTxt(L):Math.max(L.r.sa,L.r.sb)+' – '+Math.min(L.r.sa,L.r.sb))}</b>${monLocal?`<div class="tvact">${openId==='X'?`<button class="pri" data-a="rematch">${SOLO(openId)?'Nog een keer':'Nog een wedstrijd'}</button>`:nx?`<button class="pri" data-a="monnext" data-id="${nx}">Volgende wedstrijd</button>`:''}<button data-a="undo">Laatste beurt terug</button><button data-a="monklaar">Klaar</button></div>`:''}</div>`
