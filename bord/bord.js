@@ -196,12 +196,13 @@ let verstuurT = null;
 function verstuurLater() { clearTimeout(verstuurT); verstuurT = setTimeout(() => { if (CFG) verstuur(CFG, true); }, 300); }
 let CFG = null;
 // Kalibreren: de Board Manager heeft hier een knop voor; we proberen de bekende adressen (eerst het adres dat de vorige keer werkte)
-const KALIB = [['PUT', '/api/config/calibration/auto'], ['POST', '/api/config/calibration/auto'], ['PUT', '/api/calibrate'], ['POST', '/api/calibrate'], ['POST', '/api/calibration'], ['PUT', '/api/config/calibrate']];
+// Zelfde verzoek als de Calibrate-knop in de Board Manager van Autodarts (gecontroleerd: POST, antwoord 200)
+const KALIB = [['POST', '/api/config/calibration/auto']];
 async function kalibreer(cfg, waarom) {
   if (Date.now() - gezond.kbAt < 60000) return false;
   gezond.kbAt = Date.now(); gezond.kb = 'bezig'; verstuurLater();
   log('Autodarts kalibreren (' + waarom + ') …');
-  const lijst = cfg.kalib ? [cfg.kalib].concat(KALIB.filter(k => k.join(' ') !== cfg.kalib.join(' '))) : KALIB;
+  const lijst = KALIB;
   for (const [m, pad] of lijst) {
     try {
       const r = await fetch(cfg.board + pad, { method: m, signal: AbortSignal.timeout(4000) });
@@ -224,6 +225,22 @@ function checkPijl(p) {
   const n = gezond.rand.reduce((a, b) => a + b, 0);
   if (gezond.rand.length >= 6 && n >= 3) zetGezond('kalib', 'Veel pijlen vlak naast de dubbelring tellen als Mis: de kalibratie lijkt verschoven.');
   else if (gezond.gz === 'kalib' && n <= 1) zetGezond('ok', '');
+}
+// Autodarts zegt zelf of de camera's gekalibreerd zijn (/api/system → calibration)
+let sysAt = 0, kalStatus = 'ok';
+async function checkSysteem(cfg) {
+  if (Date.now() - sysAt < 15000) return; sysAt = Date.now();
+  try {
+    const d = await (await get(cfg.board + '/api/system', 2500)).json(), c = d && d.calibration;
+    if (!c || typeof c !== 'object') return;
+    const cams = Array.isArray(c.cams) ? c.cams : [], bezig = cams.some(x => x && x.calibrating);
+    const fout = cams.map((x, i) => x && (x.calibrated === false || x.fitFailed) ? i + 1 : 0).filter(Boolean);
+    const nu = bezig ? 'bezig' : (c.calibrated === false || fout.length) ? 'nee' : 'ok';
+    if (nu === kalStatus) return; kalStatus = nu;
+    if (nu === 'bezig') { gezond.kb = 'gestart'; verstuurLater(); }
+    else if (nu === 'nee') { zetGezond('kalib', fout.length ? 'Camera ' + fout.join(' en ') + ' is niet gekalibreerd.' : 'Autodarts is niet gekalibreerd.'); if (Date.now() - gezond.kbAt > 5 * 60000) await kalibreer(cfg, 'niet gekalibreerd'); }
+    else { if (gezond.kb === 'gestart' || gezond.kb === 'bezig') gezond.kb = 'klaar'; if (gezond.gz === 'kalib') zetGezond('ok', ''); else verstuurLater(); }
+  } catch (e) {}
 }
 // Elke ronde van luisteren: hangt Autodarts op takeout (oranje) terwijl er niets gebeurt?
 async function checkStatus(cfg, num, status) {
@@ -265,6 +282,7 @@ async function luisterNaarBord(cfg) {
       const nu = { num, names: throws.map(t => omzet(t).name), status: d.status, event: d.event };
       laatsteStatus = { connected: d.connected !== false, running: d.running !== false, status: String(d.status || ''), gz: gezond.gz, gm: gezond.gm, kb: gezond.kb };
       await checkStatus(cfg, num, d.status);
+      checkSysteem(cfg);
       if (vorige === null) {
         log(`Verbonden met Autodarts ✓ (status: ${d.status || 'onbekend'}). Gooi maar!`);
       } else {
