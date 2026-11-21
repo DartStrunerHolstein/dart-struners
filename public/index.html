@@ -1016,11 +1016,18 @@ function camTurnDone(side){if(!camOn||camRound<1||camRound>2)return;const ik=ikS
 const bdLab=(n,m)=>n===0?'Mis':n===25?(m>=2?'Bull':'25'):(m===3?'T':m===2?'D':'')+n;
 function bdR(e,n,m){if(typeof e.x==='number'&&typeof e.y==='number')return Math.hypot(e.x,e.y)/0.975;
   return n===0?9:n===25?(m>=2?0.02:0.065):m===3?0.6:m===2?0.98:0.4}
+// Welke speler hoort bij welke pijl van Autodarts (pijl 1/2/3). Niet op pijlnummer gokken: haalt iemand zijn pijl
+// eruit, dan begint Autodarts weer bij pijl 1. De pijlen gaan daarom in volgorde van binnenkomst naar de spelers.
+let bdMap={};
 function bullCam(e,n,m){const L=live(openId),ik=ikSide(),N=L.ps.length;
+  if(e.k==='takeout'){bdMap={};return}
   if(e.k!=='dart'&&e.k!=='fix')return;
-  const side=ik!==null?ik:(e.i|0);if(side<0||side>=N)return;
-  const bd=L.t.bd=Object.assign({},L.t.bd||{});
-  if(e.k==='dart'&&ik===null&&bd[side]&&Object.keys(bd).length>=N)return; // al compleet: eerst opnieuw bullen
+  const bd=L.t.bd=Object.assign({},L.t.bd||{}),i=e.i|0;let side;
+  if(ik!==null)side=ik;
+  else if(e.k==='fix'){side=bdMap[i];if(side===undefined)return}
+  else{side=bdMap[i]!==undefined&&!bd[bdMap[i]]?bdMap[i]:L.ps.findIndex((_,k)=>!bd[k]);if(side<0)return; // al compleet: eerst opnieuw bullen
+    bdMap[i]=side}
+  if(side<0||side>=N)return;
   bd[side]={r:bdR(e,n,m),lab:bdLab(n,m)};if(typeof e.x==='number'&&typeof e.y==='number'){bd[side].x=e.x;bd[side].y=e.y}
   S.turns[openId]=L.t;sender=true;save();render()}
 function bullRes(L){const bd=L.t&&L.t.bd;if(!bd)return null;const N=L.ps.length,got=Object.keys(bd).filter(k=>+k<N).length;
@@ -1594,7 +1601,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.copy){const v=t.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>{t.textContent='Gekopieerd';setTimeout(()=>t.textContent='Kopieer',1500)})}catch(_){}return}
   if(t.dataset.tab){tab=t.dataset.tab;try{history.replaceState(null,'','#'+tab)}catch(_){}render();window.scrollTo(0,0);return}
   if(t.dataset.score){sender=true;openId=t.dataset.score;buf='';msg='';darts=[];mod=1;renderOv();return}
-  if(t.dataset.bull&&openId){const L=live(openId);if(!L.bull)return;const s=Math.max(0,Math.min(L.n-1,parseInt(t.dataset.bull,10)||0));L.t.first=s;delete L.t.bd;if(camOn&&camRound>0&&camRound<3)camReset();S.turns[openId]=L.t;
+  if(t.dataset.bull&&openId){const L=live(openId);if(!L.bull)return;const s=Math.max(0,Math.min(L.n-1,parseInt(t.dataset.bull,10)||0));L.t.first=s;delete L.t.bd;bdMap={};if(camOn&&camRound>0&&camRound<3)camReset();S.turns[openId]=L.t;
     const who=sideName(L,s);msg=t.dataset.skip?'':`${who} wint het bullen en begint`;save();renderOv();
     if(!t.dataset.skip){ev({k:'bull',who});say(caller()?`${who} to throw first. Game on!`:`${who} begint. Daar gaan we!`,true,[['gameon']])}return}
   if(t.dataset.mode&&openId){S.inmode=t.dataset.mode;darts=[];mod=1;edit=null;buf='';msg='';save();renderOv();return}
@@ -1674,7 +1681,7 @@ document.addEventListener('click',e=>{
   if(a==='commit'&&openId){edit=null;evalTurn(live(openId),true);return}
   if(a==='close'){sheet=false;openId=null;darts=[];edit=null;render();return}
   if(a==='resume'){openId='X';darts=[];mod=1;buf='';msg='';render();return}
-  if(a==='bullre'&&openId){const L=live(openId);delete L.t.bd;S.turns[openId]=L.t;if(camOn&&camRound>0&&camRound<3)camReset();save();render();return}
+  if(a==='bullre'&&openId){const L=live(openId);delete L.t.bd;bdMap={};S.turns[openId]=L.t;if(camOn&&camRound>0&&camRound<3)camReset();save();render();return}
   if(a==='camclaim'){msg='De camera telt nu op dit apparaat';fetch('/api/koppel/code/'+encodeURIComponent(kopCode)+'/wait?claim=1&bv=-1&d='+DEV,{cache:'no-store'}).then(r=>r.json()).then(c=>{if(camTake(c))renderOv()}).catch(()=>{});if(!camLoop)camStream();renderOv();return}
   if(a==='camwarnx'){const st=cam.st||{};camWarnX=(st.gz||'')+(st.gm||'')+(st.kb||'');renderTV();return}
   if(a==='camkalib'){if(camOn&&kopCode)fetch('/api/koppel/code/'+kopCode+'/kalibreer',{method:'POST'}).catch(()=>{});msg='Autodarts wordt gekalibreerd. Even niet gooien.';renderOv();if(monLocal)renderTV();return}
