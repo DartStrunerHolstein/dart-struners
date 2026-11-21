@@ -1061,7 +1061,7 @@ function camBtn(){const ok=camLive();
   return`<button class="snd cam${camOn?' on':''}" data-a="cam" aria-pressed="${camOn}" title="${camOn?'Camera telt mee op dit apparaat':'Camera tellen aanzetten'}"><i class="dot ${camOn?(ok?'ok':'bad'):''}"></i>Camera</button>`}
 // Melding als Autodarts blijft hangen, niet goed gekalibreerd lijkt of niet bereikbaar is
 let camWarnX='';
-function camWarn(big){if(!camOn||!camLive())return'';const st=cam.st||{},kb={bezig:'De laptop probeert nu te kalibreren…',gestart:'Kalibratie gestart: even niet gooien tot Autodarts klaar is.',klaar:'',mislukt:'Automatisch kalibreren lukte niet: kalibreer in Autodarts zelf (knop Calibrate).'}[st.kb||'']||'';
+function camWarn(big){if(!camOn||!camLive())return'';const st=cam.st||{},kb={bezig:'De laptop probeert nu te kalibreren…',gestart:'Kalibratie gestart: even niet gooien tot Autodarts klaar is.',klaar:'',mislukt:'Kalibreren lukte niet vanaf de laptop: kalibreer in Autodarts zelf (knop Calibrate).'}[st.kb||'']||'';
   if((!st.gz||st.gz==='ok')&&!kb)return'';if(big&&camWarnX===(st.gz||'')+(st.gm||'')+(st.kb||''))return'';
   const t=st.gz&&st.gz!=='ok'?esc(st.gm||'Autodarts telt niet goed.'):'';
   return`<div class="${big?'tvwarn':'camwarn'}" role="alert"><b>⚠ Autodarts</b><span>${t}${t&&kb?' ':''}${esc(kb)}</span>${st.gz==='weg'?'':`<span class="cwb"><button type="button" class="${big?'':'lnk'}" data-a="camreset">Resetten</button><button type="button" class="${big?'':'lnk'}" data-a="camkalib">Kalibreren</button></span>`}${big?'<button type="button" class="tvwx" data-a="camwarnx" aria-label="Melding sluiten">×</button>':''}</div>`}

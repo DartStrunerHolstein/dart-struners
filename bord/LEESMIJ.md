@@ -35,4 +35,4 @@ Start in een opdrachtvenster: `START-BORD.bat --test`. Dan typ je zelf pijlen (b
 ## Gaat er iets mis?
 
 In deze map komt het bestand **bord-log.txt** met wat Autodarts precies doorgaf. Stuur dat (of een foto van het venster) naar Patrick.
-- Het programma let ook op Autodarts zelf. Blijft Autodarts op oranje hangen (ziet steeds beweging), dan krijg je een melding in de app en reset de laptop Autodarts vanzelf; helpt dat niet, dan probeert hij te kalibreren. Vallen veel pijlen vlak naast de dubbelring als Mis, dan meldt de app dat de kalibratie verschoven lijkt en kalibreert de laptop als het bord leeg is. In de app staan onder de melding ook de knoppen **Resetten** en **Kalibreren**.
+- Het programma grijpt nooit zelf in bij Autodarts: het kalibreert en reset alleen als je in de app op **Resetten** of **Kalibreren** drukt. Meldt Autodarts zelf dat een camera niet gekalibreerd is, of blijft Autodarts lang op oranje staan, dan zie je alleen een melding in de app.
