@@ -729,7 +729,7 @@ function live(id){
   const solo=SOLO(id),first=Number.isInteger(t.first)&&t.first>0&&t.first<n?t.first:0,bull=!solo&&t.first===undefined&&!t.list.length&&leg===0&&o.win===null;
   const cur=solo?0:(first+leg+lt.length)%n,ps=n===3?[0,1,2]:[o.a,o.b];
   const st=SI.map(s=>{const m=t.list.filter(x=>x.side===s),sc=m.filter(x=>!x.bust).reduce((q,x)=>q+x.score,0);
-    return{avg:m.length?(sc/m.length).toFixed(1):'–',last:m.length?(m[m.length-1].bust?'bust':m[m.length-1].score):'–',darts:lt.filter(x=>x.side===s).length*3}});
+    return{avg:m.length?(sc/m.length).toFixed(1):'–',last:m.length?(m[m.length-1].bust?'bust':m[m.length-1].score):'–',darts:lt.filter(x=>x.side===s).reduce((q,x)=>q+(x.out&&Array.isArray(x.d)&&x.d.length?x.d.length:3),0)}});
   return{o,r,t,leg,lt,rem,cur,st,bull,ps,n};
 }
 /* ---------- stem en eigen geluiden ---------- */
@@ -851,7 +851,7 @@ function dart(n){
   const v=n*mod,lab=n===0?'Mis':n===25?(mod===2?'Bull':'25'):(mod===3?'T':mod===2?'D':'')+n;
   const d={lab,v,dbl:mod===2};if(camXY){d.x=camXY.x;d.y=camXY.y}camXY=null;mod=1;msg='';
   if(edit!==null&&darts[edit]){msg=`Pijl ${edit+1} aangepast: ${darts[edit].lab} → ${lab}`;darts[edit]=d;edit=null}else darts.push(d);
-  say(T.dart(lab),true,DK(lab));
+  // per pijl wordt niets meer gezegd; alleen de score van de hele beurt
   evalTurn(L);
 }
 function evalTurn(L,force){
@@ -886,7 +886,7 @@ function renderOv(){
     return`<div class="pp${on?' on':''}${done&&o.win===ps[i]?' won':''}"><div class="pn">${pn(ps[i])}</div>${KOP(openId)?`<div class="pkop">${S.single.team[i].map((n,j)=>`<span class="${!done&&!L.bull&&thrW(L,i)===j?'nu':''}">${esc(n)}</span>`).join('')}</div>`:''}
     <div class="lg">Legs <b>${sets}</b></div>
     <div class="rem">${L.rem[i]}</div><div class="ck">${ck?'Uit: '+ck:'&nbsp;'}</div>
-    <div class="av"><span><small>GEM.</small>${L.st[i].avg}</span><span><small>LAATSTE</small>${L.st[i].last}</span></div></div>`};
+    <div class="av"><span><small>PIJLEN</small>${L.st[i].darts+(on?darts.length:0)}</span><span><small>LAATSTE</small>${L.st[i].last}</span></div></div>`};
   const hist=L.lt.slice(-6).reverse().map(x=>`<li><span>${turnName(x)?esc(turnName(x)):pn(ps[x.side])}${x.d?` <em>${x.d.map(q=>esc(q.lab||q)).join(' · ')}</em>`:''}</span><b>${x.bust?'Bust':x.score}</b></li>`).join('');
   const remC=L.rem[L.cur];
   const chips=[...(remC<=170&&checkout(remC)?[['Uit '+remC,remC]]:[]),...[26,41,45,60,81,85,100,140,180].map(v=>[v,v])];
@@ -1242,7 +1242,7 @@ function spSay(){const p=SP();if(!p.on)return;const rem=p.target-p.darts.reduce(
 function spDart(n){const p=SP();if(!p.on)return;
   if(n===25&&spMod===3){msg='Triple bull bestaat niet';renderOv();return}
   const lab=n===0?'Mis':n===25?(spMod===2?'Bull':'25'):(spMod===3?'T':spMod===2?'D':'')+n,d={lab,v:n*spMod,dbl:spMod===2&&n>0};spMod=1;if(spXY){d.x=spXY.x;d.y=spXY.y}spXY=null;
-  p.darts.push(d);say(T.dart(lab),true,DK(lab));
+  p.darts.push(d);
   const sum=p.darts.reduce((q,x)=>q+x.v,0),rem=p.target-sum,who=spN(p.cur);
   const ok=rem===0&&(!S.dout||d.dbl),fail=!ok&&(rem<0||rem===0||(S.dout&&rem===1)||p.darts.length>=3);
   if(ok){p.hits[p.cur]++;p.tries[p.cur]++;p.hist.unshift({w:p.cur,t:p.target,r:p.darts.map(x=>x.lab),ok:1});p.hist=p.hist.slice(0,40);
@@ -2024,7 +2024,7 @@ function tvMatch(){
   else if(openId==='F')nmR='Finale';else if(B&&B.M[openId]){const m=B.M[openId];nmR=roundName(m.br,m.r,(m.br==='W'?B.W:B.L).length)}
   const ctx=`${nmR} · ${SOLO(openId)?bo+(bo>1?' legs':' leg'):'best of '+bo+' legs'} · ${S.game} · ${S.dout?'dubbel uit':'enkel uit'}`;
   const side=i=>{const on=!done&&!L.bull&&L.cur===i,won=done&&o.win===ps[i],legs=legsOf(L.r,i),ck=on?ckFor(rem[i],3-darts.length,thrName(L,i)):'';
-    return`<div class="tvp${on?' on':''}${won?' won':''}"><div class="tvn">${pn(ps[i])}</div>${KOP(openId)?`<div class="tvkop">${S.single.team[i].map((n,j)=>`<span class="${!done&&!L.bull&&thrW(L,i)===j?'nu':''}">${esc(n)}</span>`).join('')}</div>`:''}<div class="tvl">LEGS <b>${legs}</b></div><div class="tvr">${rem[i]}</div><div class="tvck">${won?(SOLO(openId)?'KLAAR':'WINNAAR'):ck?'UIT: '+ck:on?'AAN DE BEURT':'&nbsp;'}</div><div class="tvst"><span><small>GEMIDDELD</small>${L.st[i].avg}</span><span><small>LAATSTE</small>${L.st[i].last}</span></div></div>`};
+    return`<div class="tvp${on?' on':''}${won?' won':''}"><div class="tvn">${pn(ps[i])}</div>${KOP(openId)?`<div class="tvkop">${S.single.team[i].map((n,j)=>`<span class="${!done&&!L.bull&&thrW(L,i)===j?'nu':''}">${esc(n)}</span>`).join('')}</div>`:''}<div class="tvl">LEGS <b>${legs}</b></div><div class="tvr">${rem[i]}</div><div class="tvck">${won?(SOLO(openId)?'KLAAR':'WINNAAR'):ck?'UIT: '+ck:on?'AAN DE BEURT':'&nbsp;'}</div><div class="tvst"><span><small>PIJLEN</small>${L.st[i].darts+(on?darts.length:0)}</span><span><small>LAATSTE</small>${L.st[i].last}</span></div></div>`};
   const nx=monLocal&&done?nextMatch():null;
   const turn=done?`<div class="tvd"><b>${SOLO(openId)?pn(0)+' is klaar · gemiddelde '+L.st[0].avg:pn(o.win)+' wint met '+(L.n===3?legsTxt(L):Math.max(L.r.sa,L.r.sb)+' – '+Math.min(L.r.sa,L.r.sb))}</b>${monLocal?`<div class="tvact">${openId==='X'?`<button class="pri" data-a="rematch">${SOLO(openId)?'Nog een keer':'Nog een wedstrijd'}</button>`:nx?`<button class="pri" data-a="monnext" data-id="${nx}">Volgende wedstrijd</button>`:''}<button data-a="undo">Laatste beurt terug</button><button data-a="monklaar">Klaar</button></div>`:''}</div>`
     :L.bull?`<div class="tvd tvbull"><small>Eerst bullen</small><b>Wie gooit het dichtst bij de bull?</b>${bullCamHtml(L,true)}${monLocal&&!(bullRes(L)||{}).done?`<div class="tvact">${ps.map((p,i)=>`<button class="pri" data-bull="${i}">${pn(p)}</button>`).join('')}<button data-bull="0" data-skip="1">Overslaan</button></div>`:''}</div>`
