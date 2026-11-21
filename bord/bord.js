@@ -174,7 +174,9 @@ async function verstuur(cfg, force) {
   bezig = false;
   if (queue.length) setTimeout(() => verstuur(cfg), fouten ? 2000 : 0);
 }
-function pijl(cfg, ev) { queue.push(ev); verstuur(cfg); }
+// Elke pijl krijgt een eigen nummer, zodat de website hem niet dubbel telt als hij opnieuw verstuurd wordt
+const RUN = Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(6, 'x'); let evNr = 0;
+function pijl(cfg, ev) { ev.u = RUN + '-' + (++evNr); queue.push(ev); verstuur(cfg); }
 
 // Opdrachten van de telefoon: Autodarts resetten als de beurt in de app al klaar is
 // (bijv. een gemiste pijl met de hand als Mis ingevuld), anders wacht Autodarts nog op die pijl.

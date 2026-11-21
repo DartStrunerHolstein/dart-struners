@@ -275,8 +275,10 @@ function persist() {
 // ---------- camera's (Autodarts via het doorgeefprogramma) ----------
 // Elke kamer (hoofdstand of sessie) krijgt een rij met de laatste pijlen; niet opgeslagen op schijf
 const noCam = (k, v) => (k === 'cam' ? undefined : v);
-function camOf(room) { if (!room.cam) room.cam = { seq: 0, at: 0, st: null, ev: [] }; return room.cam; }
-function camView(room) { const c = camOf(room); return { seq: c.seq, at: c.at, st: c.st, ev: c.ev.slice(-12) }; }
+// BOOT verandert bij elke herstart van de server: de telefoon weet dan dat de pijl-nummers opnieuw beginnen
+const BOOT = crypto.randomBytes(4).toString('hex');
+function camOf(room) { if (!room.cam) room.cam = { seq: 0, at: 0, st: null, ev: [], uids: [] }; if (!room.cam.uids) room.cam.uids = []; return room.cam; }
+function camView(room, own) { const c = camOf(room); return { b: BOOT, seq: c.seq, at: c.at, now: Date.now(), st: c.st, ev: c.ev.slice(-40), own: own || '' }; }
 function camPush(room, events, st) {
   const c = camOf(room), now = Date.now();
   c.at = now;
@@ -286,6 +288,9 @@ function camPush(room, events, st) {
     if (!e || typeof e !== 'object') continue;
     const k = String(e.k || '');
     if (!['dart', 'takeout', 'fix'].includes(k)) continue;
+    // Dezelfde pijl twee keer ontvangen (laptop stuurde opnieuw omdat het antwoord niet aankwam)? Dan negeren
+    const u = typeof e.u === 'string' && /^[a-z0-9]{4,12}-\d{1,9}$/.test(e.u) ? e.u : null;
+    if (u) { if (c.uids.includes(u)) continue; c.uids.push(u); if (c.uids.length > 300) c.uids = c.uids.slice(-300); }
     const n = Math.max(0, Math.min(25, Math.floor(Number(e.n) || 0))), m = Math.max(0, Math.min(3, Math.floor(Number(e.m) || 0)));
     const ev = { id: ++c.seq, k, n, m, i: Math.max(0, Math.min(2, Math.floor(Number(e.i) || 0))), name: String(e.name || '').slice(0, 12), at: now };
     const x = Number(e.x), y = Number(e.y);
@@ -302,7 +307,7 @@ function camPush(room, events, st) {
 const KOP_FILE = path.join(DATA_DIR, 'koppel.json');
 let kop = {}; // id -> { h (hash van het geheim), code, c, u }
 try { if (fs.existsSync(KOP_FILE)) { const d = JSON.parse(fs.readFileSync(KOP_FILE, 'utf8')); if (d && typeof d === 'object') kop = d; } } catch (e) {}
-const kopRoom = new Map(), kopWait = new Map(), kopSeen = new Map(), kopHits = new Map();
+const kopRoom = new Map(), kopWait = new Map(), kopSeen = new Map(), kopHits = new Map(), kopOwn = new Map();
 let kopTimer = null;
 function persistKop() {
   clearTimeout(kopTimer);
@@ -316,7 +321,7 @@ const kopByCode = c => { c = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g,
 const kopCmd = new Map(), kopCmdWait = new Map(), kopCmdHits = new Map();
 const kopCmdView = id => kopCmd.get(id) || { n: 0, cmd: '' };
 function kopCmdNotify(id) { const w = kopCmdWait.get(id) || []; kopCmdWait.set(id, []); for (const y of w) { clearTimeout(y.t); try { send(y.res, 200, kopCmdView(id)); } catch (e) {} } }
-function kopNotify(id) { const w = kopWait.get(id) || []; kopWait.set(id, []); const v = camView(roomOfKop(id)); for (const y of w) { clearTimeout(y.t); try { send(y.res, 200, v); } catch (e) {} } }
+function kopNotify(id) { const w = kopWait.get(id) || []; kopWait.set(id, []); const v = camView(roomOfKop(id), (kopOwn.get(id) || {}).d); for (const y of w) { clearTimeout(y.t); try { send(y.res, 200, v); } catch (e) {} } }
 function newKopCode() { const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; for (;;) { let c = ''; for (let i = 0; i < 4; i++) c += ch[crypto.randomInt(ch.length)]; if (!kopByCode(c)) return c; } }
 
 // Voor meekijkers alleen de beurten van de wedstrijd die nu bezig is
@@ -707,11 +712,16 @@ const server = http.createServer(async (req, res) => {
       const id = kopByCode(kw[1]);
       if (!id) return send(res, 404, { error: 'Deze koppelcode bestaat niet' });
       kopSeen.set(id, Date.now());
-      const room = roomOfKop(id), kb = url.searchParams.get('bv');
-      if (kb === null || Number(kb) !== camOf(room).seq) return send(res, 200, camView(room));
+      // Maar één apparaat per camera telt de pijlen (anders tellen twee telefoons/laptops dezelfde pijl allebei)
+      const dv = /^[a-z0-9]{6,16}$/.test(url.searchParams.get('d') || '') ? url.searchParams.get('d') : '';
+      if (dv) { const o = kopOwn.get(id), now = Date.now();
+        if (!o || o.d === dv || now - o.at > 40000 || url.searchParams.get('claim') === '1') kopOwn.set(id, { d: dv, at: now }); }
+      const ownOf = () => (kopOwn.get(id) || {}).d || '';
+      const room = roomOfKop(id), kb = url.searchParams.get('bv'), kbb = url.searchParams.get('bb');
+      if (kb === null || Number(kb) !== camOf(room).seq || kbb !== BOOT || url.searchParams.get('claim') === '1') return send(res, 200, camView(room, ownOf()));
       const w = kopWait.get(id) || []; kopWait.set(id, w);
-      if (w.length > 50) return send(res, 200, camView(room));
-      const y = { res, t: setTimeout(() => { kopWait.set(id, (kopWait.get(id) || []).filter(z => z !== y)); send(res, 200, camView(room)); }, 25000) };
+      if (w.length > 50) return send(res, 200, camView(room, ownOf()));
+      const y = { res, t: setTimeout(() => { kopWait.set(id, (kopWait.get(id) || []).filter(z => z !== y)); if (dv) { const o = kopOwn.get(id); if (o && o.d === dv) o.at = Date.now(); } send(res, 200, camView(room, ownOf())); }, 25000), own: ownOf };
       w.push(y);
       req.on('close', () => { clearTimeout(y.t); kopWait.set(id, (kopWait.get(id) || []).filter(z => z !== y)); });
       return;
