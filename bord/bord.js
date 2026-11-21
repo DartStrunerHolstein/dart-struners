@@ -16,6 +16,7 @@ const readline = require('readline');
 const CONFIG = path.join(__dirname, 'bord-instellingen.json');
 const args = process.argv.slice(2);
 const TEST = args.includes('--test');
+const START = Date.now();
 const SITE = ((args.find(a => a.startsWith('--site=')) || '').slice(7) || 'https://dartstruners.alwaysdata.net').replace(/\/+$/, '');
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -43,7 +44,7 @@ async function stuur(cfg, events, status) {
   const r = await fetch(SITE + '/api/koppel/' + cfg.id, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Secret': cfg.secret },
-    body: JSON.stringify({ events, status }),
+    body: JSON.stringify({ events, status, t0: START }),
     signal: AbortSignal.timeout(8000)
   });
   if (r.status === 401 || r.status === 404) { const e = new Error('koppeling'); e.code = 404; throw e; }
@@ -167,6 +168,7 @@ async function verstuur(cfg, force) {
     const d = await stuur(cfg, batch, laatsteStatus);
     queue = queue.slice(batch.length);
     if (d && typeof d.foto === 'boolean') fotoGewild = d.foto;
+    if (d && d.oud) { log('Er draait een nieuwer doorgeefprogramma met dezelfde koppelcode. Dit venster stopt nu.'); process.exit(0); }
     if (d && typeof d.telefoon === 'boolean' && d.telefoon !== telefoon) { const was = telefoon; telefoon = d.telefoon; if (telefoon) log('Telefoon gekoppeld ✓ De pijlen tellen mee.'); else if (was) log('Geen telefoon meer gekoppeld. Koppelcode: ' + cfg.code); }
     if (fouten) log('Weer verbonden met de website ✓');
     fouten = 0;
@@ -185,8 +187,10 @@ function pijl(cfg, ev) { ev.u = RUN + '-' + (++evNr); queue.push(ev); verstuur(c
 // Alleen als de monitor-weergave erom vraagt (fotoGewild), en bij snel achter elkaar gegooide pijlen alleen de laatste.
 let fotoAantal = null, fotoGemeld = false, fotoReeks = 0, fotoBezig = false, fotoNog = null, fotoT = null;
 async function telCameras(cfg) {
+  // Autodarts geeft ook voor niet-bestaande camera's een (leeg) plaatje; vraag daarom eerst hoeveel camera's er zijn
+  try { const d = await (await get(cfg.board + '/api/system', 2500)).json(), c = d && d.calibration && d.calibration.cams; if (Array.isArray(c) && c.length) return Math.min(6, c.length); } catch (e) {}
   let n = 0;
-  for (let i = 0; i < 6; i++) { try { const r = await fetch(cfg.board + '/api/img/cams/' + i, { signal: AbortSignal.timeout(3000) }); await r.arrayBuffer(); if (!r.ok) break; n++; } catch (e) { break; } }
+  for (let i = 0; i < 3; i++) { try { const r = await fetch(cfg.board + '/api/img/cams/' + i, { signal: AbortSignal.timeout(3000) }); await r.arrayBuffer(); if (!r.ok) break; n++; } catch (e) { break; } }
   return n;
 }
 function fotoNaPijl(cfg, naam) {
@@ -204,7 +208,7 @@ async function stuurFotos(cfg) {
       // eerst alle beelden van hetzelfde moment ophalen, dan pas versturen
       const beelden = await Promise.all(Array.from({ length: fotoAantal }, async (_, i) => { const r = await fetch(cfg.board + '/api/img/cams/' + i, { signal: AbortSignal.timeout(3000), cache: 'no-store' }); if (!r.ok) throw new Error('camera ' + i); return Buffer.from(await r.arrayBuffer()); }));
       for (let i = 0; i < beelden.length; i++) {
-        const r = await fetch(SITE + '/api/koppel/' + cfg.id + '/foto?b=' + b + '&c=' + i + '&n=' + beelden.length + '&p=' + encodeURIComponent(naam), { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'X-Secret': cfg.secret }, body: beelden[i], signal: AbortSignal.timeout(15000) });
+        const r = await fetch(SITE + '/api/koppel/' + cfg.id + '/foto?b=' + b + '&c=' + i + '&n=' + beelden.length + '&t0=' + START + '&p=' + encodeURIComponent(naam), { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'X-Secret': cfg.secret }, body: beelden[i], signal: AbortSignal.timeout(15000) });
         if (!r.ok) throw new Error('website ' + r.status);
       }
     }
@@ -304,7 +308,7 @@ async function luisterNaarBord(cfg) {
       const throws = Array.isArray(d.throws) ? d.throws : Array.isArray(d.darts) ? d.darts : Array.isArray(d.data && d.data.throws) ? d.data.throws : [];
       const num = Math.max(Number.isFinite(d.numThrows) ? d.numThrows : 0, throws.length);
       const nu = { num, names: throws.map(t => omzet(t).name), status: d.status, event: d.event };
-      laatsteStatus = { connected: d.connected !== false, running: d.running !== false, status: String(d.status || ''), gz: gezond.gz, gm: gezond.gm, kb: gezond.kb };
+      laatsteStatus = { connected: d.connected !== false, running: d.running !== false, status: String(d.status || ''), gz: gezond.gz, gm: gezond.gm, kb: gezond.kb, t0: START };
       checkStatus(num, d.status);
       checkSysteem(cfg);
       if (vorige === null) {
@@ -333,7 +337,7 @@ async function luisterNaarBord(cfg) {
       vorige = nu;
     } catch (e) {
       // pas na een paar mislukte pogingen achter elkaar melden: één trage keer is geen storing
-      if (weg >= 3) laatsteStatus = { connected: false, running: false, status: 'Niet bereikbaar', gz: 'weg', gm: 'Autodarts is niet bereikbaar op deze laptop. Staat Autodarts aan?' };
+      if (weg >= 3) laatsteStatus = { connected: false, running: false, status: 'Niet bereikbaar', gz: 'weg', gm: 'Autodarts is niet bereikbaar op deze laptop. Staat Autodarts aan?', t0: START };
       if (weg++ % 25 === 3) log('Autodarts antwoordt niet op ' + cfg.board + '. Staat het programma aan?');
       await sleep(1000);
     }
@@ -343,7 +347,7 @@ async function luisterNaarBord(cfg) {
 
 // Testmodus: zelf pijlen typen
 async function testModus(cfg) {
-  laatsteStatus = { connected: true, running: true, status: 'Test' };
+  laatsteStatus = { connected: true, running: true, status: 'Test', t0: START };
   console.log('\nTESTMODUS: typ een pijl en druk op Enter.');
   console.log('  Voorbeelden: 20  T20  D16  25  BULL  M (mis)   W = pijlen eruit   Q = stoppen\n');
   let i = 0;
@@ -361,10 +365,24 @@ async function testModus(cfg) {
   }
 }
 
+// Maar één doorgeefprogramma tegelijk op deze computer (anders telt elke pijl dubbel)
+function slot() {
+  return new Promise(res => {
+    const srv = require('net').createServer();
+    srv.once('error', () => res(false));
+    srv.listen(31801, '127.0.0.1', () => res(true));
+    srv.unref();
+  });
+}
 (async () => {
   console.log('\n  ===============================');
   console.log('    DE DART STRUNERS – BORD');
   console.log('  ===============================\n');
+  if (!(await slot())) {
+    console.log('Het doorgeefprogramma draait al in een ander venster op deze computer.');
+    console.log('Gebruik dat venster, of sluit het eerst en start dan opnieuw. Dit venster sluit over 15 seconden.');
+    await sleep(15000); process.exit(0);
+  }
   if (typeof fetch !== 'function') { console.log('Deze Node.js is te oud. Gebruik START-BORD.bat, die regelt de juiste versie.'); process.exit(1); }
   let cfg = {};
   try { if (!args.includes('--opnieuw')) cfg = JSON.parse(fs.readFileSync(CONFIG, 'utf8')) || {}; } catch (e) {}

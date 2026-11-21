@@ -35,5 +35,6 @@ Start in een opdrachtvenster: `START-BORD.bat --test`. Dan typ je zelf pijlen (b
 ## Gaat er iets mis?
 
 In deze map komt het bestand **bord-log.txt** met wat Autodarts precies doorgaf. Stuur dat (of een foto van het venster) naar Patrick.
+- Start het programma maar één keer. Start je het per ongeluk nog een keer, dan meldt het nieuwe venster dat er al een draait en sluit het. Draait er toch een oud venster met dezelfde code (bijv. een oudere versie), dan telt alleen het nieuwste en zie je in de app een melding om het oude te sluiten.
 - Staat de **monitor-weergave** open, dan stuurt het programma na elke pijl de beelden van de camera's mee. Ze staan onder het dartbord; tik erop om ze groot te zien. Zonder monitor-weergave worden er geen beelden verstuurd.
 - Het programma grijpt nooit zelf in bij Autodarts: het kalibreert en reset alleen als je in de app op **Resetten** of **Kalibreren** drukt. Meldt Autodarts zelf dat een camera niet gekalibreerd is, of blijft Autodarts lang op oranje staan, dan zie je alleen een melding in de app.

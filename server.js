@@ -283,7 +283,7 @@ function camPush(room, events, st) {
   const c = camOf(room), now = Date.now();
   c.at = now;
   if (st && typeof st === 'object') c.st = { connected: !!st.connected, running: !!st.running, status: String(st.status || '').slice(0, 40),
-    gz: ['ok', 'hangt', 'kalib', 'weg'].includes(st.gz) ? st.gz : 'ok', gm: String(st.gm || '').slice(0, 160), kb: ['bezig', 'gestart', 'klaar', 'mislukt'].includes(st.kb) ? st.kb : '' };
+    gz: ['ok', 'hangt', 'kalib', 'weg', 'dubbel'].includes(st.gz) ? st.gz : 'ok', gm: String(st.gm || '').slice(0, 160), kb: ['bezig', 'gestart', 'klaar', 'mislukt'].includes(st.kb) ? st.kb : '' };
   for (const e of Array.isArray(events) ? events.slice(0, 20) : []) {
     if (!e || typeof e !== 'object') continue;
     const k = String(e.k || '');
@@ -309,7 +309,7 @@ let kop = {}; // id -> { h (hash van het geheim), code, c, u }
 try { if (fs.existsSync(KOP_FILE)) { const d = JSON.parse(fs.readFileSync(KOP_FILE, 'utf8')); if (d && typeof d === 'object') kop = d; } } catch (e) {}
 const kopRoom = new Map(), kopWait = new Map(), kopSeen = new Map(), kopHits = new Map(), kopOwn = new Map();
 // Camerafoto's na elke pijl (alleen in het geheugen): id -> { v, n, at, p, cams: [Buffer] }; kopFotoWil: wanneer de monitor-weergave er laatst om vroeg
-const kopFoto = new Map(), kopFotoNieuw = new Map(), kopFotoWil = new Map();
+const kopFoto = new Map(), kopFotoNieuw = new Map(), kopFotoWil = new Map(), kopRuns = new Map();
 let kopTimer = null;
 function persistKop() {
   clearTimeout(kopTimer);
@@ -685,8 +685,15 @@ const server = http.createServer(async (req, res) => {
       if (!x) return send(res, 404, { error: 'Onbekend bord' });
       if (!sessOk(x, req.headers['x-secret'])) return send(res, 401, { error: 'Onjuist geheim' });
       const b = await readBody(req);
-      camPush(roomOfKop(id), b.events, b.status);
-      if (Date.now() - (x.u || 0) > 3600e3) { x.u = Date.now(); persistKop(); }
+      // Twee doorgeefprogramma's met dezelfde code (oud venster nog open)? Alleen het nieuwst gestarte telt, anders telt elke pijl dubbel
+      const now = Date.now(), t0 = Math.max(0, Number(b.t0) || Number(b.status && b.status.t0) || 0), runs = (kopRuns.get(id) || []).filter(r => now - r.at < 45000 && r.t0 !== t0);
+      runs.push({ t0, at: now }); kopRuns.set(id, runs);
+      const nieuwste = Math.max(...runs.map(r => r.t0)), oud = t0 < nieuwste;
+      if (oud) return send(res, 200, { ok: true, code: x.code, oud: true });
+      const st = b.status && typeof b.status === 'object' ? Object.assign({}, b.status) : b.status;
+      if (st && runs.some(r => r.t0 !== t0 && now - r.at < 25000)) { st.gz = 'dubbel'; st.gm = 'Er draaien twee doorgeefprogramma\'s met deze code op de laptop. Alleen het nieuwste telt; sluit het oude zwarte venster.'; }
+      camPush(roomOfKop(id), b.events, st);
+      if (now - (x.u || 0) > 3600e3) { x.u = now; persistKop(); }
       kopNotify(id);
       return send(res, 200, { ok: true, code: x.code, telefoon: Date.now() - (kopSeen.get(id) || 0) < 35000, foto: Date.now() - (kopFotoWil.get(id) || 0) < 60000 });
     }
@@ -698,6 +705,8 @@ const server = http.createServer(async (req, res) => {
       if (!sessOk(x, req.headers['x-secret'])) return send(res, 401, { error: 'Onjuist geheim' });
       const b = Math.floor(Number(url.searchParams.get('b'))), c = Math.floor(Number(url.searchParams.get('c'))), n = Math.floor(Number(url.searchParams.get('n')));
       if (!Number.isFinite(b) || !(c >= 0 && c < 6) || !(n >= 1 && n <= 6) || c >= n) return send(res, 400, { error: 'Onjuist' });
+      const fr = kopRuns.get(id) || [], ft0 = Math.max(0, Number(url.searchParams.get('t0')) || 0);
+      if (fr.length > 1 && ft0 < Math.max(...fr.map(r => r.t0))) { req.resume(); return send(res, 200, { ok: true, oud: true }); }
       let buf;
       try { buf = await readRaw(req, 1024 * 1024); } catch (e) { return send(res, 413, { error: 'Te groot' }); }
       if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) return send(res, 400, { error: 'Geen JPEG' });
