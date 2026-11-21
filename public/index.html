@@ -1014,7 +1014,7 @@ function camTurnDone(side){if(!camOn||camRound<1||camRound>2)return;const ik=ikS
 // ---------- bullen met de camera ----------
 // Pijlen van het bullen staan in turns[id].bd = {kant: {r, lab, x, y}}; r = afstand tot het midden (1 = buitenrand dubbel = 17 cm)
 const bdLab=(n,m)=>n===0?'Mis':n===25?(m>=2?'Bull':'25'):(m===3?'T':m===2?'D':'')+n;
-function bdR(e,n,m){if(typeof e.x==='number'&&typeof e.y==='number')return Math.hypot(e.x,e.y)/0.975;
+function bdR(e,n,m){if(typeof e.x==='number'&&typeof e.y==='number')return Math.hypot(e.x,e.y);
   return n===0?9:n===25?(m>=2?0.02:0.065):m===3?0.6:m===2?0.98:0.4}
 // Welke speler hoort bij welke pijl van Autodarts (pijl 1/2/3). Niet op pijlnummer gokken: haalt iemand zijn pijl
 // eruit, dan begint Autodarts weer bij pijl 1. De pijlen gaan daarom in volgorde van binnenkomst naar de spelers.
@@ -1097,7 +1097,7 @@ const RB={bull:.0374,obull:.0935,tin:.582,tout:.629,din:.953,dout:1};
 function hsh(str){let h=2166136261;for(const c of str){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return((h>>>0)%10000)/10000}
 // Plek op het bord (eenheden: buitenrand dubbel = 1, y omhoog = richting 20)
 function dartPos(d,key){
-  if(typeof d.x==='number'&&typeof d.y==='number')return{x:d.x/0.975,y:d.y/0.975};
+  if(typeof d.x==='number'&&typeof d.y==='number')return{x:d.x,y:d.y};
   const r1=hsh(key+'a'),r2=hsh(key+'b'),l=d.lab;
   if(l==='Bull')return{x:(r1-.5)*.04,y:(r2-.5)*.04};
   if(l==='25'){const a=r1*2*Math.PI,r=.055+r2*.03;return{x:Math.sin(a)*r,y:Math.cos(a)*r}}
@@ -1562,8 +1562,8 @@ function boardHit(x,y){const r=Math.hypot(x,y)/100;let a=Math.atan2(x,-y);if(a<0
 document.addEventListener('click',e=>{if(monLocal&&tvFx&&e.target.closest&&e.target.closest('.tvfx')){tvFx=null;clearTimeout(tvFxT);renderTV();return}
   const sv=e.target.closest&&e.target.closest('svg.tvboard.tap');if(!sv||!monLocal)return;
   try{const pt=sv.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(sv.getScreenCTM().inverse()),h=boardHit(q.x,q.y);
-    if(openId){mod=h.m;camXY={x:q.x/100*0.975,y:-q.y/100*0.975};dart(h.n)}
-    else if(SP().on){spMod=h.m;spXY={x:q.x/100*0.975,y:-q.y/100*0.975};spDart(h.n)}}catch(_){}});
+    if(openId){mod=h.m;camXY={x:q.x/100,y:-q.y/100};dart(h.n)}
+    else if(SP().on){spMod=h.m;spXY={x:q.x/100,y:-q.y/100};spDart(h.n)}}catch(_){}});
 let spXY=null;
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;

@@ -141,7 +141,9 @@ function omzet(t) {
   if (m === 0 || !(n === 25 || (n >= 1 && n <= 20))) { n = 0; m = 0; }
   const out = { n, m, name: n === 0 ? 'Mis' : n === 25 ? (m === 2 ? 'Bull' : '25') : (m === 3 ? 'T' : m === 2 ? 'D' : '') + n };
   // plek op het bord (voor het dartbord op de monitor): bull = (0,0), y omhoog = richting de 20
-  const c = t.coords && typeof t.coords === 'object' ? t.coords : null, cx = c ? getal(c.x) : null, cy = c ? getal(c.y) : null;
+  // Autodarts v2 geeft coordsX/coordsY (1 = buitenrand dubbel); oudere versies coords: {x, y}
+  const c = t.coords && typeof t.coords === 'object' ? t.coords : null;
+  const cx = getal(t.coordsX) !== null ? getal(t.coordsX) : c ? getal(c.x) : null, cy = getal(t.coordsY) !== null ? getal(t.coordsY) : c ? getal(c.y) : null;
   if (cx !== null && cy !== null && !(t.bouncer === true)) { out.x = cx; out.y = cy; }
   return out;
 }
