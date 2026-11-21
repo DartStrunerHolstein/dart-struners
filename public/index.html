@@ -276,6 +276,8 @@ body:not(.tvm) .hero,body:not(.tvm) main,body:not(.tvm) #ov{zoom:var(--z)}
 .bdl{list-style:none;margin:0;padding:0;display:grid;gap:6px;text-align:left}.bdl li{display:flex;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.bdl li.w{border-color:var(--hl);background:rgba(255,214,10,.12)}.bdl i{opacity:.6;font-weight:500}.bdmsg{margin:4px 0 0}.bdor{font-size:13px!important;opacity:.7;margin-top:6px!important}
 .tvbull .bdl{max-width:760px;margin:10px auto 0;font-size:clamp(14px,1.6vw,26px)}.tvbull .bdmsg{font-size:clamp(14px,1.5vw,24px);margin-top:10px;color:#fff}
 .kdd{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px;max-width:760px}.kdd span{position:relative;overflow:hidden;border-radius:10px;padding:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;align-items:center}.kdd span::before{content:'';position:absolute;left:0;bottom:0;height:4px;width:var(--p);background:var(--pink)}.kdd span.few{opacity:.55}.kdd b{font-size:15px}.kdd em{font-style:normal;font-weight:800;color:var(--hl)}.kdd small{opacity:.6;font-size:11px}
+.camwarn{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin:6px 0;padding:10px 12px;border-radius:12px;background:#fff3cd;color:#5c4100;border:1px solid #f0c36d;font-size:14px}.camwarn span{flex:1 1 200px}.camwarn .cwb{flex:0 0 auto;display:flex;gap:10px}
+.tvwarn{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + 9vh);z-index:40;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;max-width:min(900px,94vw);padding:12px 16px;border-radius:14px;background:#ffcc33;color:#3b2a00;font:600 clamp(14px,1.4vw,22px) Inter,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.4)}.tvwarn span{flex:1 1 260px}.tvwarn .tvwx{background:transparent;color:#3b2a00;font-size:22px;padding:0 6px}@media(max-width:760px){.tvwarn{top:auto;bottom:calc(90px + env(safe-area-inset-bottom));font-size:13px;padding:10px 12px}}.tvwarn .cwb{display:flex;gap:8px}.tvwarn button{border:0;border-radius:999px;padding:8px 16px;font:800 inherit Inter,sans-serif;background:#3b2a00;color:#fff;cursor:pointer}
 .kform{display:flex;gap:6px}.kform span{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:700 15px Inter,sans-serif}.kform .w{background:#1f9d55;color:#fff}.kform .v{background:rgba(255,255,255,.12);color:#fff}
 .msum{width:100%;max-width:420px;margin:12px auto 4px;border-collapse:collapse;font-size:14px}.msum th,.msum td{padding:5px 6px;text-align:center}.msum tbody th{font-weight:600;opacity:.7;font-size:12px;text-transform:uppercase;letter-spacing:.04em}.msum thead th{font-weight:800}.msum tbody tr+tr{border-top:1px solid rgba(255,255,255,.12)}
 .hfoot{margin:24px 0 0}.hfoot a{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-weight:700;text-decoration:none}.hfoot svg{width:18px;height:18px}
@@ -1041,12 +1043,18 @@ function ikHtml(){if(!camOn||!openId||SOLO(openId))return'';const L=live(openId)
   return`<div class="ikben"><span>Mijn camera telt voor:</span>${L.ps.map((p,i)=>`<button data-ik="${i}" class="${ik===i?'on':''}">${pn(p)}</button>`).join('')}<button data-ik="" class="${ik===null?'on':''}">${L.n===3?'Iedereen':'Allebei'}</button></div>`}
 function camBtn(){const ok=camLive();
   return`<button class="snd cam${camOn?' on':''}" data-a="cam" aria-pressed="${camOn}" title="${camOn?'Camera telt mee op dit apparaat':'Camera tellen aanzetten'}"><i class="dot ${camOn?(ok?'ok':'bad'):''}"></i>Camera</button>`}
+// Melding als Autodarts blijft hangen, niet goed gekalibreerd lijkt of niet bereikbaar is
+let camWarnX='';
+function camWarn(big){if(!camOn||!camLive())return'';const st=cam.st||{},kb={bezig:'De laptop probeert nu te kalibreren…',gestart:'Kalibratie gestart: even niet gooien tot Autodarts klaar is.',klaar:'',mislukt:'Automatisch kalibreren lukte niet: kalibreer in Autodarts zelf (knop Calibrate).'}[st.kb||'']||'';
+  if((!st.gz||st.gz==='ok')&&!kb)return'';if(big&&camWarnX===(st.gz||'')+(st.gm||'')+(st.kb||''))return'';
+  const t=st.gz&&st.gz!=='ok'?esc(st.gm||'Autodarts telt niet goed.'):'';
+  return`<div class="${big?'tvwarn':'camwarn'}" role="alert"><b>⚠ Autodarts</b><span>${t}${t&&kb?' ':''}${esc(kb)}</span>${st.gz==='weg'?'':`<span class="cwb"><button type="button" class="${big?'':'lnk'}" data-a="camreset">Resetten</button><button type="button" class="${big?'':'lnk'}" data-a="camkalib">Kalibreren</button></span>`}${big?'<button type="button" class="tvwx" data-a="camwarnx" aria-label="Melding sluiten">×</button>':''}</div>`}
 function camInfo(){
   if(kopAsk)return`<form class="kopf" id="kopf"><b>Camera koppelen</b><span>Start op de laptop bij het bord <em>START-BORD.bat</em> en typ de code die daar staat.</span>
     <div class="row"><input id="kopin" maxlength="4" placeholder="bijv. K7P2" autocomplete="off" autocapitalize="characters" value="${esc(kopCode)}" aria-label="Koppelcode"><button class="btn pri" type="submit">Koppelen</button><button class="btn" type="button" data-a="kopno">Annuleren</button></div>
     ${kopErr?`<span class="cerr">${esc(kopErr)}</span>`:''}</form>`;
   if(!camOn)return'';const ok=camLive(),st=cam.st;
-  return`<div class="caminfo ${ok?'ok':'bad'}">${ok?(st&&st.running===false?'Laptop verbonden, maar Autodarts telt niet (gestopt)':'Camera\'s tellen mee. Klopt een pijl niet? Tik op het vakje om hem te verbeteren.'):'Wachten op de laptop met code '+esc(kopCode)+'. Staat START-BORD.bat aan?'} ${ok?'<button type="button" class="lnk" data-a="camreset">Autodarts resetten</button> · ':''}<button type="button" class="lnk" data-a="kopnew">Andere code</button></div>`}
+  return`${camWarn(false)}<div class="caminfo ${ok?'ok':'bad'}">${ok?(st&&st.running===false?'Laptop verbonden, maar Autodarts telt niet (gestopt)':'Camera\'s tellen mee. Klopt een pijl niet? Tik op het vakje om hem te verbeteren.'):'Wachten op de laptop met code '+esc(kopCode)+'. Staat START-BORD.bat aan?'} ${ok?'<button type="button" class="lnk" data-a="camreset">Autodarts resetten</button> · ':''}<button type="button" class="lnk" data-a="kopnew">Andere code</button></div>`}
 async function kopTry(code){code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(code.length!==4){kopErr='De code heeft 4 tekens.';renderOv();return}
   try{const r=await fetch('/api/koppel/code/'+code+'/wait',{cache:'no-store'});
@@ -1650,6 +1658,8 @@ document.addEventListener('click',e=>{
   if(a==='close'){sheet=false;openId=null;darts=[];edit=null;render();return}
   if(a==='resume'){openId='X';darts=[];mod=1;buf='';msg='';render();return}
   if(a==='bullre'&&openId){const L=live(openId);delete L.t.bd;S.turns[openId]=L.t;if(camOn&&camRound>0&&camRound<3)camReset();save();render();return}
+  if(a==='camwarnx'){const st=cam.st||{};camWarnX=(st.gz||'')+(st.gm||'')+(st.kb||'');renderTV();return}
+  if(a==='camkalib'){if(camOn&&kopCode)fetch('/api/koppel/code/'+kopCode+'/kalibreer',{method:'POST'}).catch(()=>{});msg='Autodarts wordt gekalibreerd. Even niet gooien.';renderOv();if(monLocal)renderTV();return}
   if(a==='camreset'){camResetAt=0;camReset();msg='Autodarts wordt gereset';renderOv();return}
   if(a==='monnext'&&t.dataset.id){openId=t.dataset.id;darts=[];mod=1;buf='';msg='';edit=null;render();return}
   if(a==='monklaar'){const sp=!openId;sheet=false;openId=null;darts=[];edit=null;if(sp){const p=SP();p.done=false}monClose();render();return}
@@ -2029,7 +2039,8 @@ function tvMatch(){
     if(age<2600){clearTimeout(boardT);boardT=setTimeout(renderTV,2650-age)}else fade=true}
   const tap=monLocal&&!done&&!L.bull&&S.inmode==='pijl'&&(darts.length<3||edit!==null);
   const board=`<div class="tvbw">${boardSvg(bd,fade,bk,tap)}${monLocal&&!done&&!L.bull?(S.inmode==='pijl'?`<p class="tvtap">${edit!==null?'Tik op het bord voor de juiste waarde van pijl '+(edit+1):'Tik op het bord waar je pijl zit'}</p><div class="tvact"><button data-n="0"${tap?'':' disabled'}>Mis</button><button data-a="undo">⌫ Pijl terug</button></div>`:`<p class="tvtap">Invoer staat op Per beurt</p><div class="tvact"><button class="pri" data-mode="pijl">Tikken op het bord</button></div>`):''}</div>`;
-  const main=L.n===3?`<div class="tvm2 n3 wb">${side(0)}${side(1)}${side(2)}${board}${turn}</div>`:`<div class="tvm2${SOLO(openId)?' solo':''}${board?' wb':''}">${side(0)}${board}${SOLO(openId)?'':side(1)}${turn}</div>${hist?`<ul class="tvh">${hist}</ul>`:''}`;
+  const warn=monLocal?camWarn(true):'';
+  const main=warn+(L.n===3?`<div class="tvm2 n3 wb">${side(0)}${side(1)}${side(2)}${board}${turn}</div>`:`<div class="tvm2${SOLO(openId)?' solo':''}${board?' wb':''}">${side(0)}${board}${SOLO(openId)?'':side(1)}${turn}</div>${hist?`<ul class="tvh">${hist}</ul>`:''}`);
   if(!isC(openId)||!S.comp.started)return{ctx,html:main};
   const T=cStand();
   return{ctx,html:`<div class="tvsp"><div class="tvmn">${main}</div><aside class="tvsd"><h3>Live stand</h3><table class="tvmini"><thead><tr><th>#</th><th class="tn">SPELER</th><th>W</th><th>+/−</th><th>PNT</th></tr></thead><tbody>${T.map((r,i)=>{const d=r.lf-r.la;return`<tr class="${ps.includes(r.i)?'me':''}"><td>${i+1}</td><td class="tn">${esc(r.n)}</td><td>${r.w}</td><td>${d>0?'+'+d:d}</td><td class="pt">${r.pt}</td></tr>`}).join('')}</tbody></table><p class="tvsdn"><i></i>speelt nu</p></aside></div>`};

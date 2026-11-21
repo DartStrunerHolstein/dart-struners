@@ -280,7 +280,8 @@ function camView(room) { const c = camOf(room); return { seq: c.seq, at: c.at, s
 function camPush(room, events, st) {
   const c = camOf(room), now = Date.now();
   c.at = now;
-  if (st && typeof st === 'object') c.st = { connected: !!st.connected, running: !!st.running, status: String(st.status || '').slice(0, 40) };
+  if (st && typeof st === 'object') c.st = { connected: !!st.connected, running: !!st.running, status: String(st.status || '').slice(0, 40),
+    gz: ['ok', 'hangt', 'kalib', 'weg'].includes(st.gz) ? st.gz : 'ok', gm: String(st.gm || '').slice(0, 160), kb: ['bezig', 'gestart', 'klaar', 'mislukt'].includes(st.kb) ? st.kb : '' };
   for (const e of Array.isArray(events) ? events.slice(0, 20) : []) {
     if (!e || typeof e !== 'object') continue;
     const k = String(e.k || '');
@@ -690,14 +691,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     // De telefoon vraagt de laptop om Autodarts te resetten (beurt in de app afgerond, Autodarts wacht nog op pijlen)
-    const kr = /^\/api\/koppel\/code\/([A-Za-z0-9]{4})\/reset$/.exec(p);
+    const kr = /^\/api\/koppel\/code\/([A-Za-z0-9]{4})\/(reset|kalibreer)$/.exec(p);
     if (kr && req.method === 'POST') {
       const id = kopByCode(kr[1]);
       if (!id) return send(res, 404, { error: 'Deze koppelcode bestaat niet' });
       const now = Date.now(), l = (kopCmdHits.get(id) || []).filter(t => now - t < 60000);
       if (l.length >= 20) return send(res, 429, { error: 'Te vaak' });
       l.push(now); kopCmdHits.set(id, l);
-      kopCmd.set(id, { n: kopCmdView(id).n + 1, cmd: 'reset', at: now });
+      kopCmd.set(id, { n: kopCmdView(id).n + 1, cmd: kr[2], at: now });
       kopCmdNotify(id);
       return send(res, 200, { ok: true });
     }
