@@ -80,7 +80,7 @@ In **Beheer** staat alleen nog de **competitie**, plus het checkout-leaderboard,
 **Live kijken** heeft drie tabbladen: **Live** (alle wedstrijden die nu bezig zijn, competitie en sessies van vrienden; tik op *Kijken*), **Competitie** (stand en alle wedstrijden) en **Checkout-top**. De chat staat er altijd bij. Op de **monitor** kies je de wedstrijd op het startscherm of met **Wissel wedstrijd**. Een sessie kan zich verbergen met de knop *Zichtbaar in Live kijken*.
 
 ### Spelen op het grote scherm
-In een wedstrijd (en in het checkout-spel) staat bovenin **Monitor**: dit apparaat toont dan het grote scherm met het dartbord. Met **✎ Aanpassen** ga je terug naar het invullen; tik je op het monitorscherm op een pijl-vakje, dan pas je die pijl meteen aan.
+In een wedstrijd (en in het checkout-spel) staat bovenin **Monitor**: dit apparaat toont dan het grote scherm met het dartbord. Met **✎ Aanpassen** ga je terug naar het invullen; tik je op het monitorscherm op een pijl-vakje, dan pas je die pijl meteen aan. Telt de camera mee, dan staan onder het dartbord na elke pijl de beelden van de camera's; tik erop om ze groot te bekijken.
 
 ### Samen spelen op afstand
 In een sessie staat **Uitnodigen**: dat deelt een link waarmee je vriend meteen in de sessie zit (zonder code te typen). Start een wedstrijd; op het andere apparaat verschijnt **Meedoen**. Hebben jullie allebei een bord met camera's, koppel dan ieder zijn eigen camera en kies bij **Mijn camera telt voor:** je eigen naam. Dan telt elk bord alleen in de beurt van die speler, en zien jullie elkaars worpen live.

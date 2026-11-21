@@ -158,7 +158,7 @@ function bewaarRuw(t, p) {
 }
 
 // ---------- hoofdlus ----------
-let queue = [], bezig = false, laatsteStatus = null, fouten = 0, telefoon = null;
+let queue = [], bezig = false, laatsteStatus = null, fouten = 0, telefoon = null, fotoGewild = false;
 async function verstuur(cfg, force) {
   if (bezig || (!queue.length && !force)) return;
   bezig = true;
@@ -166,6 +166,7 @@ async function verstuur(cfg, force) {
   try {
     const d = await stuur(cfg, batch, laatsteStatus);
     queue = queue.slice(batch.length);
+    if (d && typeof d.foto === 'boolean') fotoGewild = d.foto;
     if (d && typeof d.telefoon === 'boolean' && d.telefoon !== telefoon) { const was = telefoon; telefoon = d.telefoon; if (telefoon) log('Telefoon gekoppeld ✓ De pijlen tellen mee.'); else if (was) log('Geen telefoon meer gekoppeld. Koppelcode: ' + cfg.code); }
     if (fouten) log('Weer verbonden met de website ✓');
     fouten = 0;
@@ -179,6 +180,38 @@ async function verstuur(cfg, force) {
 // Elke pijl krijgt een eigen nummer, zodat de website hem niet dubbel telt als hij opnieuw verstuurd wordt
 const RUN = Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(6, 'x'); let evNr = 0;
 function pijl(cfg, ev) { ev.u = RUN + '-' + (++evNr); queue.push(ev); verstuur(cfg); }
+
+// ---------- camerafoto's: na een pijl de beelden van de camera's naar de monitor-weergave ----------
+// Alleen als de monitor-weergave erom vraagt (fotoGewild), en bij snel achter elkaar gegooide pijlen alleen de laatste.
+let fotoAantal = null, fotoGemeld = false, fotoReeks = 0, fotoBezig = false, fotoNog = null, fotoT = null;
+async function telCameras(cfg) {
+  let n = 0;
+  for (let i = 0; i < 6; i++) { try { const r = await fetch(cfg.board + '/api/img/cams/' + i, { signal: AbortSignal.timeout(3000) }); await r.arrayBuffer(); if (!r.ok) break; n++; } catch (e) { break; } }
+  return n;
+}
+function fotoNaPijl(cfg, naam) {
+  if (!fotoGewild || TEST) return;
+  fotoNog = naam; clearTimeout(fotoT);
+  fotoT = setTimeout(() => stuurFotos(cfg), 250); // even wachten tot de pijl stil zit
+}
+async function stuurFotos(cfg) {
+  if (fotoBezig || fotoNog === null) return;
+  fotoBezig = true; const naam = fotoNog; fotoNog = null;
+  try {
+    if (fotoAantal === null) { const n = await telCameras(cfg); if (n) { fotoAantal = n; log('Camerabeelden gaan naar de monitor-weergave (' + n + ' camera\'s) ✓'); } else if (!fotoGemeld) { fotoGemeld = true; log('Geen camerabeelden gevonden bij Autodarts.'); } }
+    if (fotoAantal) {
+      const b = ++fotoReeks;
+      // eerst alle beelden van hetzelfde moment ophalen, dan pas versturen
+      const beelden = await Promise.all(Array.from({ length: fotoAantal }, async (_, i) => { const r = await fetch(cfg.board + '/api/img/cams/' + i, { signal: AbortSignal.timeout(3000), cache: 'no-store' }); if (!r.ok) throw new Error('camera ' + i); return Buffer.from(await r.arrayBuffer()); }));
+      for (let i = 0; i < beelden.length; i++) {
+        const r = await fetch(SITE + '/api/koppel/' + cfg.id + '/foto?b=' + b + '&c=' + i + '&n=' + beelden.length + '&p=' + encodeURIComponent(naam), { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'X-Secret': cfg.secret }, body: beelden[i], signal: AbortSignal.timeout(15000) });
+        if (!r.ok) throw new Error('website ' + r.status);
+      }
+    }
+  } catch (e) { fotoAantal = null; }
+  fotoBezig = false;
+  if (fotoNog !== null) stuurFotos(cfg);
+}
 
 // Opdrachten van de telefoon: Autodarts resetten als de beurt in de app al klaar is
 // (bijv. een gemiste pijl met de hand als Mis ingevuld), anders wacht Autodarts nog op die pijl.
@@ -288,6 +321,7 @@ async function luisterNaarBord(cfg) {
           log(`Pijl ${i + 1}: ${p.name}`);
           bewaarRuw(throws[i], p);
           pijl(cfg, { k: 'dart', i, ...p });
+          fotoNaPijl(cfg, p.name);
         }
         // pijlen uit het bord gehaald
         if (num === 0 && vorige.num > 0) {

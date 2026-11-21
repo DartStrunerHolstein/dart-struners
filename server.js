@@ -278,7 +278,7 @@ const noCam = (k, v) => (k === 'cam' ? undefined : v);
 // BOOT verandert bij elke herstart van de server: de telefoon weet dan dat de pijl-nummers opnieuw beginnen
 const BOOT = crypto.randomBytes(4).toString('hex');
 function camOf(room) { if (!room.cam) room.cam = { seq: 0, at: 0, st: null, ev: [], uids: [] }; if (!room.cam.uids) room.cam.uids = []; return room.cam; }
-function camView(room, own) { const c = camOf(room); return { b: BOOT, seq: c.seq, at: c.at, now: Date.now(), st: c.st, ev: c.ev.slice(-40), own: own || '' }; }
+function camView(room, own) { const c = camOf(room); const v = { b: BOOT, seq: c.seq, at: c.at, now: Date.now(), st: c.st, ev: c.ev.slice(-40), own: own || '' }; if (c.foto) v.foto = { v: c.foto.v, n: c.foto.n, at: c.foto.at, p: c.foto.p }; return v; }
 function camPush(room, events, st) {
   const c = camOf(room), now = Date.now();
   c.at = now;
@@ -308,6 +308,8 @@ const KOP_FILE = path.join(DATA_DIR, 'koppel.json');
 let kop = {}; // id -> { h (hash van het geheim), code, c, u }
 try { if (fs.existsSync(KOP_FILE)) { const d = JSON.parse(fs.readFileSync(KOP_FILE, 'utf8')); if (d && typeof d === 'object') kop = d; } } catch (e) {}
 const kopRoom = new Map(), kopWait = new Map(), kopSeen = new Map(), kopHits = new Map(), kopOwn = new Map();
+// Camerafoto's na elke pijl (alleen in het geheugen): id -> { v, n, at, p, cams: [Buffer] }; kopFotoWil: wanneer de monitor-weergave er laatst om vroeg
+const kopFoto = new Map(), kopFotoNieuw = new Map(), kopFotoWil = new Map();
 let kopTimer = null;
 function persistKop() {
   clearTimeout(kopTimer);
@@ -445,6 +447,14 @@ const HEADERS = {
 function send(res, code, body, type) {
   res.writeHead(code, Object.assign({ 'Content-Type': type || 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, HEADERS));
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
+}
+function readRaw(req, max) {
+  return new Promise((resolve, reject) => {
+    let size = 0; const parts = [];
+    req.on('data', c => { size += c.length; if (size > max) { reject(new Error('te groot')); req.destroy(); return; } parts.push(c); });
+    req.on('end', () => resolve(Buffer.concat(parts)));
+    req.on('error', reject);
+  });
 }
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -678,7 +688,37 @@ const server = http.createServer(async (req, res) => {
       camPush(roomOfKop(id), b.events, b.status);
       if (Date.now() - (x.u || 0) > 3600e3) { x.u = Date.now(); persistKop(); }
       kopNotify(id);
-      return send(res, 200, { ok: true, code: x.code, telefoon: Date.now() - (kopSeen.get(id) || 0) < 35000 });
+      return send(res, 200, { ok: true, code: x.code, telefoon: Date.now() - (kopSeen.get(id) || 0) < 35000, foto: Date.now() - (kopFotoWil.get(id) || 0) < 60000 });
+    }
+    // De laptop stuurt na een pijl de beelden van de camera's (één JPEG per verzoek; ?b=reeks&c=camera&n=aantal&p=pijl)
+    const kf = /^\/api\/koppel\/([a-f0-9]{18})\/foto$/.exec(p);
+    if (kf && req.method === 'POST') {
+      const id = kf[1], x = kop[id];
+      if (!x) return send(res, 404, { error: 'Onbekend bord' });
+      if (!sessOk(x, req.headers['x-secret'])) return send(res, 401, { error: 'Onjuist geheim' });
+      const b = Math.floor(Number(url.searchParams.get('b'))), c = Math.floor(Number(url.searchParams.get('c'))), n = Math.floor(Number(url.searchParams.get('n')));
+      if (!Number.isFinite(b) || !(c >= 0 && c < 6) || !(n >= 1 && n <= 6) || c >= n) return send(res, 400, { error: 'Onjuist' });
+      let buf;
+      try { buf = await readRaw(req, 1024 * 1024); } catch (e) { return send(res, 413, { error: 'Te groot' }); }
+      if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) return send(res, 400, { error: 'Geen JPEG' });
+      let nw = kopFotoNieuw.get(id);
+      if (!nw || nw.b !== b) { nw = { b, n, cams: [], p: String(url.searchParams.get('p') || '').slice(0, 12) }; kopFotoNieuw.set(id, nw); }
+      nw.cams[c] = buf;
+      if (nw.cams.filter(Boolean).length >= nw.n) {
+        kopFotoNieuw.delete(id);
+        const old = kopFoto.get(id), room = roomOfKop(id), cm = camOf(room);
+        const f = { v: (old ? old.v : 0) + 1, n: nw.n, at: Date.now(), p: nw.p, cams: nw.cams };
+        kopFoto.set(id, f); cm.foto = { v: f.v, n: f.n, at: f.at, p: f.p }; cm.seq++;
+        kopNotify(id);
+      }
+      return send(res, 200, { ok: true });
+    }
+    const kg = /^\/api\/koppel\/code\/([A-Za-z0-9]{4})\/foto\/(\d)$/.exec(p);
+    if (kg && req.method === 'GET') {
+      const id = kopByCode(kg[1]), f = id && kopFoto.get(id), buf = f && f.cams[+kg[2]];
+      if (!buf) return send(res, 404, { error: 'Geen foto' });
+      res.writeHead(200, Object.assign({ 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=600', 'Content-Length': buf.length }, HEADERS));
+      return res.end(buf);
     }
     // De laptop wacht hier op opdrachten van de telefoon
     const ko = /^\/api\/koppel\/([a-f0-9]{18})\/opdracht$/.exec(p);
@@ -712,6 +752,7 @@ const server = http.createServer(async (req, res) => {
       const id = kopByCode(kw[1]);
       if (!id) return send(res, 404, { error: 'Deze koppelcode bestaat niet' });
       kopSeen.set(id, Date.now());
+      if (url.searchParams.get('f') === '1') kopFotoWil.set(id, Date.now());
       // Maar één apparaat per camera telt de pijlen (anders tellen twee telefoons/laptops dezelfde pijl allebei)
       const dv = /^[a-z0-9]{6,16}$/.test(url.searchParams.get('d') || '') ? url.searchParams.get('d') : '';
       if (dv) { const o = kopOwn.get(id), now = Date.now();
