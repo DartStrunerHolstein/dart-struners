@@ -14,6 +14,8 @@ const path = require('path');
 const readline = require('readline');
 
 const CONFIG = path.join(__dirname, 'bord-instellingen.json');
+// Vaste kopie in de gebruikersmap: pak je de zip in een andere map uit, dan blijft de koppelcode toch hetzelfde
+const CONFIG_VAST = path.join(require('os').homedir(), '.dart-struners-bord.json');
 const args = process.argv.slice(2);
 const TEST = args.includes('--test');
 const START = Date.now();
@@ -25,7 +27,15 @@ rl.on('line', l => { const w = wachters.shift(); if (w) w(String(l || '').trim()
 const ask = q => { process.stdout.write(q); return lijnen.length ? Promise.resolve(lijnen.shift()) : new Promise(r => wachters.push(r)); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const tijd = () => new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-const log = (...a) => console.log(`[${tijd()}]`, ...a);
+// Alles wat in het venster komt, gaat ook naar bord-verbinding.txt (handig om achteraf te zien waarom iets wegviel)
+const VLOG = path.join(__dirname, 'bord-verbinding.txt');
+const log = (...a) => {
+  console.log(`[${tijd()}]`, ...a);
+  try {
+    if (fs.existsSync(VLOG) && fs.statSync(VLOG).size > 2e6) fs.renameSync(VLOG, VLOG.replace('.txt', '-oud.txt'));
+    fs.appendFileSync(VLOG, `[${new Date().toLocaleString('nl-NL')}] ${a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' ')}\n`);
+  } catch (e) {}
+};
 
 async function get(url, ms = 1500) {
   const r = await fetch(url, { signal: AbortSignal.timeout(ms), cache: 'no-store' });
@@ -47,7 +57,11 @@ async function stuur(cfg, events, status) {
     body: JSON.stringify({ events, status, t0: START }),
     signal: AbortSignal.timeout(8000)
   });
-  if (r.status === 401 || r.status === 404) { const e = new Error('koppeling'); e.code = 404; throw e; }
+  if (r.status === 401 || r.status === 404) {
+    // Alleen als de website zelf zegt dat dit bord onbekend is; een 404 van een tussenstation (bijv. tijdens het bijwerken) telt niet
+    const t = await r.text().catch(() => '');
+    const e = new Error('website antwoordt ' + r.status + (/Onbekend bord|Onjuist geheim/.test(t) ? ' (koppeling onbekend)' : '')); if (/Onbekend bord|Onjuist geheim/.test(t)) e.code = 404; throw e;
+  }
   if (!r.ok) throw new Error('website antwoordt ' + r.status);
   return r.json().catch(() => ({}));
 }
@@ -159,7 +173,7 @@ function bewaarRuw(t, p) {
 }
 
 // ---------- hoofdlus ----------
-let queue = [], bezig = false, laatsteStatus = null, fouten = 0, telefoon = null, fotoGewild = false;
+let onbekendSinds = 0, onbekendGemeld = false, queue = [], bezig = false, laatsteStatus = null, fouten = 0, telefoon = null, fotoGewild = false;
 async function verstuur(cfg, force) {
   if (bezig || (!queue.length && !force)) return;
   bezig = true;
@@ -170,10 +184,12 @@ async function verstuur(cfg, force) {
     if (d && typeof d.foto === 'boolean') fotoGewild = d.foto;
     if (d && d.oud) { log('Er draait een nieuwer doorgeefprogramma met dezelfde koppelcode. Dit venster stopt nu.'); process.exit(0); }
     if (d && typeof d.telefoon === 'boolean' && d.telefoon !== telefoon) { const was = telefoon; telefoon = d.telefoon; if (telefoon) log('Telefoon gekoppeld ✓ De pijlen tellen mee.'); else if (was) log('Geen telefoon meer gekoppeld. Koppelcode: ' + cfg.code); }
-    if (fouten) log('Weer verbonden met de website ✓');
-    fouten = 0;
+    if (fouten) log('Weer verbonden met de website ✓ (na ' + fouten + ' mislukte pogingen)');
+    fouten = 0; onbekendSinds = 0;
   } catch (e) {
-    if (e.code === 404) { log('De koppeling is verlopen. Start opnieuw met: START-BORD.bat --opnieuw'); process.exit(1); }
+    // Nooit zomaar stoppen: blijven proberen. Alleen als de website een kwartier lang zegt dat de koppeling onbekend is, een duidelijke melding.
+    if (e.code === 404) { if (!onbekendSinds) onbekendSinds = Date.now(); if (Date.now() - onbekendSinds > 15 * 60e3 && !onbekendGemeld) { onbekendGemeld = true; log('De website kent deze koppeling niet meer. Sluit dit venster en start opnieuw met: START-BORD.bat --opnieuw'); } }
+    else onbekendSinds = 0;
     if (fouten++ % 10 === 0) log('Website niet bereikbaar (' + e.message + '). Ik probeer het steeds opnieuw…');
   }
   bezig = false;
@@ -388,7 +404,11 @@ function slot() {
   }
   if (typeof fetch !== 'function') { console.log('Deze Node.js is te oud. Gebruik START-BORD.bat, die regelt de juiste versie.'); process.exit(1); }
   let cfg = {};
-  try { if (!args.includes('--opnieuw')) cfg = JSON.parse(fs.readFileSync(CONFIG, 'utf8')) || {}; } catch (e) {}
+  if (!args.includes('--opnieuw')) {
+    for (const f of [CONFIG, CONFIG_VAST]) {
+      try { const c = JSON.parse(fs.readFileSync(f, 'utf8')); if (c && c.id && c.secret) { cfg = c; if (f === CONFIG_VAST) console.log('Koppeling van een eerdere map gevonden: de code blijft ' + c.code + '.'); break; } } catch (e) {}
+    }
+  }
   if (cfg.site && cfg.site !== SITE) cfg = { board: cfg.board };
   // koppelcode
   while (!cfg.id) {
@@ -403,7 +423,7 @@ function slot() {
     cfg.board = b;
     console.log('Autodarts gevonden op ' + b + ' ✓');
   }
-  try { fs.writeFileSync(CONFIG, JSON.stringify(cfg, null, 2)); } catch (e) {}
+  for (const f of [CONFIG, CONFIG_VAST]) { try { fs.writeFileSync(f, JSON.stringify(cfg, null, 2)); } catch (e) {} }
   toonCode(cfg.code);
   console.log('Laat dit venster open zolang je speelt.\n');
   setInterval(() => verstuur(cfg, true), 10000); // teken van leven voor de status op de telefoon
