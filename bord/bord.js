@@ -208,6 +208,9 @@ async function stuurFotos(cfg) {
       // eerst alle beelden van hetzelfde moment ophalen, dan pas versturen
       const beelden = await Promise.all(Array.from({ length: fotoAantal }, async (_, i) => { const r = await fetch(cfg.board + '/api/img/cams/' + i, { signal: AbortSignal.timeout(3000), cache: 'no-store' }); if (!r.ok) throw new Error('camera ' + i); return Buffer.from(await r.arrayBuffer()); }));
       for (let i = 0; i < beelden.length; i++) {
+        // pijlen gaan altijd voor: eerst wachten tot alle pijlberichten verstuurd zijn
+        for (let w = 0; w < 30 && (bezig || queue.length); w++) await sleep(100);
+        if (fotoNog !== null) break; // er is al een nieuwere pijl: deze beelden niet meer afmaken
         const r = await fetch(SITE + '/api/koppel/' + cfg.id + '/foto?b=' + b + '&c=' + i + '&n=' + beelden.length + '&t0=' + START + '&p=' + encodeURIComponent(naam), { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'X-Secret': cfg.secret }, body: beelden[i], signal: AbortSignal.timeout(15000) });
         if (!r.ok) throw new Error('website ' + r.status);
       }

@@ -976,37 +976,52 @@ const CAMK='dartstruners-cam'+(SID?'-'+SID:''),KOPK='dartstruners-koppel';
 let cam={seq:-1,at:0,st:null,ev:[]},camOn=false,camLast=null,camSkew=0,kopCode='',kopAsk=false,kopErr='',camLoop=false;
 try{camOn=localStorage.getItem(CAMK)==='1';kopCode=localStorage.getItem(KOPK)||''}catch(e){}
 if(!kopCode)camOn=false;
-const camLive=()=>cam.at&&Date.now()-camSkew-cam.at<25000;
+const camLive=()=>cam.at&&Date.now()-camSkew-cam.at<35000;
 // Eén apparaat per camera telt de pijlen; dit apparaat heeft een vaste eigen id
 const DEV=(()=>{try{let d=localStorage.getItem('dartstruners-dev');if(!/^[a-z0-9]{10}$/.test(d||'')){d=Math.random().toString(36).slice(2,12).replace(/[^a-z0-9]/g,'x').padEnd(10,'x');localStorage.setItem('dartstruners-dev',d)}return d}catch(e){return Math.random().toString(36).slice(2,12).padEnd(10,'x')}})();
-let camClaim=false;
-const camMine=()=>!cam.own||cam.own===DEV;
+let camClaim=false,camWasMine=false;
+const camMine=()=>cam.own===DEV;
 function camTake(c){if(!c||typeof c!=='object'||(c.seq===cam.seq&&c.b===cam.b&&c.own===cam.own))return false;
   const prevB=cam.b,newBoot=!!(prevB&&c.b&&c.b!==prevB);
   const fv=cam.foto&&cam.foto.v;cam={b:c.b||'',seq:+c.seq||0,at:+c.at||0,own:typeof c.own==='string'?c.own:'',st:c.st&&typeof c.st==='object'?c.st:null,ev:Array.isArray(c.ev)?c.ev:[],foto:c.foto&&typeof c.foto==='object'&&+c.foto.v>0?{v:+c.foto.v,n:Math.max(1,Math.min(6,+c.foto.n||1)),p:String(c.foto.p||'')}:null};
-  if(monLocal&&(cam.foto&&cam.foto.v)!==fv)setTimeout(renderTV,0);
+  if(monLocal&&(cam.foto&&cam.foto.v)!==fv)setTimeout(()=>{const x=document.querySelector('#tv .tvcams'),h=fotoHtml();if(x&&h)x.outerHTML=h;else if(h)renderTV()},0);
   let evs=cam.ev.filter(e=>e&&typeof e.id==='number').sort((a,b)=>a.id-b.id);
   if(camLast===null){camLast=evs.reduce((m,e)=>Math.max(m,e.id),0);return true}
   // De server is opnieuw gestart: de nummers beginnen weer bij 1. Alleen pijlen van de laatste 20 seconden nog meenemen
   if(newBoot){camLast=0;const now=+c.now||0;evs=evs.filter(e=>!now||now-(+e.at||0)<20000)}
-  const nw=evs.filter(e=>e.id>camLast);if(nw.length)camLast=Math.max(camLast,...nw.map(e=>e.id));
-  if(camOn&&(admin||SPELP)&&!tv&&camMine())nw.forEach(camApply);
+  const wasMine=camWasMine,mine=camMine();camWasMine=mine;
+  if(newBoot)camAp=0;
+  // Net de teller geworden? Dan ook de pijlen tellen die de vorige teller gemist heeft (vanaf 'from')
+  const fromId=mine&&!wasMine&&typeof c.from==='number'?c.from:null;
+  const nowS=+c.now||0,nw=evs.filter(e=>fromId!==null?e.id>fromId&&e.id>camAp&&(e.id>camLast||!nowS||nowS-(+e.at||0)<30000):e.id>camLast);
+  if(nw.length)camLast=Math.max(camLast,...nw.map(e=>e.id));
+  if(camOn&&(admin||SPELP)&&!tv&&mine){nw.forEach(camApply);if(nw.length)camAp=Math.max(camAp,...nw.map(e=>e.id))}
   return true}
 // Scherm aan laten zolang de camera meetelt of de monitor-weergave open is (anders slaapt de telefoon en mist hij pijlen)
 let wakeL=null;
 async function wakeSync(){const want=(camOn||monLocal)&&document.visibilityState==='visible';
   try{if(want&&!wakeL&&navigator.wakeLock){wakeL=await navigator.wakeLock.request('screen');wakeL.addEventListener('release',()=>{wakeL=null})}
     else if(!want&&wakeL){const w=wakeL;wakeL=null;await w.release()}}catch(e){wakeL=null}}
-document.addEventListener('visibilitychange',()=>{wakeSync();if(document.visibilityState==='visible'&&camOn&&!camLoop)camStream()});
+document.addEventListener('visibilitychange',()=>{wakeSync();if(document.visibilityState!=='visible')camRelease();camKick();if(document.visibilityState==='visible'&&camOn&&!camLoop)camStream()});
+addEventListener('pagehide',camRelease);setInterval(camKick,1500);
 setInterval(wakeSync,5000);
+// Alleen een apparaat dat de wedstrijd echt open heeft (en zichtbaar is) mag de pijlen tellen. Een telefoon met de app
+// op de startpagina of op de achtergrond meldt zich niet aan, anders telt de laptop niets en raken pijlen kwijt.
+const camElig=()=>!!(camOn&&(admin||SPELP)&&!tv&&document.visibilityState==='visible'&&(openId||((S.kind==='spel'||SPELP)&&SP().on)));
+let camAp=0; // tot welke pijl (id) dit apparaat geteld heeft
+let camAC=null,camReqElig=null,camReqMon=null;
+function camKick(){if(camAC&&(camReqElig!==camElig()||camReqMon!==monLocal)){try{camAC.abort()}catch(e){}}}
+function camRelease(){if(kopCode&&cam.own===DEV)try{fetch('/api/koppel/code/'+encodeURIComponent(kopCode)+'/wait?bv=-1&rel='+DEV+'&ap='+camAp,{cache:'no-store',keepalive:true}).catch(()=>{})}catch(e){}}
 async function camStream(){if(camLoop)return;camLoop=true;const code=kopCode;
   while(camOn&&kopCode===code){
-    try{const cl=camClaim;camClaim=false;const r=await fetch('/api/koppel/code/'+encodeURIComponent(code)+'/wait?bv='+cam.seq+'&bb='+encodeURIComponent(cam.b||'')+'&d='+DEV+(cl?'&claim=1':'')+(monLocal?'&f=1':''),{cache:'no-store'});
+    try{const cl=camClaim;camClaim=false;const el=camElig();camReqElig=el;camReqMon=monLocal;camAC=new AbortController();
+      const r=await fetch('/api/koppel/code/'+encodeURIComponent(code)+'/wait?bv='+cam.seq+'&bb='+encodeURIComponent(cam.b||'')+'&ow='+encodeURIComponent(cam.own||'')+(el?'&d='+DEV:(cam.own===DEV?'&rel='+DEV:''))+(cam.own===DEV?'&ap='+camAp:'')+(cl&&el?'&claim=1':'')+(monLocal?'&f=1':''),{cache:'no-store',signal:camAC.signal});
       if(r.status===404){kopErr='Deze koppelcode bestaat niet (meer). Kijk op de laptop welke code er staat.';camOn=false;kopAsk=true;try{localStorage.setItem(CAMK,'0')}catch(_){}renderOv();break}
       if(!r.ok)throw new Error(r.status);
       const sk=r.headers.get('date');if(sk){const t=Date.parse(sk);if(t)camSkew=Date.now()-t}
       if(camTake(await r.json()))renderOv();
-    }catch(e){await new Promise(r=>setTimeout(r,2000))}}
+    }catch(e){if(!(e&&e.name==='AbortError'))await new Promise(r=>setTimeout(r,2000))}
+    finally{camAC=null}}
   camLoop=false}
 // Hoeveel pijlen Autodarts in zijn huidige beurt al heeft gezien (0–3)
 let camRound=0,camResetAt=0;

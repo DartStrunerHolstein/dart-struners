@@ -323,7 +323,7 @@ const kopByCode = c => { c = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g,
 const kopCmd = new Map(), kopCmdWait = new Map(), kopCmdHits = new Map();
 const kopCmdView = id => kopCmd.get(id) || { n: 0, cmd: '' };
 function kopCmdNotify(id) { const w = kopCmdWait.get(id) || []; kopCmdWait.set(id, []); for (const y of w) { clearTimeout(y.t); try { send(y.res, 200, kopCmdView(id)); } catch (e) {} } }
-function kopNotify(id) { const w = kopWait.get(id) || []; kopWait.set(id, []); const v = camView(roomOfKop(id), (kopOwn.get(id) || {}).d); for (const y of w) { clearTimeout(y.t); try { send(y.res, 200, v); } catch (e) {} } }
+function kopNotify(id) { const w = kopWait.get(id) || []; kopWait.set(id, []); for (const y of w) { try { if (y.done) y.done(); else clearTimeout(y.t); const v = y.view ? y.view() : camView(roomOfKop(id), (kopOwn.get(id) || {}).d); send(y.res, 200, v); } catch (e) {} } }
 function newKopCode() { const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; for (;;) { let c = ''; for (let i = 0; i < 4; i++) c += ch[crypto.randomInt(ch.length)]; if (!kopByCode(c)) return c; } }
 
 // Voor meekijkers alleen de beurten van de wedstrijd die nu bezig is
@@ -764,16 +764,35 @@ const server = http.createServer(async (req, res) => {
       if (url.searchParams.get('f') === '1') kopFotoWil.set(id, Date.now());
       // Maar één apparaat per camera telt de pijlen (anders tellen twee telefoons/laptops dezelfde pijl allebei)
       const dv = /^[a-z0-9]{6,16}$/.test(url.searchParams.get('d') || '') ? url.searchParams.get('d') : '';
-      if (dv) { const o = kopOwn.get(id), now = Date.now();
-        if (!o || o.d === dv || now - o.at > 40000 || url.searchParams.get('claim') === '1') kopOwn.set(id, { d: dv, at: now }); }
+      // Eén apparaat telt (anders telt een beurt dubbel). Het meldt steeds tot welke pijl het geteld heeft (ap).
+      // Valt het weg, dan neemt een ander apparaat het over en telt de gemiste pijlen alsnog (vanaf ap).
+      const room = roomOfKop(id), cmr = camOf(room), now = Date.now(), maxId = cmr.ev.length ? cmr.ev[cmr.ev.length - 1].id : 0;
+      const rel = url.searchParams.get('rel'), ap = Math.floor(Number(url.searchParams.get('ap'))), wasOwn = (kopOwn.get(id) || {}).d || '';
+      let o = kopOwn.get(id);
+      if (o && (o.d === dv || o.d === rel) && Number.isFinite(ap) && ap >= 0 && ap <= maxId) o.ap = Math.max(o.ap || 0, ap);
+      if (rel && o && o.d === rel) { kopOwn.delete(id); o = null; }   // wedstrijd verlaten / achtergrond: pijlen daarna tellen niet voor die wedstrijd
+      const stale = x => !x || (x.pend <= 0 && now - (x.last || x.at) > 6000) || now - x.at > 30000;
+      if (dv) {
+        if (o && o.d === dv) o.at = now;
+        else if (!o || stale(o) || url.searchParams.get('claim') === '1') {
+          // nieuwe teller: vanaf welke pijl moet hij tellen? Vorige teller: vanaf zijn laatste getelde pijl; anders alleen nieuwe pijlen
+          const from = o ? (o.ap || 0) : maxId;
+          o = { d: dv, at: now, ap: Math.min(from, maxId), pend: 0, last: now, from: Math.min(from, maxId), boot: BOOT }; kopOwn.set(id, o);
+        }
+      }
       const ownOf = () => (kopOwn.get(id) || {}).d || '';
-      const room = roomOfKop(id), kb = url.searchParams.get('bv'), kbb = url.searchParams.get('bb');
-      if (kb === null || Number(kb) !== camOf(room).seq || kbb !== BOOT || url.searchParams.get('claim') === '1') return send(res, 200, camView(room, ownOf()));
+      if (ownOf() !== wasOwn) kopNotify(id);
+      const view = () => { const v = camView(room, ownOf()), x = kopOwn.get(id); if (x) v.from = x.from || 0; return v; };
+      const kb = url.searchParams.get('bv'), kbb = url.searchParams.get('bb');
+      if (kb === null || Number(kb) !== cmr.seq || kbb !== BOOT || url.searchParams.get('claim') === '1' || (url.searchParams.has('ow') && url.searchParams.get('ow') !== ownOf())) return send(res, 200, view());
       const w = kopWait.get(id) || []; kopWait.set(id, w);
-      if (w.length > 50) return send(res, 200, camView(room, ownOf()));
-      const y = { res, t: setTimeout(() => { kopWait.set(id, (kopWait.get(id) || []).filter(z => z !== y)); if (dv) { const o = kopOwn.get(id); if (o && o.d === dv) o.at = Date.now(); } send(res, 200, camView(room, ownOf())); }, 25000), own: ownOf };
+      if (w.length > 50) return send(res, 200, view());
+      const mine = dv && o && o.d === dv; if (mine) o.pend = (o.pend || 0) + 1;
+      let klaar = false;
+      const done = () => { if (klaar) return; klaar = true; clearTimeout(y.t); kopWait.set(id, (kopWait.get(id) || []).filter(z => z !== y)); if (mine) { const x = kopOwn.get(id); if (x && x.d === dv) { x.pend = Math.max(0, (x.pend || 0) - 1); x.last = Date.now(); } } };
+      const y = { res, t: setTimeout(() => { done(); if (mine) { const x = kopOwn.get(id); if (x && x.d === dv) x.at = Date.now(); } send(res, 200, view()); }, dv ? 15000 : 25000), own: ownOf, done, view };
       w.push(y);
-      req.on('close', () => { clearTimeout(y.t); kopWait.set(id, (kopWait.get(id) || []).filter(z => z !== y)); });
+      res.on('close', () => done());
       return;
     }
 
