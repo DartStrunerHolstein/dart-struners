@@ -255,28 +255,7 @@ function zetGezond(gz, gm) { if (gezond.gz !== gz || gezond.gm !== gm) { gezond.
 let verstuurT = null;
 function verstuurLater() { clearTimeout(verstuurT); verstuurT = setTimeout(() => { if (CFG) verstuur(CFG, true); }, 300); }
 let CFG = null;
-// Kalibreren: alleen als iemand op de website op Kalibreren drukt.
-// Zelfde verzoek als de Calibrate-knop in de Board Manager van Autodarts (gecontroleerd: POST, antwoord 200)
-const KALIB = [['POST', '/api/config/calibration/auto']];
-async function kalibreer(cfg, waarom) {
-  if (Date.now() - gezond.kbAt < 20000) return false;
-  gezond.kbAt = Date.now(); gezond.kb = 'bezig'; verstuurLater();
-  log('Autodarts kalibreren (' + waarom + ') …');
-  const lijst = KALIB;
-  for (const [m, pad] of lijst) {
-    try {
-      const r = await fetch(cfg.board + pad, { method: m, signal: AbortSignal.timeout(4000) });
-      if (r.ok) {
-        gezond.kb = 'gestart'; log('Kalibratie gestart ✓ Even niet gooien tot Autodarts klaar is.'); verstuurLater();
-        setTimeout(() => { if (gezond.kb === 'gestart') { gezond.kb = 'klaar'; verstuurLater(); } }, 20000);
-        return true;
-      }
-    } catch (e) {}
-  }
-  gezond.kb = 'mislukt'; log('Kalibreren lukte niet vanaf dit programma. Kalibreer in Autodarts zelf (knop Calibrate).'); verstuurLater();
-  return false;
-}
-// Alleen kijken, nooit zelf ingrijpen: Autodarts kalibreert of reset alleen als iemand op de knop drukt.
+// Alleen kijken, nooit zelf ingrijpen: kalibreren doe je in Autodarts zelf; resetten alleen als iemand in de app op Reset drukt.
 // Autodarts zegt zelf of de camera's gekalibreerd zijn (/api/system → calibration)
 let sysAt = 0, kalStatus = 'ok';
 async function checkSysteem(cfg) {
@@ -289,7 +268,7 @@ async function checkSysteem(cfg) {
     const nu = bezig ? 'bezig' : (c.calibrated === false || fout.length) ? 'nee' : 'ok';
     if (nu === kalStatus) return; kalStatus = nu;
     if (nu === 'bezig') { gezond.kb = 'gestart'; verstuurLater(); }
-    else if (nu === 'nee') zetGezond('kalib', fout.length ? 'Camera ' + fout.join(' en ') + ' meldt in Autodarts: niet gekalibreerd.' : 'Autodarts meldt: niet gekalibreerd.');
+    else if (nu === 'nee') zetGezond('kalib', fout.length ? 'Camera ' + fout.join(' en ') + ' meldt in Autodarts: niet gekalibreerd. Kalibreer in Autodarts zelf.' : 'Autodarts meldt: niet gekalibreerd. Kalibreer in Autodarts zelf.');
     else { if (gezond.kb === 'gestart' || gezond.kb === 'bezig') gezond.kb = 'klaar'; if (gezond.gz === 'kalib') zetGezond('ok', ''); else verstuurLater(); }
   } catch (e) {}
 }
@@ -310,7 +289,6 @@ async function luisterNaarOpdrachten(cfg) {
       const d = await r.json();
       if (d && Number.isFinite(d.n)) {
         if (n !== null && d.n !== n && d.cmd === 'reset') { if (TEST) log('(test) Opdracht ontvangen: Autodarts resetten'); else await resetBord(cfg); }
-        if (n !== null && d.n !== n && d.cmd === 'kalibreer') { if (TEST) log('(test) Opdracht ontvangen: kalibreren'); else await kalibreer(cfg, 'gevraagd vanaf de website'); }
         n = d.n;
       }
     } catch (e) { await sleep(3000); }

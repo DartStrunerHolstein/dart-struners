@@ -745,7 +745,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     // De telefoon vraagt de laptop om Autodarts te resetten (beurt in de app afgerond, Autodarts wacht nog op pijlen)
-    const kr = /^\/api\/koppel\/code\/([A-Za-z0-9]{4})\/(reset|kalibreer)$/.exec(p);
+    const kr = /^\/api\/koppel\/code\/([A-Za-z0-9]{4})\/(reset)$/.exec(p);
     if (kr && req.method === 'POST') {
       const id = kopByCode(kr[1]);
       if (!id) return send(res, 404, { error: 'Deze koppelcode bestaat niet' });
